@@ -1,0 +1,228 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+    session:
+      timeout: 30m
+  # Gzip压缩配置 - P3-008
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,text/css,application/javascript,application/javascript+json
+    min-response-size: 1024
+
+spring:
+  application:
+    name: library-system
+
+  # 数据源配置
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: ${MYSQL_PASSWORD:123456}
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 20
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      pool-name: LibraryHikariPool
+      leak-detection-threshold: 60000
+      connection-init-sql: SELECT 1
+      # 优化：添加PreparedStatement缓存
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+        rewriteBatchedStatements: true
+
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 6000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-wait: -1ms
+          max-idle: 16
+          min-idle: 4
+
+  # 缓存配置
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=5000,expireAfterAccess=30m
+
+# MyBatis Plus配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.library.system.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: true
+    default-executor-type: reuse
+    default-statement-timeout: 5000
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:library-system-secret-key-2024-secure-jwt-token-generation}
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+  key-rotation-days: 90
+
+# Redisson配置
+redisson:
+  address: redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}
+  password: ${REDIS_PASSWORD:}
+  database: 0
+  connection-minimum-idle-size: 10
+  connection-pool-size: 32  # FIXED: PERF-005 从64调整为32，单节点推荐值
+  lock-watchdog-timeout: 30000
+
+# API限流配置
+rate-limiter:
+  enabled: true
+  default-limit: 60
+  login-limit: 5
+  window-size: 60
+  redis-key-prefix: "rate:"
+
+# 日志配置
+logging:
+  level:
+    com.library.system: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# CORS配置
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: Authorization,Content-Type,X-Requested-With,Accept,Origin
+  exposed-headers: X-RateLimit-Limit,X-RateLimit-Remaining,Authorization
+  max-age: 1800
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: ${MYSQL_PASSWORD:dev123456}
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+
+logging:
+  level:
+    com.library.system: DEBUG
+    org.springframework.security: DEBUG
+
+---
+# 生产环境配置
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME:library_user}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: true
+
+jwt:
+  secret: ${JWT_SECRET}
+
+logging:
+  level:
+    com.library.system: INFO
+    org.springframework.security: WARN
+  file:
+    name: /var/log/library-system/application.log
+
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+  group-configs:
+    - group: '认证模块'
+      paths-to-match: '/auth/**'
+      packages-to-scan: com.library.system.controller
+    - group: '图书模块'
+      paths-to-match: '/books/**'
+      packages-to-scan: com.library.system.controller
+    - group: '读者模块'
+      paths-to-match: '/readers/**'
+      packages-to-scan: com.library.system.controller
+    - group: '借阅模块'
+      paths-to-match: '/borrow-records/**'
+      packages-to-scan: com.library.system.controller
+    - group: '座位模块'
+      paths-to-match: '/seats/**','/seat-reservations/**'
+      packages-to-scan: com.library.system.controller
+    - group: '积分模块'
+      paths-to-match: '/points/**','/credits/**'
+      packages-to-scan: com.library.system.controller
+    - group: '公告模块'
+      paths-to-match: '/announcements/**'
+      packages-to-scan: com.library.system.controller
+    - group: '志愿模块'
+      paths-to-match: '/volunteers/**','/volunteer-activities/**'
+      packages-to-scan: com.library.system.controller
+    - group: '统计模块'
+      paths-to-match: '/statistics/**'
+      packages-to-scan: com.library.system.controller
+    - group: '赔偿模块'
+      paths-to-match: '/compensations/**'
+      packages-to-scan: com.library.system.controller

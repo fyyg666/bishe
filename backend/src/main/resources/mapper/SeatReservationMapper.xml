@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.system.mapper.SeatReservationMapper">
+
+    <!-- 查询用户的预约记录 -->
+    <select id="selectByUserId" resultType="com.library.system.entity.SeatReservation">
+        SELECT * FROM seat_reservation
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询座位在某时间段的预约 -->
+    <select id="selectActiveBySeatId" resultType="com.library.system.entity.SeatReservation">
+        SELECT * FROM seat_reservation
+        WHERE seat_id = #{seatId}
+        AND status IN ('PENDING', 'CHECKED_IN')
+        AND deleted = 0
+        AND (
+            (start_time &lt;= #{startTime} AND end_time &gt; #{startTime})
+            OR (start_time &lt; #{endTime} AND end_time &gt;= #{endTime})
+            OR (start_time &gt;= #{startTime} AND end_time &lt;= #{endTime})
+        )
+    </select>
+
+    <!-- 查询用户当天的预约次数 -->
+    <select id="countUserDailyReservations" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM seat_reservation
+        WHERE user_id = #{userId}
+        AND DATE(reservation_date) = DATE(#{date})
+        AND status IN ('PENDING', 'CHECKED_IN')
+        AND deleted = 0
+    </select>
+
+</mapper>

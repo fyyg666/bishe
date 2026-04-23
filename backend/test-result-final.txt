@@ -1,0 +1,650 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.library:library-system >---------------------
+[INFO] Building Library Management System 2.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ library-system ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 7 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ library-system ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ library-system ---
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ library-system ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.5:test (default-test) @ library-system ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.library.system.controller.AnnouncementControllerTest
+21:28:27.863 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.library.system.controller.AnnouncementControllerTest]: AnnouncementControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.497 s <<< FAILURE! -- in com.library.system.controller.AnnouncementControllerTest
+[ERROR] com.library.system.controller.AnnouncementControllerTest -- Time elapsed: 0.497 s <<< ERROR!
+java.lang.IllegalStateException: Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+	at org.springframework.util.Assert.state(Assert.java:101)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:92)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:350)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:268)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:216)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:109)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:362)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.controller.AuthControllerTest
+21:28:28.188 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.library.system.controller.AuthControllerTest]: AuthControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.060 s <<< FAILURE! -- in com.library.system.controller.AuthControllerTest
+[ERROR] com.library.system.controller.AuthControllerTest -- Time elapsed: 0.060 s <<< ERROR!
+java.lang.IllegalStateException: Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+	at org.springframework.util.Assert.state(Assert.java:101)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:92)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:350)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:268)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:216)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:109)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:362)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.controller.BookControllerTest
+21:28:28.258 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.library.system.controller.BookControllerTest]: BookControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.031 s <<< FAILURE! -- in com.library.system.controller.BookControllerTest
+[ERROR] com.library.system.controller.BookControllerTest -- Time elapsed: 0.031 s <<< ERROR!
+java.lang.IllegalStateException: Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+	at org.springframework.util.Assert.state(Assert.java:101)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:92)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:350)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:268)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:216)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:109)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:362)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.controller.ReaderControllerTest
+21:28:28.301 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.library.system.controller.ReaderControllerTest]: ReaderControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.041 s <<< FAILURE! -- in com.library.system.controller.ReaderControllerTest
+[ERROR] com.library.system.controller.ReaderControllerTest -- Time elapsed: 0.041 s <<< ERROR!
+java.lang.IllegalStateException: Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+	at org.springframework.util.Assert.state(Assert.java:101)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:92)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:350)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:268)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:216)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:109)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:362)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.controller.StatisticsControllerTest
+21:28:28.354 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.library.system.controller.StatisticsControllerTest]: StatisticsControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.038 s <<< FAILURE! -- in com.library.system.controller.StatisticsControllerTest
+[ERROR] com.library.system.controller.StatisticsControllerTest -- Time elapsed: 0.038 s <<< ERROR!
+java.lang.IllegalStateException: Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+	at org.springframework.util.Assert.state(Assert.java:101)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:92)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:350)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:268)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:216)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:109)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:362)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.controller.VolunteerControllerTest
+21:28:28.413 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.library.system.controller.VolunteerControllerTest]: VolunteerControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.032 s <<< FAILURE! -- in com.library.system.controller.VolunteerControllerTest
+[ERROR] com.library.system.controller.VolunteerControllerTest -- Time elapsed: 0.032 s <<< ERROR!
+java.lang.IllegalStateException: Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+	at org.springframework.util.Assert.state(Assert.java:101)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.scanPackage(AnnotatedClassFinder.java:92)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromPackage(AnnotatedClassFinder.java:82)
+	at org.springframework.boot.test.context.AnnotatedClassFinder.findFromClass(AnnotatedClassFinder.java:68)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.findConfigurationClass(SpringBootTestContextBootstrapper.java:245)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.getOrFindConfigurationClasses(SpringBootTestContextBootstrapper.java:233)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.processMergedContextConfiguration(SpringBootTestContextBootstrapper.java:150)
+	at org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTestContextBootstrapper.processMergedContextConfiguration(WebMvcTestContextBootstrapper.java:36)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:350)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildDefaultMergedContextConfiguration(AbstractTestContextBootstrapper.java:268)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildMergedContextConfiguration(AbstractTestContextBootstrapper.java:216)
+	at org.springframework.test.context.support.AbstractTestContextBootstrapper.buildTestContext(AbstractTestContextBootstrapper.java:109)
+	at org.springframework.boot.test.context.SpringBootTestContextBootstrapper.buildTestContext(SpringBootTestContextBootstrapper.java:111)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:142)
+	at org.springframework.test.context.TestContextManager.<init>(TestContextManager.java:126)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.getTestContextManager(SpringExtension.java:362)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:128)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.security.JwtUtilsTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.13)
+
+2026-04-23 21:28:29 [main] INFO  c.l.system.security.JwtUtilsTest - Starting JwtUtilsTest using Java 17.0.2 with PID 11872 (started by 12856 in C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend)
+2026-04-23 21:28:29 [main] DEBUG c.l.system.security.JwtUtilsTest - Running with Spring Boot v3.5.13, Spring v6.2.17
+2026-04-23 21:28:29 [main] INFO  c.l.system.security.JwtUtilsTest - No active profile set, falling back to 1 default profile: "default"
+2026-04-23 21:28:29 [main] INFO  c.l.system.security.JwtUtilsTest - Started JwtUtilsTest in 0.639 seconds (process running for 2.536)
+mvn : OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath h
+as been appended
+所在位置 行:1 字符: 225
++ ... 12856\Desktop\论文实现\library-system-v2\backend" ; mvn test 2>&1 | Out-F ...
++                                                     ~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (OpenJDK 64-Bit ...s been appended:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-04-23 21:28:30 [main] WARN  c.library.system.security.JwtUtils - Token��֤ʧ��: Malformed protected header JSON: Unable to deserialize: Unexpected character ('?' (code 65533 / 0xfffd)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 1]
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.256 s -- in com.library.system.security.JwtUtilsTest
+[INFO] Running com.library.system.service.AuthServiceTest
+2026-04-23 21:28:31 [main] INFO  c.l.s.service.impl.AuthServiceImpl - �û��޸�����ɹ�: testuser
+2026-04-23 21:28:31 [main] INFO  c.l.s.service.impl.AuthServiceImpl - �û���¼�ɹ�: testuser
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.AuthServiceImpl - �û�ע��ɹ�: newuser
+2026-04-23 21:28:32 [main] WARN  c.l.s.service.impl.AuthServiceImpl - �û��˻��ѱ�����: testuser
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.AuthServiceImpl - �û��ǳ���Token�Ѽ��������
+[ERROR] Tests run: 20, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 1.558 s <<< FAILURE! -- in com.library.system.service.AuthServiceTest
+[ERROR] com.library.system.service.AuthServiceTest.testLogout_Success -- Time elapsed: 0.145 s <<< FAILURE!
+Argument(s) are different! Wanted:
+valueOperations.set(
+    "token:blacklist:valid_token",
+    "1",
+    <any long>,
+    SECONDS
+);
+-> at com.library.system.service.AuthServiceTest.testLogout_Success(AuthServiceTest.java:242)
+Actual invocations have different arguments at position [0]:
+valueOperations.set(
+    "blacklist:valid_token",
+    "1",
+    3599L,
+    SECONDS
+);
+-> at com.library.system.service.impl.AuthServiceImpl.logout(AuthServiceImpl.java:148)
+
+	at com.library.system.service.AuthServiceTest.testLogout_Success(AuthServiceTest.java:242)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.service.BookServiceTest
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.BookServiceImpl - ͼ�鴴���ɹ�: Java���˼��
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.074 s -- in com.library.system.service.BookServiceTest
+[INFO] Running com.library.system.service.BorrowServiceTest
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.BorrowServiceImpl - ͼ������ɹ�: userId=1, borrowId=1, newDueDate=2026-06-07T21:28:32.792038400
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.BorrowServiceImpl - ͼ��黹�ɹ�: user=testuser, book=Java���˼��, overdueDays=0
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.BorrowServiceImpl - ͼ��黹�ɹ�: user=testuser, book=Java���˼��, overdueDays=5
+[ERROR] Tests run: 21, Failures: 2, Errors: 15, Skipped: 0, Time elapsed: 0.488 s <<< FAILURE! -- in com.library.system.service.BorrowServiceTest
+[ERROR] com.library.system.service.BorrowServiceTest.testHasOverdueBooks_True -- Time elapsed: 0.344 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_AlreadyReturned -- Time elapsed: 0.005 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testHasOverdueBooks_False -- Time elapsed: 0.003 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testRenewBook_MaxRenewCount -- Time elapsed: 0.006 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetMyBorrows_Success -- Time elapsed: 0.034 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testRenewBook_Success -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testBorrowBook_Success -- Time elapsed: 0.006 s <<< ERROR!
+java.lang.RuntimeException: ��ͼ�鵱ǰ���ɽ���
+	at com.library.system.service.impl.BorrowServiceImpl.borrowBook(BorrowServiceImpl.java:88)
+	at com.library.system.service.BorrowServiceTest.testBorrowBook_Success(BorrowServiceTest.java:131)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetBorrowById_Success -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetBorrowById_NotFound -- Time elapsed: 0.005 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetMyBorrows_WithStatusFilter -- Time elapsed: 0.005 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testRenewBook_Overdue -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_WrongUser -- Time elapsed: 0.005 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_RecordNotFound -- Time elapsed: 0.006 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_Success -- Time elapsed: 0.006 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testBorrowBook_BookNotAvailable -- Time elapsed: 0.009 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <ͼ���治��> but was: <��ͼ�鵱ǰ���ɽ���>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+	at com.library.system.service.BorrowServiceTest.testBorrowBook_BookNotAvailable(BorrowServiceTest.java:169)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_OverdueFine -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testBorrowBook_BorrowDaysExceedLimit -- Time elapsed: 0.004 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <��������������1-60��֮��> but was: <��ͼ�鵱ǰ���ɽ���>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+	at com.library.system.service.BorrowServiceTest.testBorrowBook_BorrowDaysExceedLimit(BorrowServiceTest.java:202)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.service.CreditServiceTest
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.CreditServiceImpl - ���ֱ䶯: userId=1, value=10, type=TEST, newBalance=110
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.CreditServiceImpl - ���ֱ䶯: userId=1, value=5, type=BORROW, newBalance=105
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.CreditServiceImpl - ���ֱ䶯: userId=1, value=10, type=RETURN, newBalance=110
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.CreditServiceImpl - ���ֱ䶯: userId=1, value=-10, type=OVERDUE, newBalance=90
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.CreditServiceImpl - ���ֱ䶯: userId=1, value=-10, type=OVERDUE, newBalance=90
+2026-04-23 21:28:32 [main] INFO  c.l.s.service.impl.CreditServiceImpl - ���ֱ䶯: userId=1, value=2, type=CHECKIN, newBalance=102
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.071 s -- in com.library.system.service.CreditServiceTest
+[INFO] Running com.library.system.service.SeatServiceTest
+2026-04-23 21:28:33 [main] INFO  c.l.s.service.impl.SeatServiceImpl - ��λǩ���ɹ�: userId=1, reservationId=1
+2026-04-23 21:28:33 [main] INFO  c.l.s.service.impl.SeatServiceImpl - ��λԤԼ�ɹ�: user=testuser, seat=A01, date=2026-04-24 09:00-12:00
+2026-04-23 21:28:33 [main] INFO  c.l.s.service.impl.SeatServiceImpl - ��λԤԼȡ���ɹ�: userId=1, reservationId=1
+2026-04-23 21:28:33 [main] INFO  c.l.s.service.impl.SeatServiceImpl - ��λǩ�˳ɹ�: userId=1, reservationId=1
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.156 s -- in com.library.system.service.SeatServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   AuthServiceTest.testLogout_Success:242 
+Argument(s) are different! Wanted:
+valueOperations.set(
+    "token:blacklist:valid_token",
+    "1",
+    <any long>,
+    SECONDS
+);
+-> at com.library.system.service.AuthServiceTest.testLogout_Success(AuthServiceTest.java:242)
+Actual invocations have different arguments at position [0]:
+valueOperations.set(
+    "blacklist:valid_token",
+    "1",
+    3599L,
+    SECONDS
+);
+-> at com.library.system.service.impl.AuthServiceImpl.logout(AuthServiceImpl.java:148)
+
+[ERROR]   BorrowServiceTest.testBorrowBook_BookNotAvailable:169 expected: <ͼ���治��> but was: <��ͼ�鵱ǰ���ɽ���>
+[ERROR]   BorrowServiceTest.testBorrowBook_BorrowDaysExceedLimit:202 expected: <��������������1-60��֮��> but was: <��ͼ�鵱ǰ���ɽ���>
+[ERROR] Errors: 
+[ERROR]   AnnouncementControllerTest ? IllegalState Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+[ERROR]   AuthControllerTest ? IllegalState Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+[ERROR]   BookControllerTest ? IllegalState Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+[ERROR]   ReaderControllerTest ? IllegalState Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+[ERROR]   StatisticsControllerTest ? IllegalState Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+[ERROR]   VolunteerControllerTest ? IllegalState Found multiple @SpringBootConfiguration annotated classes [Generic bean: class=com.library.system.LibraryApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibraryApplication.class], Generic bean: class=com.library.system.LibrarySystemApplication; scope=; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\classes\com\library\system\LibrarySystemApplication.class]]
+[ERROR]   BorrowServiceTest.testBorrowBook_Success:131 ? Runtime ��ͼ�鵱ǰ���ɽ���
+[ERROR]   BorrowServiceTest.testGetBorrowById_NotFound ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testGetBorrowById_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testGetMyBorrows_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testGetMyBorrows_WithStatusFilter ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testHasOverdueBooks_False ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testHasOverdueBooks_True ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testRenewBook_MaxRenewCount ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testRenewBook_Overdue ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testRenewBook_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_AlreadyReturned ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_OverdueFine ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_RecordNotFound ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_WrongUser ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[INFO] 
+[ERROR] Tests run: 93, Failures: 3, Errors: 21, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.985 s
+[INFO] Finished at: 2026-04-23T21:28:33+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.5:test (default-test) on project library-system: There are test failures.
+[ERROR] 
+[ERROR] See C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

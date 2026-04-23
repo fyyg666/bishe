@@ -1,0 +1,8 @@
+# 浏览器兼容性配置
+# 支持主流浏览器的最近2个版本，以及IE 11+
+# 使用命令 `npx browserslist` 查看匹配的浏览器列表
+
+> 1%
+last 2 versions
+not dead
+not ie 11

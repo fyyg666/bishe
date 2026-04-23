@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.system.mapper.VolunteerServiceMapper">
+
+    <!-- 查询用户的志愿服务记录 -->
+    <select id="selectByUserId" resultType="com.library.system.entity.VolunteerService">
+        SELECT * FROM volunteer_service
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询待审核的记录 -->
+    <select id="selectPendingReview" resultType="com.library.system.entity.VolunteerService">
+        SELECT * FROM volunteer_service
+        WHERE status = 'PENDING' AND deleted = 0
+        ORDER BY create_time ASC
+    </select>
+
+</mapper>

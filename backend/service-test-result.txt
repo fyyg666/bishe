@@ -1,0 +1,482 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.library:library-system >---------------------
+[INFO] Building Library Management System 2.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ library-system ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 7 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ library-system ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ library-system ---
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ library-system ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.5:test (default-test) @ library-system ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.library.system.service.AuthServiceTest
+mvn : OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath h
+as been appended
+所在位置 行:1 字符: 225
++ ... ibrary-system-v2\backend" ; mvn test -Dtest=*ServiceTest 2>&1 | Out-F ...
++                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (OpenJDK 64-Bit ...s been appended:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+21:30:13.055 [main] INFO com.library.system.service.impl.AuthServiceImpl -- �û��޸�����ɹ�: testuser
+21:30:13.109 [main] INFO com.library.system.service.impl.AuthServiceImpl -- �û���¼�ɹ�: testuser
+21:30:13.293 [main] INFO com.library.system.service.impl.AuthServiceImpl -- �û�ע��ɹ�: newuser
+21:30:13.310 [main] WARN com.library.system.service.impl.AuthServiceImpl -- �û��˻��ѱ�����: testuser
+21:30:13.406 [main] INFO com.library.system.service.impl.AuthServiceImpl -- �û��ǳ���Token�Ѽ��������
+[ERROR] Tests run: 20, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 2.490 s <<< FAILURE! -- in com.library.system.service.AuthServiceTest
+[ERROR] com.library.system.service.AuthServiceTest.testLogout_Success -- Time elapsed: 0.145 s <<< FAILURE!
+Argument(s) are different! Wanted:
+valueOperations.set(
+    "token:blacklist:valid_token",
+    "1",
+    <any long>,
+    SECONDS
+);
+-> at com.library.system.service.AuthServiceTest.testLogout_Success(AuthServiceTest.java:242)
+Actual invocations have different arguments at position [0]:
+valueOperations.set(
+    "blacklist:valid_token",
+    "1",
+    3599L,
+    SECONDS
+);
+-> at com.library.system.service.impl.AuthServiceImpl.logout(AuthServiceImpl.java:148)
+
+	at com.library.system.service.AuthServiceTest.testLogout_Success(AuthServiceTest.java:242)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.service.BookServiceTest
+21:30:13.594 [main] INFO com.library.system.service.impl.BookServiceImpl -- ͼ�鴴���ɹ�: Java���˼��
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.library.system.service.BookServiceTest
+[INFO] Running com.library.system.service.BorrowServiceTest
+21:30:13.910 [main] INFO com.library.system.service.impl.BorrowServiceImpl -- ͼ������ɹ�: userId=1, borrowId=1, newDueDate=2026-06-07T21:30:13.909998800
+21:30:13.952 [main] INFO com.library.system.service.impl.BorrowServiceImpl -- ͼ��黹�ɹ�: user=testuser, book=Java���˼��, overdueDays=0
+21:30:13.966 [main] INFO com.library.system.service.impl.BorrowServiceImpl -- ͼ��黹�ɹ�: user=testuser, book=Java���˼��, overdueDays=5
+[ERROR] Tests run: 21, Failures: 2, Errors: 15, Skipped: 0, Time elapsed: 0.351 s <<< FAILURE! -- in com.library.system.service.BorrowServiceTest
+[ERROR] com.library.system.service.BorrowServiceTest.testHasOverdueBooks_True -- Time elapsed: 0.226 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_AlreadyReturned -- Time elapsed: 0.005 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testHasOverdueBooks_False -- Time elapsed: 0.003 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testRenewBook_MaxRenewCount -- Time elapsed: 0.005 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetMyBorrows_Success -- Time elapsed: 0.028 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testRenewBook_Success -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testBorrowBook_Success -- Time elapsed: 0.007 s <<< ERROR!
+java.lang.RuntimeException: ��ͼ�鵱ǰ���ɽ���
+	at com.library.system.service.impl.BorrowServiceImpl.borrowBook(BorrowServiceImpl.java:88)
+	at com.library.system.service.BorrowServiceTest.testBorrowBook_Success(BorrowServiceTest.java:131)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetBorrowById_Success -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetBorrowById_NotFound -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testGetMyBorrows_WithStatusFilter -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testRenewBook_Overdue -- Time elapsed: 0.003 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_WrongUser -- Time elapsed: 0.003 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_RecordNotFound -- Time elapsed: 0.004 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_Success -- Time elapsed: 0.006 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testBorrowBook_BookNotAvailable -- Time elapsed: 0.008 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <ͼ���治��> but was: <��ͼ�鵱ǰ���ɽ���>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+	at com.library.system.service.BorrowServiceTest.testBorrowBook_BookNotAvailable(BorrowServiceTest.java:169)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testReturnBook_OverdueFine -- Time elapsed: 0.005 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.lambda$afterEach$2(MockitoExtension.java:200)
+	at java.base/java.util.Optional.ifPresent(Optional.java:178)
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:198)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] com.library.system.service.BorrowServiceTest.testBorrowBook_BorrowDaysExceedLimit -- Time elapsed: 0.003 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <��������������1-60��֮��> but was: <��ͼ�鵱ǰ���ɽ���>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+	at com.library.system.service.BorrowServiceTest.testBorrowBook_BorrowDaysExceedLimit(BorrowServiceTest.java:202)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] Running com.library.system.service.CreditServiceTest
+21:30:14.031 [main] INFO com.library.system.service.impl.CreditServiceImpl -- ���ֱ䶯: userId=1, value=10, type=TEST, newBalance=110
+21:30:14.034 [main] INFO com.library.system.service.impl.CreditServiceImpl -- ���ֱ䶯: userId=1, value=5, type=BORROW, newBalance=105
+21:30:14.038 [main] INFO com.library.system.service.impl.CreditServiceImpl -- ���ֱ䶯: userId=1, value=10, type=RETURN, newBalance=110
+21:30:14.042 [main] INFO com.library.system.service.impl.CreditServiceImpl -- ���ֱ䶯: userId=1, value=-10, type=OVERDUE, newBalance=90
+21:30:14.045 [main] INFO com.library.system.service.impl.CreditServiceImpl -- ���ֱ䶯: userId=1, value=-10, type=OVERDUE, newBalance=90
+21:30:14.047 [main] INFO com.library.system.service.impl.CreditServiceImpl -- ���ֱ䶯: userId=1, value=2, type=CHECKIN, newBalance=102
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.062 s -- in com.library.system.service.CreditServiceTest
+[INFO] Running com.library.system.service.SeatServiceTest
+21:30:14.145 [main] INFO com.library.system.service.impl.SeatServiceImpl -- ��λǩ���ɹ�: userId=1, reservationId=1
+21:30:14.156 [main] INFO com.library.system.service.impl.SeatServiceImpl -- ��λԤԼ�ɹ�: user=testuser, seat=A01, date=2026-04-24 09:00-12:00
+21:30:14.167 [main] INFO com.library.system.service.impl.SeatServiceImpl -- ��λԤԼȡ���ɹ�: userId=1, reservationId=1
+21:30:14.220 [main] INFO com.library.system.service.impl.SeatServiceImpl -- ��λǩ�˳ɹ�: userId=1, reservationId=1
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.185 s -- in com.library.system.service.SeatServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   AuthServiceTest.testLogout_Success:242 
+Argument(s) are different! Wanted:
+valueOperations.set(
+    "token:blacklist:valid_token",
+    "1",
+    <any long>,
+    SECONDS
+);
+-> at com.library.system.service.AuthServiceTest.testLogout_Success(AuthServiceTest.java:242)
+Actual invocations have different arguments at position [0]:
+valueOperations.set(
+    "blacklist:valid_token",
+    "1",
+    3599L,
+    SECONDS
+);
+-> at com.library.system.service.impl.AuthServiceImpl.logout(AuthServiceImpl.java:148)
+
+[ERROR]   BorrowServiceTest.testBorrowBook_BookNotAvailable:169 expected: <ͼ���治��> but was: <��ͼ�鵱ǰ���ɽ���>
+[ERROR]   BorrowServiceTest.testBorrowBook_BorrowDaysExceedLimit:202 expected: <��������������1-60��֮��> but was: <��ͼ�鵱ǰ���ɽ���>
+[ERROR] Errors: 
+[ERROR]   BorrowServiceTest.testBorrowBook_Success:131 ? Runtime ��ͼ�鵱ǰ���ɽ���
+[ERROR]   BorrowServiceTest.testGetBorrowById_NotFound ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testGetBorrowById_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testGetMyBorrows_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testGetMyBorrows_WithStatusFilter ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testHasOverdueBooks_False ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testHasOverdueBooks_True ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testRenewBook_MaxRenewCount ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testRenewBook_Overdue ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testRenewBook_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:115)
+  2. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+  3. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:117)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_AlreadyReturned ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_OverdueFine ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_RecordNotFound ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_Success ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[ERROR]   BorrowServiceTest.testReturnBook_WrongUser ? UnnecessaryStubbing 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.library.system.service.BorrowServiceTest.setUp(BorrowServiceTest.java:116)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+[INFO] 
+[ERROR] Tests run: 77, Failures: 3, Errors: 15, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.346 s
+[INFO] Finished at: 2026-04-23T21:30:14+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.5:test (default-test) on project library-system: There are test failures.
+[ERROR] 
+[ERROR] See C:\Users\12856\Desktop\����ʵ��\library-system-v2\backend\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

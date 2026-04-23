@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.system.mapper.BookMapper">
+
+    <!-- 分页查询图书 -->
+    <select id="selectBookPage" resultType="com.library.system.entity.Book">
+        SELECT b.*, bc.name as category_name
+        FROM book b
+        LEFT JOIN book_category bc ON b.category_id = bc.id
+        WHERE b.deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (
+                b.title LIKE CONCAT('%', #{keyword}, '%')
+                OR b.author LIKE CONCAT('%', #{keyword}, '%')
+                OR b.isbn LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="status != null">
+            AND b.status = #{status}
+        </if>
+        ORDER BY b.create_time DESC
+    </select>
+
+    <!-- 获取热门图书 -->
+    <select id="selectHotBooks" resultType="com.library.system.entity.Book">
+        SELECT id, isbn, title, author, category_id, cover_image, borrow_count
+        FROM book
+        WHERE deleted = 0 AND status = 0
+        ORDER BY borrow_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取新书推荐 -->
+    <select id="selectNewBooks" resultType="com.library.system.entity.Book">
+        SELECT id, isbn, title, author, category_id, cover_image, create_time
+        FROM book
+        WHERE deleted = 0 AND status = 0
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 根据ISBN查询 -->
+    <select id="selectByIsbn" resultType="com.library.system.entity.Book">
+        SELECT * FROM book
+        WHERE isbn = #{isbn} AND deleted = 0
+    </select>
+
+</mapper>
