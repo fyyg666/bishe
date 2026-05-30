@@ -1,90 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    Logback配置 - 图书馆管理系统V2.0
-    FIXED: SEC-P3-02 添加独立的security-audit.log记录安全事件
-    
-    日志文件:
-    - application.log     主应用日志（所有日志）
-    - security-audit.log  安全审计日志（仅SECURITY_AUDIT logger输出）
--->
-<configuration>
-
-    <!-- 日志文件根目录 -->
-    <property name="LOG_PATH" value="${LOG_PATH:-./logs}" />
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n" />
+<configuration scan="true" scanPeriod="30 seconds">
+    <!-- 应用名称 -->
+    <property name="APP_NAME" value="library-system"/>
+    <property name="LOG_PATH" value="${LOG_PATH:-${LOG_FILE:-./logs}}/"/>
 
     <!-- 控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
 
-    <!-- 主应用日志文件 -->
+    <!-- 文件输出 - 按天轮转 + 大小限制 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/application.log</file>
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
+        <file>${LOG_PATH}application.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>50MB</maxFileSize>
+            <!-- 日志文件命名格式 -->
+            <fileNamePattern>${LOG_PATH}application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 保留30天 -->
             <maxHistory>30</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
+            <!-- 每个文件最大100MB -->
+            <maxFileSize>100MB</maxFileSize>
+            <!-- 总大小限制20GB -->
+            <totalSizeCap>20GB</totalSizeCap>
+            <!-- 启动时清理旧日志 -->
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
-    </appender>
-
-    <!-- FIXED: SEC-P3-02 独立安全审计日志文件 -->
-    <appender name="SECURITY_AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/security-audit.log</file>
         <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/security-audit.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>20MB</maxFileSize>
-            <maxHistory>90</maxHistory>
-            <totalSizeCap>500MB</totalSizeCap>
-        </rollingPolicy>
     </appender>
 
-    <!-- 安全审计Logger：仅输出到独立文件，不传播到root -->
-    <logger name="SECURITY_AUDIT" level="INFO" additivity="false">
-        <appender-ref ref="SECURITY_AUDIT_FILE" />
-        <appender-ref ref="CONSOLE" />
-    </logger>
+    <!-- 错误日志单独输出 -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>90</maxHistory>
+            <maxFileSize>50MB</maxFileSize>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <!-- 只输出ERROR级别 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
 
-    <!-- Spring Security调试日志 -->
-    <logger name="org.springframework.security" level="WARN" />
-
-    <!-- 应用日志级别 -->
-    <logger name="com.library.system" level="DEBUG" />
-
-    <!-- 开发环境配置 -->
-    <springProfile name="dev">
+    <!-- 开发环境 -->
+    <springProfile name="dev,default">
         <root level="INFO">
-            <appender-ref ref="CONSOLE" />
-            <appender-ref ref="FILE" />
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
         </root>
+        <logger name="com.library.system" level="DEBUG"/>
     </springProfile>
 
-    <!-- 生产环境配置 -->
+    <!-- 生产环境 -->
     <springProfile name="prod">
-        <root level="WARN">
-            <appender-ref ref="FILE" />
-        </root>
-        <logger name="com.library.system" level="INFO" />
-    </springProfile>
-
-    <!-- 默认配置（无profile时） -->
-    <springProfile name="default">
         <root level="INFO">
-            <appender-ref ref="CONSOLE" />
-            <appender-ref ref="FILE" />
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
         </root>
+        <logger name="com.library.system" level="INFO"/>
+        <logger name="org.springframework.security" level="WARN"/>
     </springProfile>
 
+    <!-- 测试环境 -->
+    <springProfile name="test">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+        <logger name="com.library.system" level="DEBUG"/>
+    </springProfile>
 </configuration>

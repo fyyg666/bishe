@@ -2,18 +2,26 @@
   <div class="seat-map">
     <!-- 区域选择 -->
     <el-card class="area-card">
-      <el-radio-group v-model="currentArea" @change="handleAreaChange">
-        <el-radio-button label="A">A区</el-radio-button>
-        <el-radio-button label="B">B区</el-radio-button>
-        <el-radio-button label="C">C区</el-radio-button>
-        <el-radio-button label="D">D区</el-radio-button>
+      <el-radio-group
+        v-model="currentArea"
+        @change="handleAreaChange"
+      >
+        <el-radio-button value="A">
+          A区
+        </el-radio-button>
+        <el-radio-button value="B">
+          B区
+        </el-radio-button>
+        <el-radio-button value="C">
+          C区
+        </el-radio-button>
       </el-radio-group>
       
       <div class="seat-legend">
-        <span class="legend-item"><span class="seat available"></span>空闲</span>
-        <span class="legend-item"><span class="seat reserved"></span>已预约</span>
-        <span class="legend-item"><span class="seat occupied"></span>使用中</span>
-        <span class="legend-item"><span class="seat selected"></span>已选</span>
+        <span class="legend-item"><span class="seat available" />空闲</span>
+        <span class="legend-item"><span class="seat reserved" />已预约</span>
+        <span class="legend-item"><span class="seat occupied" />使用中</span>
+        <span class="legend-item"><span class="seat selected" />已选</span>
       </div>
     </el-card>
 
@@ -22,20 +30,29 @@
       <template #header>
         <div class="card-header">
           <span>{{ currentArea }}区座位图</span>
-          <el-button type="primary" size="small" @click="$router.push('/seats/reserve')">
+          <el-button
+            type="primary"
+            size="small"
+            :disabled="!selectedSeat"
+            @click="goToReserve"
+          >
             预约选中的座位
           </el-button>
         </div>
       </template>
       
       <div class="seat-grid">
-        <div v-for="row in 8" :key="row" class="seat-row">
+        <div
+          v-for="row in 8"
+          :key="row"
+          class="seat-row"
+        >
           <span class="row-label">{{ row }}排</span>
           <div
             v-for="col in 10"
             :key="col"
             class="seat"
-            :class="getSeatClass(getSeatStatus(row, col))"
+            :class="getSeatClass(row, col, getSeatStatus(row, col))"
             @click="handleSeatClick(row, col)"
           >
             {{ (row - 1) * 10 + col }}
@@ -44,8 +61,14 @@
       </div>
       
       <!-- 选中座位信息 -->
-      <div class="selected-info" v-if="selectedSeat">
-        <el-alert type="info" :closable="false">
+      <div
+        v-if="selectedSeat"
+        class="selected-info"
+      >
+        <el-alert
+          type="info"
+          :closable="false"
+        >
           已选中: {{ currentArea }}区 {{ selectedSeat.row }}排 {{ selectedSeat.col }}号
         </el-alert>
       </div>
@@ -55,9 +78,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getSeatMap } from '@/api/seat'
 
+const router = useRouter()
 const currentArea = ref('A')
 const selectedSeat = ref(null)
 
@@ -105,7 +130,7 @@ function getSeatStatus(row, col) {
   return seatStatus.value[key] || 'available'
 }
 
-function getSeatClass(status) {
+function getSeatClass(row, col, status) {
   return {
     available: status === 'available',
     reserved: status === 'reserved',
@@ -121,6 +146,25 @@ function handleSeatClick(row, col) {
     return
   }
   selectedSeat.value = { row, col }
+}
+
+function goToReserve() {
+  if (!selectedSeat.value) {
+    ElMessage.warning('请先选择一个座位')
+    return
+  }
+  const { row, col } = selectedSeat.value
+  const seatNumber = (row - 1) * 10 + col
+  // FIXED: 使用 name 跳转 + 传递 row/col 参数，SeatReserve 可以按需使用
+  router.push({
+    name: 'SeatReserve',
+    query: {
+      area: currentArea.value,
+      seatNumber: String(seatNumber),
+      row: String(row),
+      col: String(col)
+    }
+  })
 }
 </script>
 

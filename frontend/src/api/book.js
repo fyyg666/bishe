@@ -40,30 +40,3 @@ export function deleteBook(id) {
     method: 'delete'
   })
 }
-
-export function getBookCategories() {
-  return request({
-    url: '/books/categories',
-    method: 'get'
-  })
-}
-
-export function exportBooks(params) {
-  return request({
-    url: '/books/export',
-    method: 'get',
-    params,
-    responseType: 'blob'
-  })
-}
-
-export function importBooks(data) {
-  return request({
-    url: '/books/import',
-    method: 'post',
-    data,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  })
-}

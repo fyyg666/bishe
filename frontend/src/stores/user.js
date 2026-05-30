@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as apiLogin, logout as apiLogout, getUserInfo } from '@/api/auth'
-import { getToken, setToken as setCookieToken, removeToken, setRefreshToken, removeRefreshToken, clearAuthCookies } from '@/utils/auth'
+import { getToken, setToken as setCookieToken, setRefreshToken, clearAuthCookies } from '@/utils/auth'
 
 // FIXED: FE-001 - 所有Token操作从localStorage迁移到Cookie
 export const useUserStore = defineStore('user', () => {
@@ -28,26 +28,29 @@ export const useUserStore = defineStore('user', () => {
       userInfo.value = res.data || res
     } catch (error) {
       console.error('获取用户信息失败:', error)
-      logout()
+      // 如果userInfo已经在登录时设置，不强制登出
+      if (!userInfo.value) {
+        logout()
+      }
     }
   }
 
   async function login(loginForm) {
     try {
       const res = await apiLogin(loginForm)
-      const newToken = res.token || res.data?.token
-      const refreshToken = res.refreshToken || res.data?.refreshToken
+      const newToken = res.accessToken || res.token || res.data?.accessToken || res.data?.token
+      const refreshTokenValue = res.refreshToken || res.data?.refreshToken
 
       token.value = newToken
       setCookieToken(newToken)
 
       // 保存刷新Token到Cookie
-      if (refreshToken) {
-        setRefreshToken(refreshToken)
+      if (refreshTokenValue) {
+        setRefreshToken(refreshTokenValue)
       }
 
       // 获取用户信息
-      userInfo.value = res.data?.user || res.data
+      userInfo.value = res.userInfo || res.data?.userInfo || res.data
       return res
     } catch (error) {
       throw error
@@ -57,7 +60,7 @@ export const useUserStore = defineStore('user', () => {
   function logout() {
     try {
       apiLogout()
-    } catch (e) {
+    } catch {
       // 忽略错误
     }
     token.value = ''

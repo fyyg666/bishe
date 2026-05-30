@@ -1,16 +1,13 @@
 package com.library.system.controller;
 
-import com.library.system.annotation.AuditLog;
 import com.library.system.dto.*;
 import com.library.system.service.SeatService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +45,7 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
      */
     @Operation(summary = "获取座位列表", description = "查询座位列表及可用性状态")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json"))
     })
     @GetMapping
@@ -70,14 +67,13 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
      */
     @Operation(summary = "预约座位", description = "预约图书馆座位（需要READER角色）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "预约成功"),
-        @ApiResponse(responseCode = "400", description = "参数错误"),
-        @ApiResponse(responseCode = "403", description = "无权预约"),
-        @ApiResponse(responseCode = "409", description = "时间段冲突")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "预约成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权预约"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "时间段冲突")
     })
-    @AuditLog(module = "座位管理", operation = "预约座位")
     @PostMapping("/reserve")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<SeatReservationResponse> reserveSeat(
             @Parameter(description = "预约请求体", required = true)
             @Valid @RequestBody SeatReservationRequest request,
@@ -93,13 +89,12 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
      */
     @Operation(summary = "取消预约", description = "取消已预约的座位")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "取消成功"),
-        @ApiResponse(responseCode = "403", description = "无权取消"),
-        @ApiResponse(responseCode = "404", description = "预约记录不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "取消成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权取消"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "预约记录不存在")
     })
-    @AuditLog(module = "座位管理", operation = "取消预约")
     @PostMapping("/cancel/{reservationId}")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<Void> cancelReservation(
             @Parameter(description = "预约记录ID", required = true)
             @PathVariable Long reservationId,
@@ -115,13 +110,12 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
      */
     @Operation(summary = "座位签到", description = "到达座位后扫码签到")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "签到成功"),
-        @ApiResponse(responseCode = "400", description = "签到失败（如未到时间）"),
-        @ApiResponse(responseCode = "403", description = "无权签到")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "签到成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "签到失败（如未到时间）"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权签到")
     })
-    @AuditLog(module = "座位管理", operation = "座位签到")
     @PostMapping("/checkin/{reservationId}")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<SeatReservationResponse> checkIn(
             @Parameter(description = "预约记录ID", required = true)
             @PathVariable Long reservationId,
@@ -137,12 +131,11 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
      */
     @Operation(summary = "座位签退", description = "离开座位时签退")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "签退成功"),
-        @ApiResponse(responseCode = "403", description = "无权签退")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "签退成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权签退")
     })
-    @AuditLog(module = "座位管理", operation = "座位签退")
     @PostMapping("/checkout/{reservationId}")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<SeatReservationResponse> checkOut(
             @Parameter(description = "预约记录ID", required = true)
             @PathVariable Long reservationId,
@@ -158,10 +151,10 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
      */
     @Operation(summary = "获取我的预约列表", description = "分页查询当前用户的座位预约记录")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping("/my")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<PageResult<SeatReservationResponse>> getMyReservations(
             @Parameter(description = "当前页（默认1）")
             @RequestParam(defaultValue = "1") Long current,
@@ -179,7 +172,7 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
      */
     @Operation(summary = "检查座位可用性", description = "检查指定时间段座位是否可用")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "检查成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "检查成功")
     })
     @GetMapping("/check-availability")
     public ApiResponse<Boolean> checkAvailability(

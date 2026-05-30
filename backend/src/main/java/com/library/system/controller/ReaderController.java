@@ -1,18 +1,12 @@
 package com.library.system.controller;
 
-import com.library.system.annotation.AuditLog;
-import com.library.system.common.Constants;
 import com.library.system.dto.*;
-import com.library.system.entity.User;
 import com.library.system.service.ReaderService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,8 +43,8 @@ public class ReaderController {
      */
     @Operation(summary = "获取读者列表", description = "分页查询读者列表（需要管理员或图书管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -73,10 +67,11 @@ public class ReaderController {
      */
     @Operation(summary = "获取读者详情", description = "根据ID查询读者详细信息")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "404", description = "读者不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "读者不存在")
     })
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<ReaderResponse> getReaderById(
             @Parameter(description = "读者ID", required = true)
             @PathVariable Long id) {
@@ -89,8 +84,8 @@ public class ReaderController {
      */
     @Operation(summary = "获取当前读者信息", description = "获取当前登录用户的个人信息")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "404", description = "用户不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "用户不存在")
     })
     @GetMapping("/me")
     public ApiResponse<ReaderResponse> getCurrentReader(
@@ -104,10 +99,9 @@ public class ReaderController {
      */
     @Operation(summary = "注册读者", description = "注册新读者账号")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "注册成功"),
-        @ApiResponse(responseCode = "400", description = "用户名已存在或参数错误")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "注册成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "用户名已存在或参数错误")
     })
-    @AuditLog(module = "读者管理", operation = "注册读者")
     @PostMapping
     public ApiResponse<ReaderResponse> registerReader(
             @Parameter(description = "注册请求体", required = true)
@@ -124,11 +118,12 @@ public class ReaderController {
      */
     @Operation(summary = "更新读者信息", description = "更新读者信息（普通用户可更新自己的，管理员可更新任意用户）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "更新成功"),
-        @ApiResponse(responseCode = "403", description = "无权修改该用户信息"),
-        @ApiResponse(responseCode = "404", description = "用户不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "更新成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权修改该用户信息"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "用户不存在")
     })
     @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<ReaderResponse> updateReader(
             @Parameter(description = "读者ID", required = true)
             @PathVariable Long id,
@@ -138,14 +133,11 @@ public class ReaderController {
         log.info("更新读者信息: id={}", id);
 
         String username = authentication.getName();
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User currentUser = readerService.findByUsername(username);
-
-        boolean isAdmin = Constants.Role.ADMIN.equals(currentUser.getRole()) ||
-                          Constants.Role.LIBRARIAN.equals(currentUser.getRole());
+        Long currentUserId = readerService.getUserIdByUsername(username);
+        boolean isAdmin = readerService.isCurrentUserAdmin(username);
 
         ReaderResponse response = readerService.updateReader(
-                id, currentUser.getId(), isAdmin,
+                id, currentUserId, isAdmin,
                 request.getRealName(), request.getPhone(), request.getEmail(), request.getAvatar(),
                 request.getRole(), request.getStatus(), request.getCreditScore(), request.getMaxBorrowCount());
         return ApiResponse.success("读者信息更新成功", response);
@@ -156,11 +148,12 @@ public class ReaderController {
      */
     @Operation(summary = "修改密码", description = "修改用户密码（需要验证旧密码）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "密码修改成功"),
-        @ApiResponse(responseCode = "400", description = "旧密码错误"),
-        @ApiResponse(responseCode = "403", description = "无权修改该用户密码")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "密码修改成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "旧密码错误"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权修改该用户密码")
     })
     @PostMapping("/{id}/password")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> changePassword(
             @Parameter(description = "读者ID", required = true)
             @PathVariable Long id,
@@ -170,10 +163,9 @@ public class ReaderController {
         log.info("修改密码: id={}", id);
 
         String username = authentication.getName();
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User currentUser = readerService.findByUsername(username);
+        Long currentUserId = readerService.getUserIdByUsername(username);
 
-        readerService.changePassword(id, currentUser.getId(),
+        readerService.changePassword(id, currentUserId,
                 request.getOldPassword(), request.getNewPassword());
         return ApiResponse.success("密码修改成功", null);
     }
@@ -183,11 +175,10 @@ public class ReaderController {
      */
     @Operation(summary = "删除读者", description = "删除读者账号（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "删除成功"),
-        @ApiResponse(responseCode = "403", description = "无权删除"),
-        @ApiResponse(responseCode = "404", description = "读者不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "删除成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权删除"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "读者不存在")
     })
-    @AuditLog(module = "读者管理", operation = "删除读者")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @CacheEvict(value = "readers", allEntries = true)
@@ -204,11 +195,10 @@ public class ReaderController {
      */
     @Operation(summary = "重置密码", description = "重置读者密码为默认密码（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "重置成功"),
-        @ApiResponse(responseCode = "403", description = "无权重置"),
-        @ApiResponse(responseCode = "404", description = "读者不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "重置成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权重置"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "读者不存在")
     })
-    @AuditLog(module = "读者管理", operation = "重置密码")
     @PostMapping("/{id}/reset-password")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<Void> resetPassword(
@@ -224,9 +214,9 @@ public class ReaderController {
      */
     @Operation(summary = "更新读者状态", description = "禁用或启用读者账号（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "状态更新成功"),
-        @ApiResponse(responseCode = "403", description = "无权操作"),
-        @ApiResponse(responseCode = "404", description = "读者不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "状态更新成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权操作"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "读者不存在")
     })
     @PostMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")

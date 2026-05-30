@@ -59,24 +59,26 @@ public class Book implements Serializable {
     @TableField("total_quantity")
     private Integer totalCount;
 
-    /** 可借数量（对应数据库stock字段） */ 
+    /** 可借数量 */ 
     @TableField("stock")
     private Integer availableCount;
 
-    /** 馆藏位置（对应数据库无此字段，仅展示用） */
+    /** 馆藏位置（数据库暂无此列） */
     @TableField(exist = false)
     private String location;
 
     /** 借阅次数 */
+    @TableField("borrow_count")
     private Integer borrowCount;
 
-    /** 状态：0-正常，1-下架 */
+    /** 状态：0-上架（可借），1-下架（不可借）— 对应 Constants.BookStatus.NORMAL / OFFLINE */
     private Integer status;
 
     /** 描述 */
     private String description;
 
     /** 封面图片URL */
+    @TableField("cover_image")
     private String coverImage;
 
     /** 版本号（乐观锁） */

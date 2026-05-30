@@ -2,14 +2,13 @@ package com.library.system.controller;
 
 import com.library.system.dto.*;
 import com.library.system.service.StatisticsService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,10 +43,10 @@ public class StatisticsController {
      */
     @Operation(summary = "获取综合概览", description = "获取系统综合统计数据（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = StatisticsResponse.class))),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/overview")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -61,8 +60,8 @@ public class StatisticsController {
      */
     @Operation(summary = "获取借阅统计", description = "获取借阅相关统计数据（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/borrows")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -76,8 +75,8 @@ public class StatisticsController {
      */
     @Operation(summary = "获取图书统计", description = "获取图书相关统计数据（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/books")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -91,8 +90,8 @@ public class StatisticsController {
      */
     @Operation(summary = "获取读者统计", description = "获取读者相关统计数据（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/readers")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -106,8 +105,8 @@ public class StatisticsController {
      */
     @Operation(summary = "获取座位统计", description = "获取座位相关统计数据（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/seats")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -121,8 +120,8 @@ public class StatisticsController {
      */
     @Operation(summary = "获取借阅趋势", description = "获取指定天数内的借阅趋势数据（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/borrow-trend")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -138,7 +137,7 @@ public class StatisticsController {
      */
     @Operation(summary = "获取热门图书", description = "获取热门借阅图书排行榜（公开接口）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping("/hot-books")
     public ApiResponse<List<BookResponse>> getHotBooks(
@@ -153,8 +152,8 @@ public class StatisticsController {
      */
     @Operation(summary = "获取图书分类分布", description = "获取各类图书的数量分布（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/category-distribution")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -164,12 +163,27 @@ public class StatisticsController {
     }
 
     /**
+     * 获取座位使用率热力图
+     */
+    @Operation(summary = "获取座位使用率热力图", description = "获取各时间段各区域的座位使用率数据（需要管理员权限）")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
+    })
+    @GetMapping("/seat-heatmap")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public ApiResponse<List<Map<String, Object>>> getSeatHeatmap() {
+        log.debug("获取座位使用率热力图");
+        return ApiResponse.success(statisticsService.getSeatHeatmap());
+    }
+
+    /**
      * 获取月度统计
      */
     @Operation(summary = "获取月度统计", description = "获取指定月数内的月度统计数据（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/monthly")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")

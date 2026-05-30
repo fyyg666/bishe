@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getSeatMap, reserveSeat, cancelReserve, getMyReservations } from '@/api/seat'
+import { getSeatMap, reserveSeat, cancelReserve, getMyReservations, checkIn, checkOut } from '@/api/seat'
 
 export const useSeatStore = defineStore('seat', () => {
   // 状态
@@ -30,6 +30,16 @@ export const useSeatStore = defineStore('seat', () => {
     return res
   }
 
+  async function doCheckIn(id) {
+    const res = await checkIn(id)
+    return res
+  }
+
+  async function doCheckOut(id) {
+    const res = await checkOut(id)
+    return res
+  }
+
   async function fetchMyReservations(params) {
     loading.value = true
     try {
@@ -48,6 +58,8 @@ export const useSeatStore = defineStore('seat', () => {
     fetchSeatMap,
     reserve,
     cancel,
+    doCheckIn,
+    doCheckOut,
     fetchMyReservations
   }
 })

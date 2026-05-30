@@ -1,7 +1,6 @@
 package com.library.system.config;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.library.system.entity.Book;
@@ -13,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -26,7 +25,6 @@ import java.util.List;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class BloomFilterConfig {
 
     private final BookMapper bookMapper;
@@ -35,21 +33,21 @@ public class BloomFilterConfig {
     private BloomFilter<String> bookBloomFilter;
     private BloomFilter<String> userBloomFilter;
 
-    private static final int EXPECTED_INSERTIONS = 10000;
+    private static final int EXPECTED_INSERTIONS = 100000;
     private static final double FPP = 0.01;
 
     @PostConstruct
     public void init() {
         // 初始化图书布隆过滤器
         bookBloomFilter = BloomFilter.create(
-                Funnels.stringFunnel(Charset.defaultCharset()),
+                Funnels.stringFunnel(StandardCharsets.UTF_8),
                 EXPECTED_INSERTIONS,
                 FPP
         );
 
         // 初始化用户布隆过滤器
         userBloomFilter = BloomFilter.create(
-                Funnels.stringFunnel(Charset.defaultCharset()),
+                Funnels.stringFunnel(StandardCharsets.UTF_8),
                 EXPECTED_INSERTIONS,
                 FPP
         );

@@ -20,7 +20,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: ${MYSQL_PASSWORD:123456}
+    password: ${MYSQL_PASSWORD:root}
     hikari:
       minimum-idle: 10
       maximum-pool-size: 20
@@ -80,8 +80,9 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 # JWT配置
+# 生产环境必须通过JWT_SECRET环境变量设置强密钥（至少32字符）
 jwt:
-  secret: ${JWT_SECRET:library-system-secret-key-2024-secure-jwt-token-generation}
+  secret: ${JWT_SECRET:CHANGE-ME-TO-A-STRONG-SECRET-KEY-IN-PRODUCTION-AT-LEAST-32-CHARS}
   access-token-expiration: 7200000
   refresh-token-expiration: 604800000
   key-rotation-days: 90
@@ -135,6 +136,55 @@ management:
       prometheus:
         enabled: true
 
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+  group-configs:
+    - group: '认证模块'
+      paths-to-match: '/auth/**'
+      packages-to-scan: com.library.system.controller
+    - group: '图书模块'
+      paths-to-match: '/books/**'
+      packages-to-scan: com.library.system.controller
+    - group: '读者模块'
+      paths-to-match: '/readers/**'
+      packages-to-scan: com.library.system.controller
+    - group: '借阅模块'
+      paths-to-match: '/borrows/**'
+      packages-to-scan: com.library.system.controller
+    - group: '座位模块'
+      paths-to-match:
+        - '/seats/**'
+        - '/seat-reservations/**'
+      packages-to-scan: com.library.system.controller
+    - group: '积分模块'
+      paths-to-match:
+        - '/points/**'
+        - '/credits/**'
+      packages-to-scan: com.library.system.controller
+    - group: '公告模块'
+      paths-to-match: '/announcements/**'
+      packages-to-scan: com.library.system.controller
+    - group: '志愿模块'
+      paths-to-match:
+        - '/volunteers/**'
+        - '/volunteer-activities/**'
+      packages-to-scan: com.library.system.controller
+    - group: '统计模块'
+      paths-to-match: '/statistics/**'
+      packages-to-scan: com.library.system.controller
+    - group: '赔偿模块'
+      paths-to-match: '/compensations/**'
+      packages-to-scan: com.library.system.controller
+
 ---
 # 开发环境配置
 spring:
@@ -144,7 +194,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: ${MYSQL_PASSWORD:dev123456}
+    password: ${MYSQL_PASSWORD:root}
   data:
     redis:
       host: localhost
@@ -182,47 +232,11 @@ logging:
     com.library.system: INFO
     org.springframework.security: WARN
   file:
-    name: /var/log/library-system/application.log
+    name: ./logs/application.log
 
-# SpringDoc OpenAPI 配置
+# 生产环境禁用Swagger UI（安全加固）
 springdoc:
   api-docs:
-    enabled: true
-    path: /v3/api-docs
+    enabled: false
   swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
-    operationsSorter: method
-    tagsSorter: alpha
-    tryItOutEnabled: true
-  group-configs:
-    - group: '认证模块'
-      paths-to-match: '/auth/**'
-      packages-to-scan: com.library.system.controller
-    - group: '图书模块'
-      paths-to-match: '/books/**'
-      packages-to-scan: com.library.system.controller
-    - group: '读者模块'
-      paths-to-match: '/readers/**'
-      packages-to-scan: com.library.system.controller
-    - group: '借阅模块'
-      paths-to-match: '/borrow-records/**'
-      packages-to-scan: com.library.system.controller
-    - group: '座位模块'
-      paths-to-match: '/seats/**','/seat-reservations/**'
-      packages-to-scan: com.library.system.controller
-    - group: '积分模块'
-      paths-to-match: '/points/**','/credits/**'
-      packages-to-scan: com.library.system.controller
-    - group: '公告模块'
-      paths-to-match: '/announcements/**'
-      packages-to-scan: com.library.system.controller
-    - group: '志愿模块'
-      paths-to-match: '/volunteers/**','/volunteer-activities/**'
-      packages-to-scan: com.library.system.controller
-    - group: '统计模块'
-      paths-to-match: '/statistics/**'
-      packages-to-scan: com.library.system.controller
-    - group: '赔偿模块'
-      paths-to-match: '/compensations/**'
-      packages-to-scan: com.library.system.controller
+    enabled: false

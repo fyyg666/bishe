@@ -38,18 +38,14 @@ export const useBookStore = defineStore('book', () => {
     return res
   }
 
-  async function editBook(data) {
-    const res = await updateBook(data)
+  async function editBook(id, data) {
+    const res = await updateBook(id, data)
     return res
   }
 
   async function removeBook(id) {
     const res = await deleteBook(id)
     return res
-  }
-
-  function clearCurrentBook() {
-    currentBook.value = null
   }
 
   return {
@@ -61,7 +57,6 @@ export const useBookStore = defineStore('book', () => {
     fetchBookDetail,
     createBook,
     editBook,
-    removeBook,
-    clearCurrentBook
+    removeBook
   }
 })

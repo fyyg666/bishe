@@ -1,35 +1,124 @@
-// Color variables
-$primary-color: #409eff;
-$success-color: #67c23a;
-$warning-color: #e6a23c;
-$danger-color: #f56c6c;
-$info-color: #909399;
+// ============================================
+// Design System Tokens — v3.0 (Warm & Gentle)
+// ============================================
 
-// Text colors
-$text-primary: #303133;
-$text-regular: #606266;
-$text-secondary: #909399;
-$text-placeholder: #c0c4cc;
+// ── Typography ──────────────────────────────
+$font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont,
+  sans-serif;
+$font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 
-// Border colors
-$border-color: #dcdfe6;
-$border-color-light: #e4e7ed;
-$border-color-lighter: #ebeef5;
-$border-color-extra-light: #f2f6fc;
+// Modular scale: 1.25
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.8125rem;
+$font-size-base: 0.875rem;
+$font-size-lg: 1rem;
+$font-size-xl: 1.125rem;
+$font-size-2xl: 1.5rem;
+$font-size-3xl: 2rem;
 
-// Background colors
-$bg-color: #f5f7fa;
-$bg-color-white: #ffffff;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
 
-// Sidebar
-$sidebar-width: 210px;
-$sidebar-collapsed-width: 64px;
-$sidebar-bg: #304156;
-$sidebar-text: #bfcbd9;
-$sidebar-active-text: #409eff;
+$line-height-tight: 1.25;
+$line-height-base: 1.5;
+$line-height-relaxed: 1.75;
 
-// Header
-$header-height: 50px;
+// ── Color Palette — Warm, Low-Saturation ────
+// Primary: muted slate-blue with warm undertone
+$primary-h: 248;
+$primary-s: 0.2;
+$primary-l: 0.52;
+$primary: oklch($primary-l $primary-s $primary-h);
+$primary-light: oklch($primary-l + 0.15 $primary-s * 0.8 $primary-h + 5);
+$primary-lighter: oklch($primary-l + 0.25 $primary-s * 0.5 $primary-h + 8);
+$primary-dark: oklch($primary-l - 0.1 $primary-s * 1.1 $primary-h - 3);
 
-// Animation
-$transition-duration: 0.3s;
+// Accent: warm terra cotta
+$accent: oklch(0.56 0.1 35);
+$accent-light: oklch(0.72 0.07 35);
+
+// Neutral: warm gray (sand undertone)
+$gray-50: oklch(0.985 0.003 55);
+$gray-100: oklch(0.97 0.005 52);
+$gray-150: oklch(0.96 0.006 50);
+$gray-200: oklch(0.93 0.007 48);
+$gray-300: oklch(0.86 0.008 45);
+$gray-400: oklch(0.75 0.008 42);
+$gray-500: oklch(0.6 0.01 40);
+$gray-600: oklch(0.48 0.015 38);
+$gray-700: oklch(0.38 0.02 36);
+$gray-750: oklch(0.3 0.025 34);
+$gray-800: oklch(0.25 0.03 32);
+$gray-900: oklch(0.2 0.035 30);
+
+// Status — muted
+$success: oklch(0.58 0.12 145);
+$success-bg: oklch(0.94 0.04 145);
+$warning: oklch(0.68 0.1 80);
+$warning-bg: oklch(0.95 0.04 80);
+$danger: oklch(0.55 0.14 25);
+$danger-bg: oklch(0.94 0.05 25);
+$info: $gray-400;
+
+// Text — warm
+$text-primary: oklch(0.2 0.02 40);
+$text-regular: $gray-600;
+$text-secondary: $gray-400;
+$text-placeholder: $gray-300;
+$text-inverse: oklch(0.98 0.003 50);
+
+// Background — paper-like warmth
+$bg-page: oklch(0.975 0.004 55);
+$bg-card: oklch(0.995 0.002 55);
+$bg-white: oklch(1 0 0);
+
+// Border — subtle
+$border: $gray-150;
+$border-light: oklch(0.965 0.004 52);
+
+// ── Shadows — single-layer, gentle ──────────
+$shadow-sm: 0 1px 3px oklch(0 0 0 / 0.04);
+$shadow-md: 0 4px 12px oklch(0 0 0 / 0.06);
+$shadow-lg: 0 8px 24px oklch(0 0 0 / 0.08);
+$shadow-xl: 0 16px 40px oklch(0 0 0 / 0.1);
+$shadow-primary: 0 2px 12px oklch($primary-l $primary-s * 0.5 #{$primary-h} / 0.25);
+
+// ── Border Radius ────────────────────────────
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+
+// ── Spacing (8px base) ──────────────────────
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-5: 20px;
+$space-6: 24px;
+$space-8: 32px;
+$space-10: 40px;
+$space-12: 48px;
+$space-16: 64px;
+
+// ── Layout ──────────────────────────────────
+$sidebar-width: 240px;
+$sidebar-collapsed: 64px;
+$header-height: 56px;
+$content-max-width: 1280px;
+
+// ── Transitions ─────────────────────────────
+$ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+$transition-fast: 120ms $ease-out-expo;
+$transition-base: 200ms $ease-out-expo;
+$transition-slow: 350ms $ease-out-expo;
+
+// ── Z-index ─────────────────────────────────
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-fixed: 300;
+$z-overlay: 500;
+$z-modal: 1000;
+$z-toast: 2000;

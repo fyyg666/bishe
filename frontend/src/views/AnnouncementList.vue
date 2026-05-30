@@ -2,14 +2,20 @@
   <div class="page-container">
     <div class="page-header">
       <h2>公告管理</h2>
-      <el-button type="primary" @click="handleCreate">
+      <el-button
+        type="primary"
+        @click="handleCreate"
+      >
         <el-icon><Plus /></el-icon>发布公告
       </el-button>
     </div>
 
     <!-- 搜索筛选 -->
     <el-card class="filter-card">
-      <el-form :inline="true" :model="filterForm">
+      <el-form
+        :inline="true"
+        :model="filterForm"
+      >
         <el-form-item label="关键词">
           <el-input
             v-model="filterForm.keyword"
@@ -19,23 +25,58 @@
           />
         </el-form-item>
         <el-form-item label="类型">
-          <el-select v-model="filterForm.type" placeholder="选择类型" clearable>
-            <el-option label="全部" value="" />
-            <el-option label="通知" value="NOTICE" />
-            <el-option label="活动" value="ACTIVITY" />
-            <el-option label="系统" value="SYSTEM" />
+          <el-select
+            v-model="filterForm.type"
+            placeholder="选择类型"
+            clearable
+          >
+            <el-option
+              label="全部"
+              value=""
+            />
+            <el-option
+              label="通知"
+              value="NOTICE"
+            />
+            <el-option
+              label="活动"
+              value="ACTIVITY"
+            />
+            <el-option
+              label="系统"
+              value="SYSTEM"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="filterForm.status" placeholder="选择状态" clearable>
-            <el-option label="全部" value="" />
-            <el-option label="草稿" value="DRAFT" />
-            <el-option label="已发布" value="PUBLISHED" />
-            <el-option label="已归档" value="ARCHIVED" />
+          <el-select
+            v-model="filterForm.status"
+            placeholder="选择状态"
+            clearable
+          >
+            <el-option
+              label="全部"
+              value=""
+            />
+            <el-option
+              label="草稿"
+              value="DRAFT"
+            />
+            <el-option
+              label="已发布"
+              value="PUBLISHED"
+            />
+            <el-option
+              label="已归档"
+              value="ARCHIVED"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">
+          <el-button
+            type="primary"
+            @click="handleSearch"
+          >
             <el-icon><Search /></el-icon>搜索
           </el-button>
           <el-button @click="handleReset">
@@ -48,7 +89,11 @@
     <!-- 数据表格 -->
     <el-card class="table-card">
       <!-- 骨架屏加载状态 -->
-      <el-skeleton v-if="loading && announcementList.length === 0" :rows="5" animated />
+      <el-skeleton
+        v-if="loading && announcementList.length === 0"
+        :rows="5"
+        animated
+      />
       
       <!-- 空状态 -->
       <EmptyState 
@@ -67,44 +112,99 @@
         stripe
         style="width: 100%"
       >
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="type" label="类型" width="100" align="center">
+        <el-table-column
+          prop="id"
+          label="ID"
+          width="80"
+          align="center"
+        />
+        <el-table-column
+          prop="title"
+          label="标题"
+          min-width="200"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="type"
+          label="类型"
+          width="100"
+          align="center"
+        >
           <template #default="{ row }">
             <el-tag :type="getTypeTagType(row.type)">
               {{ getTypeName(row.type) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="priority" label="优先级" width="80" align="center">
+        <el-table-column
+          prop="priority"
+          label="优先级"
+          width="80"
+          align="center"
+        >
           <template #default="{ row }">
-            <el-tag :type="row.priority > 0 ? 'danger' : 'info'" size="small">
+            <el-tag
+              :type="row.priority > 0 ? 'danger' : 'info'"
+              size="small"
+            >
               {{ row.priority > 0 ? `P${row.priority}` : '普通' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column
+          prop="status"
+          label="状态"
+          width="100"
+          align="center"
+        >
           <template #default="{ row }">
             <el-tag :type="getStatusTagType(row.status)">
               {{ getStatusName(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="publisherName" label="发布人" width="100" align="center" />
-        <el-table-column prop="publishTime" label="发布时间" width="160" align="center">
+        <el-table-column
+          prop="publisherName"
+          label="发布人"
+          width="100"
+          align="center"
+        />
+        <el-table-column
+          prop="publishTime"
+          label="发布时间"
+          width="160"
+          align="center"
+        >
           <template #default="{ row }">
             {{ row.publishTime || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" align="center" fixed="right">
+        <el-table-column
+          label="操作"
+          width="200"
+          align="center"
+          fixed="right"
+        >
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleView(row)">
+            <el-button
+              type="primary"
+              link
+              @click="handleView(row)"
+            >
               <el-icon><View /></el-icon>查看
             </el-button>
-            <el-button type="warning" link @click="handleEdit(row)">
+            <el-button
+              type="warning"
+              link
+              @click="handleEdit(row)"
+            >
               <el-icon><Edit /></el-icon>编辑
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row)">
+            <el-button
+              type="danger"
+              link
+              @click="handleDelete(row)"
+            >
               <el-icon><Delete /></el-icon>删除
             </el-button>
           </template>
@@ -112,7 +212,10 @@
       </el-table>
 
       <!-- 分页 -->
-      <div v-if="announcementList.length > 0" class="pagination">
+      <div
+        v-if="announcementList.length > 0"
+        class="pagination"
+      >
         <el-pagination
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
@@ -138,10 +241,21 @@
         :rules="formRules"
         label-width="100px"
       >
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="formData.title" placeholder="请输入公告标题" maxlength="200" show-word-limit />
+        <el-form-item
+          label="标题"
+          prop="title"
+        >
+          <el-input
+            v-model="formData.title"
+            placeholder="请输入公告标题"
+            maxlength="200"
+            show-word-limit
+          />
         </el-form-item>
-        <el-form-item label="内容" prop="content">
+        <el-form-item
+          label="内容"
+          prop="content"
+        >
           <el-input
             v-model="formData.content"
             type="textarea"
@@ -151,39 +265,94 @@
             show-word-limit
           />
         </el-form-item>
-        <el-form-item label="类型" prop="type">
-          <el-select v-model="formData.type" placeholder="选择类型">
-            <el-option label="通知" value="NOTICE" />
-            <el-option label="活动" value="ACTIVITY" />
-            <el-option label="系统" value="SYSTEM" />
+        <el-form-item
+          label="类型"
+          prop="type"
+        >
+          <el-select
+            v-model="formData.type"
+            placeholder="选择类型"
+          >
+            <el-option
+              label="通知"
+              value="NOTICE"
+            />
+            <el-option
+              label="活动"
+              value="ACTIVITY"
+            />
+            <el-option
+              label="系统"
+              value="SYSTEM"
+            />
           </el-select>
         </el-form-item>
-        <el-form-item label="优先级" prop="priority">
-          <el-input-number v-model="formData.priority" :min="0" :max="10" />
+        <el-form-item
+          label="优先级"
+          prop="priority"
+        >
+          <el-input-number
+            v-model="formData.priority"
+            :min="0"
+            :max="10"
+          />
           <span class="form-tip">数值越大优先级越高</span>
         </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="formData.status" placeholder="选择状态">
-            <el-option label="草稿" value="DRAFT" />
-            <el-option label="已发布" value="PUBLISHED" />
-            <el-option label="已归档" value="ARCHIVED" />
+        <el-form-item
+          label="状态"
+          prop="status"
+        >
+          <el-select
+            v-model="formData.status"
+            placeholder="选择状态"
+          >
+            <el-option
+              label="草稿"
+              value="DRAFT"
+            />
+            <el-option
+              label="已发布"
+              value="PUBLISHED"
+            />
+            <el-option
+              label="已归档"
+              value="ARCHIVED"
+            />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="submitLoading"
+          @click="handleSubmit"
+        >
           确定
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 查看详情对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="公告详情" width="700px">
-      <div v-if="currentAnnouncement" class="announcement-detail">
-        <h3 class="detail-title">{{ currentAnnouncement.title }}</h3>
+    <el-dialog
+      v-model="viewDialogVisible"
+      title="公告详情"
+      width="700px"
+    >
+      <div
+        v-if="currentAnnouncement"
+        class="announcement-detail"
+      >
+        <h3 class="detail-title">
+          {{ currentAnnouncement.title }}
+        </h3>
         <div class="detail-meta">
-          <el-tag :type="getTypeTagType(currentAnnouncement.type)" size="small">
+          <el-tag
+            :type="getTypeTagType(currentAnnouncement.type)"
+            size="small"
+          >
             {{ getTypeName(currentAnnouncement.type) }}
           </el-tag>
           <span class="meta-item">
@@ -196,14 +365,16 @@
           </span>
         </div>
         <el-divider />
-        <div class="detail-content">{{ currentAnnouncement.content }}</div>
+        <div class="detail-content">
+          {{ currentAnnouncement.content }}
+        </div>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAnnouncementList,

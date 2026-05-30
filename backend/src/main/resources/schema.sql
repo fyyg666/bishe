@@ -25,6 +25,8 @@ CREATE TABLE sys_user (
     credit_score INT DEFAULT 100 COMMENT '积分',
     card_number VARCHAR(20) COMMENT '读者卡号',
     borrow_count INT DEFAULT 0 COMMENT '当前借阅数量',
+    violation_count INT DEFAULT 0 COMMENT '违约次数',
+    ban_until DATETIME COMMENT '封禁到期时间',
     version INT DEFAULT 0 COMMENT '版本号(乐观锁)',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -258,12 +260,76 @@ CREATE TABLE sys_operation_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';
 
 -- =========================================
+-- 12. 赔偿订单表
+-- =========================================
+DROP TABLE IF EXISTS compensation_order;
+CREATE TABLE compensation_order (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '赔偿ID',
+    order_no VARCHAR(32) NOT NULL UNIQUE COMMENT '赔偿单号(COMP+日期+序号)',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    borrow_id BIGINT COMMENT '关联借阅记录ID',
+    book_id BIGINT NOT NULL COMMENT '图书ID',
+    book_title VARCHAR(200) NOT NULL COMMENT '书名',
+    isbn VARCHAR(20) COMMENT 'ISBN',
+    comp_type VARCHAR(20) NOT NULL COMMENT '赔偿类型: LOST-丢失/DAMAGE-损坏',
+    amount DECIMAL(10,2) DEFAULT 0 COMMENT '赔偿金额',
+    status VARCHAR(20) DEFAULT 'PENDING' COMMENT '状态: PENDING待处理/PAID已赔付/CANCELLED已取消',
+    payment_method VARCHAR(20) COMMENT '支付方式: CASH/CREDIT/VOLUNTEER',
+    credit_deducted INT DEFAULT 0 COMMENT '扣除积分',
+    volunteer_hours DECIMAL(5,2) DEFAULT 0 COMMENT '抵扣志愿服务时长(小时)',
+    remark VARCHAR(500) COMMENT '备注',
+    reviewer_id BIGINT COMMENT '审核人ID',
+    review_time DATETIME COMMENT '审核时间',
+    version INT DEFAULT 0 COMMENT '版本号',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '逻辑删除',
+    INDEX idx_order_no (order_no),
+    INDEX idx_user_id (user_id),
+    INDEX idx_book_id (book_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='赔偿订单表';
+
+-- =========================================
+-- 13. 日统计表
+-- =========================================
+DROP TABLE IF EXISTS statistics_daily;
+CREATE TABLE statistics_daily (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '统计ID',
+    stat_date DATE NOT NULL UNIQUE COMMENT '统计日期',
+    total_borrows INT DEFAULT 0 COMMENT '当日借阅数',
+    total_returns INT DEFAULT 0 COMMENT '当日归还数',
+    total_overdue INT DEFAULT 0 COMMENT '当日逾期数',
+    total_reservations INT DEFAULT 0 COMMENT '当日预约数',
+    total_checkins INT DEFAULT 0 COMMENT '当日签到数',
+    total_new_users INT DEFAULT 0 COMMENT '当日新增用户数',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_stat_date (stat_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日统计表';
+
+-- =========================================
+-- 14. 系统配置表
+-- =========================================
+DROP TABLE IF EXISTS sys_config;
+CREATE TABLE sys_config (
+    config_key VARCHAR(50) PRIMARY KEY COMMENT '配置键',
+    config_value TEXT NOT NULL COMMENT '配置值',
+    description VARCHAR(200) COMMENT '配置说明',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
+
+-- 插入默认寒暑假配置
+INSERT INTO sys_config (config_key, config_value, description) VALUES
+('summer_holiday', '2026-07-01,2026-08-31', '暑假起止日期'),
+('winter_holiday', '2026-01-15,2026-02-25', '寒假起止日期');
+
+-- =========================================
 -- 初始化数据
 -- =========================================
 
 -- 插入默认管理员账户 (密码: admin123)
 INSERT INTO sys_user (username, password, real_name, role, status, credit_score) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '系统管理员', 'ADMIN', 'NORMAL', 100);
+('admin', '$2a$10$QiOOZxFl4HMIUZ2SI4IOCeFNURPoVDf/mzISxZxJegX1MGNTecq6W', '系统管理员', 'ADMIN', 'NORMAL', 100);
 
 -- 插入图书分类
 INSERT INTO book_category (name, code, parent_id, sort_order) VALUES

@@ -1,17 +1,15 @@
 package com.library.system.controller;
 
-import com.library.system.annotation.AuditLog;
 import com.library.system.common.Constants;
 import com.library.system.dto.*;
 import com.library.system.service.BorrowService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,16 +43,15 @@ public class BorrowController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "借阅图书", description = "借阅图书，需要READER角色")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "借阅成功",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "借阅成功",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = BorrowResponse.class))),
-        @ApiResponse(responseCode = "400", description = "参数错误"),
-        @ApiResponse(responseCode = "403", description = "无权借阅"),
-        @ApiResponse(responseCode = "404", description = "图书不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权借阅"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "图书不存在")
     })
-    @AuditLog(module = "借阅管理", operation = "借阅图书")
     @PostMapping
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<BorrowResponse> borrowBook(
             @Parameter(description = "借阅请求体", required = true)
             @Valid @RequestBody BorrowRequest request,
@@ -70,13 +67,12 @@ public class BorrowController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "归还图书", description = "归还已借阅的图书")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "归还成功"),
-        @ApiResponse(responseCode = "400", description = "借阅记录不存在"),
-        @ApiResponse(responseCode = "403", description = "无权归还")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "归还成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "借阅记录不存在"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权归还")
     })
-    @AuditLog(module = "借阅管理", operation = "归还图书")
     @PostMapping("/{borrowId}/return")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<BorrowResponse> returnBook(
             @Parameter(description = "借阅记录ID", required = true)
             @PathVariable Long borrowId,
@@ -92,13 +88,12 @@ public class BorrowController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "续借图书", description = "续借已借阅的图书，可指定续借天数")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "续借成功"),
-        @ApiResponse(responseCode = "400", description = "续借失败（如已超期）"),
-        @ApiResponse(responseCode = "403", description = "无权续借")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "续借成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "续借失败（如已超期）"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权续借")
     })
-    @AuditLog(module = "借阅管理", operation = "续借图书")
     @PostMapping("/{borrowId}/renew")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<BorrowResponse> renewBook(
             @Parameter(description = "借阅记录ID", required = true)
             @PathVariable Long borrowId,
@@ -116,11 +111,11 @@ public class BorrowController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "获取我的借阅列表", description = "分页查询当前用户的借阅记录")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json"))
     })
     @GetMapping("/my")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<PageResult<BorrowResponse>> getMyBorrows(
             @Parameter(description = "当前页（默认1）")
             @RequestParam(defaultValue = "1") Long current,
@@ -137,13 +132,34 @@ public class BorrowController extends BaseController { // FIXED: ARCH-002 继承
     }
 
     /**
+     * 获取所有借阅列表（管理员用）
+     */
+    @Operation(summary = "获取所有借阅列表", description = "分页查询所有借阅记录（需要管理员权限）")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
+    })
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public ApiResponse<PageResult<BorrowResponse>> listAllBorrows(
+            @Parameter(description = "当前页（默认1）")
+            @RequestParam(defaultValue = "1") Long current,
+            @Parameter(description = "每页大小（默认10）")
+            @RequestParam(defaultValue = "10") Long size,
+            @Parameter(description = "借阅状态筛选（可选）")
+            @RequestParam(required = false) String status) {
+        log.debug("查询所有借阅: current={}, size={}, status={}", current, size, status);
+        PageResult<BorrowResponse> result = borrowService.getAllBorrows(current, size, status);
+        return ApiResponse.success(result);
+    }
+
+    /**
      * 获取借阅详情
      */
     @Operation(summary = "获取借阅详情", description = "根据ID查询借阅记录详情")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权查看该记录"),
-        @ApiResponse(responseCode = "404", description = "借阅记录不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权查看该记录"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "借阅记录不存在")
     })
     @GetMapping("/{borrowId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN', 'READER')")
@@ -168,10 +184,10 @@ public class BorrowController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "检查逾期", description = "检查当前用户是否有逾期未还的图书")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping("/check-overdue")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<Boolean> checkOverdue(Authentication authentication) {
         Long userId = getUserIdFromAuthentication(authentication);
         boolean hasOverdue = borrowService.hasOverdueBooks(userId);

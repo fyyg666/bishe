@@ -1,75 +1,114 @@
-// SCSS Mixins
+// ============================================
+// SCSS Mixins & Utilities — v2.0
+// ============================================
 
-// Clearfix
-@mixin clearfix {
-  &::after {
-    content: '';
-    display: table;
-    clear: both;
-  }
-}
+@use 'sass:color';
+@use './variables.scss' as *;
 
-// Ellipsis (single line)
-@mixin ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-// Multi-line ellipsis
-@mixin multi-ellipsis($lines: 2) {
-  display: -webkit-box;
-  -webkit-line-clamp: $lines;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-// Flex center
+// ── Flex ────────────────────────────────────
 @mixin flex-center {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-// Flex between
 @mixin flex-between {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-// Scrollbar
-@mixin scrollbar {
-  &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
 
-  &::-webkit-scrollbar-thumb {
-    background: #c0c4cc;
-    border-radius: 3px;
-  }
+// ── Card ────────────────────────────────────
+@mixin card($padding: $space-6, $radius: $radius-lg) {
+  background: $bg-card;
+  border-radius: $radius;
+  padding: $padding;
+  border: 1px solid $border-light;
+  box-shadow: $shadow-sm;
+  transition: box-shadow $transition-base, transform $transition-base;
 
-  &::-webkit-scrollbar-track {
-    background: transparent;
+  &:hover {
+    box-shadow: $shadow-md;
   }
 }
 
-// Responsive breakpoints
-@mixin respond-to($breakpoint) {
-  @if $breakpoint == 'xs' {
-    @media (max-width: 575px) { @content; }
+// ── Glass ───────────────────────────────────
+@mixin glass($opacity: 0.92, $blur: 16px) {
+  background: oklch(1 0 0 / $opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+}
+
+// ── Scrollbar ──────────────────────────────
+@mixin scrollbar($width: 6px, $thumb: $gray-300, $track: transparent) {
+  &::-webkit-scrollbar {
+    width: $width;
+    height: $width;
   }
-  @if $breakpoint == 'sm' {
-    @media (min-width: 576px) { @content; }
+  &::-webkit-scrollbar-thumb {
+    background: $thumb;
+    border-radius: 3px;
+    &:hover { background: $gray-400; }
   }
-  @if $breakpoint == 'md' {
-    @media (min-width: 768px) { @content; }
+  &::-webkit-scrollbar-track {
+    background: $track;
   }
-  @if $breakpoint == 'lg' {
-    @media (min-width: 992px) { @content; }
+}
+
+// ── Text truncation ────────────────────────
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin multi-truncate($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ── Hover lift ─────────────────────────────
+@mixin hover-lift($amount: -2px) {
+  transition: transform $transition-base, box-shadow $transition-base;
+  &:hover {
+    transform: translateY($amount);
+    box-shadow: $shadow-md;
   }
-  @if $breakpoint == 'xl' {
-    @media (min-width: 1200px) { @content; }
-  }
+}
+
+// ── Shimmer skeleton ───────────────────────
+@mixin shimmer {
+  background: linear-gradient(
+    90deg,
+    $gray-100 25%,
+    $gray-200 37%,
+    $gray-100 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ── Responsive ─────────────────────────────
+@mixin mobile {
+  @media (max-width: 767px) { @content; }
+}
+
+@mixin tablet {
+  @media (min-width: 768px) and (max-width: 1199px) { @content; }
+}
+
+@mixin desktop {
+  @media (min-width: 1200px) { @content; }
 }

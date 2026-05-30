@@ -6,6 +6,7 @@ import com.library.system.dto.*;
 import com.library.system.entity.CreditLog;
 import com.library.system.entity.User;
 import com.library.system.mapper.CreditLogMapper;
+import com.library.system.common.Constants;
 import com.library.system.enums.ErrorCode;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ResourceNotFoundException;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,16 +51,16 @@ public class CreditServiceImpl implements CreditService {
         typeDescMap.put("OTHER", "其他");
         TYPE_DESC_MAP = Collections.unmodifiableMap(typeDescMap);
 
-        // 积分规则
+        // 积分规则（统一从 Constants.Credit 读取，确保单一数据源）
         Map<String, Integer> creditRules = new HashMap<>();
-        creditRules.put("BORROW", 5);        // 借阅奖励5分
-        creditRules.put("RETURN", 10);       // 按时归还奖励10分
-        creditRules.put("RETURN_EARLY", 15); // 提前归还奖励15分
-        creditRules.put("OVERDUE_PER_DAY", -5);  // 逾期每天扣5分
-        creditRules.put("DAMAGE", -50);      // 损坏扣50分
-        creditRules.put("LOST", -100);       // 丢失扣100分
-        creditRules.put("VOLUNTEER_PER_HOUR", 10); // 志愿服务每小时10分
-        creditRules.put("CHECKIN", 2);       // 签到奖励2分
+        creditRules.put("BORROW", Constants.Credit.BORROW_REWARD);
+        creditRules.put("RETURN", Constants.Credit.RETURN_ON_TIME);
+        creditRules.put("RETURN_EARLY", Constants.Credit.RETURN_EARLY);
+        creditRules.put("OVERDUE_PER_DAY", -Constants.Credit.OVERDUE_PER_DAY);
+        creditRules.put("DAMAGE", -Constants.Credit.DAMAGE_PENALTY);
+        creditRules.put("LOST", -Constants.Credit.LOST_PENALTY);
+        creditRules.put("VOLUNTEER_PER_HOUR", Constants.Credit.VOLUNTEER_PER_HOUR);
+        creditRules.put("CHECKIN", Constants.Credit.CHECKIN_REWARD);
         CREDIT_RULES = Collections.unmodifiableMap(creditRules);
     }
 
@@ -69,6 +71,36 @@ public class CreditServiceImpl implements CreditService {
             throw new ResourceNotFoundException(ErrorCode.READER_NOT_FOUND, "用户不存在"); 
         }
         return user.getCreditScore();
+    }
+
+    @Override
+    public CreditLevelResponse getUserLevel(Long userId) {
+        Integer score = getUserCredit(userId);
+        String level;
+        Integer nextLevelScore;
+
+        if (score >= Constants.Credit.PLATINUM_THRESHOLD) {
+            level = "白金";
+            nextLevelScore = null;
+        } else if (score >= Constants.Credit.GOLD_THRESHOLD) {
+            level = "金牌";
+            nextLevelScore = Constants.Credit.PLATINUM_THRESHOLD;
+        } else if (score >= Constants.Credit.SILVER_THRESHOLD) {
+            level = "银牌";
+            nextLevelScore = Constants.Credit.GOLD_THRESHOLD;
+        } else if (score >= Constants.Credit.BRONZE_THRESHOLD) {
+            level = "铜牌";
+            nextLevelScore = Constants.Credit.SILVER_THRESHOLD;
+        } else {
+            level = "普通";
+            nextLevelScore = Constants.Credit.BRONZE_THRESHOLD;
+        }
+
+        return CreditLevelResponse.builder()
+                .score(score)
+                .level(level)
+                .nextLevelScore(nextLevelScore)
+                .build();
     }
 
     @Override
@@ -100,8 +132,22 @@ public class CreditServiceImpl implements CreditService {
 
         int newBalance = user.getCreditScore() + value;
 
+        // 积分上下限截断：确保积分在 [MIN_SCORE, MAX_SCORE] 范围内
+        if (newBalance > Constants.Credit.MAX_SCORE) {
+            newBalance = Constants.Credit.MAX_SCORE;
+        } else if (newBalance < Constants.Credit.MIN_SCORE) {
+            newBalance = Constants.Credit.MIN_SCORE;
+        }
+
+        // 计算实际增减值（截断后的差值）
+        int actualDelta = newBalance - user.getCreditScore();
+        if (actualDelta == 0) {
+            log.debug("积分未变动（已达上限或下限）: userId={}, currentScore={}", userId, user.getCreditScore());
+            return; // 积分已达上下限，无需更新
+        }
+
         // 更新用户积分
-        int updated = userMapper.updateCreditScore(userId, value, user.getVersion());
+        int updated = userMapper.updateCreditScore(userId, actualDelta, user.getVersion());
         if (updated == 0) {
             throw new BusinessException(ErrorCode.CREDIT_ADJUST_FAILED, "积分更新失败，请重试"); 
         }
@@ -110,17 +156,17 @@ public class CreditServiceImpl implements CreditService {
         CreditLog creditLog = CreditLog.builder()
                 .userId(userId)
                 .username(user.getUsername())
-                .creditChange(value)
+                .creditChange(actualDelta)
                 .creditBalance(newBalance)
                 .changeType(type)
                 .remark(description)
-                .bizId(relatedId != null ? String.valueOf(relatedId) : null)
+                .bizId(relatedId)
                 .build();
 
         creditLogMapper.insert(creditLog);
 
         log.info("积分变动: userId={}, value={}, type={}, newBalance={}",
-                userId, value, type, newBalance);
+                userId, actualDelta, type, newBalance);
     }
 
     @Override
@@ -142,13 +188,20 @@ public class CreditServiceImpl implements CreditService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void processReturnCredit(Long userId, Long borrowId, Integer overdueDays) {
+    public void processReturnCredit(Long userId, Long borrowId, Integer overdueDays,
+                                    LocalDateTime dueDate, LocalDateTime returnDate) {
         if (overdueDays > 0) {
             // 逾期扣减积分
             Integer dailyPenalty = CREDIT_RULES.get("OVERDUE_PER_DAY");
             int totalPenalty = dailyPenalty * overdueDays;
             deductCredit(userId, Math.abs(totalPenalty), "OVERDUE",
                     "图书逾期" + overdueDays + "天",
+                    borrowId, "BORROW_RECORD");
+        } else if (returnDate != null && dueDate != null && returnDate.toLocalDate().isBefore(dueDate.toLocalDate())) {
+            // 提前归还奖励积分
+            Integer value = CREDIT_RULES.get("RETURN_EARLY");
+            addCredit(userId, value, "RETURN_EARLY",
+                    "提前归还图书奖励",
                     borrowId, "BORROW_RECORD");
         } else {
             // 按时归还奖励积分

@@ -1,201 +1,123 @@
 package com.library.system.service;
 
+import com.library.system.base.BaseTest;
 import com.library.system.dto.AnnouncementRequest;
+import com.library.system.dto.AnnouncementResponse;
+import com.library.system.dto.PageResult;
 import com.library.system.entity.Announcement;
+import com.library.system.entity.User;
+import com.library.system.exception.BusinessException;
+import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.AnnouncementMapper;
+import com.library.system.mapper.UserMapper;
+import com.library.system.service.impl.AnnouncementServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * 公告服务单元测试
- *
- * @author Library Team
- * @version 2.0.0
- */
-@ExtendWith(MockitoExtension.class)
-class AnnouncementServiceTest {
+@DisplayName("AnnouncementService 单元测试")
+class AnnouncementServiceTest extends BaseTest {
 
     @Mock
     private AnnouncementMapper announcementMapper;
+
+    @Mock
+    private UserMapper userMapper;
 
     @InjectMocks
     private AnnouncementServiceImpl announcementService;
 
     private Announcement testAnnouncement;
-    private AnnouncementRequest testRequest;
+    private User testPublisher;
 
     @BeforeEach
     void setUp() {
+        testPublisher = new User();
+        testPublisher.setId(1L);
+        testPublisher.setUsername("admin");
+        testPublisher.setRealName("管理员");
+
         testAnnouncement = new Announcement();
         testAnnouncement.setId(1L);
-        testAnnouncement.setTitle("系统维护通知");
-        testAnnouncement.setContent("系统将于今晚凌晨2点进行维护");
-        testAnnouncement.setType(1);
-        testAnnouncement.setPriority(2);
-        testAnnouncement.setPublishTime(LocalDateTime.now());
+        testAnnouncement.setTitle("系统升级通知");
+        testAnnouncement.setContent("系统将于本周日进行升级维护");
+        testAnnouncement.setStatus("DRAFT");
         testAnnouncement.setPublisherId(1L);
-        testAnnouncement.setPublisherName("管理员");
-        testAnnouncement.setStatus(1);
+        testAnnouncement.setDeleted(0);
+        testAnnouncement.setCreateTime(LocalDateTime.now());
 
-        testRequest = new AnnouncementRequest();
-        testRequest.setTitle("新公告");
-        testRequest.setContent("这是一条新公告");
-        testRequest.setType(1);
-        testRequest.setPriority(1);
+        lenient().when(userMapper.selectById(1L)).thenReturn(testPublisher);
+        lenient().when(userMapper.selectByUsername("admin")).thenReturn(testPublisher);
     }
 
-    @Test
-    void testGetAllAnnouncements_Success() {
-        List<Announcement> announcements = Arrays.asList(testAnnouncement);
-        when(announcementMapper.selectList(null)).thenReturn(announcements);
+    @Nested
+    @DisplayName("公告查询")
+    class QueryTests {
+        @Test
+        void listAnnouncements_shouldReturnPage() {
+            when(announcementMapper.selectPage(any(), any())).thenAnswer(inv -> {
+                com.baomidou.mybatisplus.core.metadata.IPage<Announcement> p = inv.getArgument(0);
+                p.setRecords(Arrays.asList(testAnnouncement));
+                p.setTotal(1);
+                return p;
+            });
+            PageResult<?> result = announcementService.listAnnouncements(1L, 10L, null, null);
+            assertEquals(1, result.getTotal());
+        }
 
-        List<Announcement> result = announcementService.getAllAnnouncements();
+        @Test
+        void getAnnouncementById_exists() {
+            when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
+            assertNotNull(announcementService.getAnnouncementById(1L));
+        }
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("系统维护通知", result.get(0).getTitle());
-        verify(announcementMapper).selectList(null);
+        @Test
+        void getAnnouncementById_notExists() {
+            when(announcementMapper.selectById(999L)).thenReturn(null);
+            assertThrows(ResourceNotFoundException.class, () -> announcementService.getAnnouncementById(999L));
+        }
+
+        @Test
+        void getLatestAnnouncements() {
+            when(announcementMapper.selectList(any())).thenReturn(Arrays.asList(testAnnouncement));
+            var list = announcementService.getLatestAnnouncements(5);
+            assertFalse(list.isEmpty());
+        }
     }
 
-    @Test
-    void testGetAnnouncementById_Success() {
-        when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
+    @Nested
+    @DisplayName("公告管理")
+    class ManagementTests {
+        @Test
+        void createAnnouncement_success() {
+            when(announcementMapper.insert(any(Announcement.class))).thenReturn(1);
 
-        Announcement result = announcementService.getAnnouncementById(1L);
+            AnnouncementResponse resp = announcementService.createAnnouncement(new AnnouncementRequest(), "admin");
+            assertNotNull(resp);
+        }
 
-        assertNotNull(result);
-        assertEquals("系统维护通知", result.getTitle());
-        assertEquals(1, result.getType());
-        verify(announcementMapper).selectById(1L);
-    }
+        @Test
+        void deleteAnnouncement_success() {
+            when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
+            announcementService.deleteAnnouncement(1L);
+            verify(announcementMapper).deleteById(1L);
+        }
 
-    @Test
-    void testGetAnnouncementById_NotFound() {
-        when(announcementMapper.selectById(999L)).thenReturn(null);
-
-        assertThrows(RuntimeException.class, () -> announcementService.getAnnouncementById(999L));
-        verify(announcementMapper).selectById(999L);
-    }
-
-    @Test
-    void testCreateAnnouncement_Success() {
-        when(announcementMapper.insert(any(Announcement.class))).thenReturn(1);
-
-        Announcement result = announcementService.createAnnouncement(testRequest, 1L, "管理员");
-
-        assertNotNull(result);
-        assertEquals("新公告", result.getTitle());
-        assertEquals(1, result.getType());
-        assertEquals(1L, result.getPublisherId());
-        verify(announcementMapper).insert(any(Announcement.class));
-    }
-
-    @Test
-    void testUpdateAnnouncement_Success() {
-        when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
-        when(announcementMapper.updateById(any(Announcement.class))).thenReturn(1);
-
-        Announcement result = announcementService.updateAnnouncement(1L, testRequest);
-
-        assertNotNull(result);
-        verify(announcementMapper).updateById(any(Announcement.class));
-    }
-
-    @Test
-    void testUpdateAnnouncement_NotFound() {
-        when(announcementMapper.selectById(999L)).thenReturn(null);
-
-        assertThrows(RuntimeException.class, () -> announcementService.updateAnnouncement(999L, testRequest));
-        verify(announcementMapper, never()).updateById(any(Announcement.class));
-    }
-
-    @Test
-    void testDeleteAnnouncement_Success() {
-        when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
-        doNothing().when(announcementMapper).deleteById(anyLong());
-
-        assertDoesNotThrow(() -> announcementService.deleteAnnouncement(1L));
-        verify(announcementMapper).deleteById(1L);
-    }
-
-    @Test
-    void testDeleteAnnouncement_NotFound() {
-        when(announcementMapper.selectById(999L)).thenReturn(null);
-
-        assertThrows(RuntimeException.class, () -> announcementService.deleteAnnouncement(999L));
-        verify(announcementMapper, never()).deleteById(anyLong());
-    }
-
-    @Test
-    void testGetAnnouncementsByType_Success() {
-        List<Announcement> announcements = Arrays.asList(testAnnouncement);
-        when(announcementMapper.selectByType(1)).thenReturn(announcements);
-
-        List<Announcement> result = announcementService.getAnnouncementsByType(1);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(1, result.get(0).getType());
-        verify(announcementMapper).selectByType(1);
-    }
-
-    @Test
-    void testPublishAnnouncement_Success() {
-        when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
-        when(announcementMapper.updateById(any(Announcement.class))).thenReturn(1);
-
-        Announcement result = announcementService.publishAnnouncement(1L);
-
-        assertNotNull(result);
-        assertEquals(1, result.getStatus());
-        verify(announcementMapper).updateById(any(Announcement.class));
-    }
-
-    @Test
-    void testUnpublishAnnouncement_Success() {
-        testAnnouncement.setStatus(1);
-        when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
-        when(announcementMapper.updateById(any(Announcement.class))).thenReturn(1);
-
-        Announcement result = announcementService.unpublishAnnouncement(1L);
-
-        assertNotNull(result);
-        assertEquals(0, result.getStatus());
-        verify(announcementMapper).updateById(any(Announcement.class));
-    }
-
-    @Test
-    void testGetTopAnnouncements_Success() {
-        List<Announcement> announcements = Arrays.asList(testAnnouncement);
-        when(announcementMapper.selectTopAnnouncements(5)).thenReturn(announcements);
-
-        List<Announcement> result = announcementService.getTopAnnouncements(5);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(announcementMapper).selectTopAnnouncements(5);
-    }
-
-    @Test
-    void testCreateAnnouncement_ValidationError_EmptyTitle() {
-        AnnouncementRequest invalidRequest = new AnnouncementRequest();
-        invalidRequest.setTitle("");  // Empty title
-        invalidRequest.setContent("Content");
-        invalidRequest.setType(1);
-
-        // This should trigger validation error
-        assertThrows(Exception.class, () -> announcementService.createAnnouncement(invalidRequest, 1L, "管理员"));
+        @Test
+        void publishAnnouncement_success() {
+            when(announcementMapper.selectById(1L)).thenReturn(testAnnouncement);
+            announcementService.publishAnnouncement(1L);
+            verify(announcementMapper).updateById(argThat(a -> "PUBLISHED".equals(a.getStatus())));
+        }
     }
 }

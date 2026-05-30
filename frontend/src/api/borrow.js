@@ -29,7 +29,7 @@ export function getBorrowDetail(id) {
  */
 export function borrowBook(data) {
   return request({
-    url: '/borrows/borrow',
+    url: '/borrows',
     method: 'post',
     data
   })
@@ -42,7 +42,7 @@ export function borrowBook(data) {
 export function returnBook(id) {
   return request({
     url: `/borrows/${id}/return`,
-    method: 'put'
+    method: 'post'
   })
 }
 
@@ -54,8 +54,8 @@ export function returnBook(id) {
 export function renewBook(id, data) {
   return request({
     url: `/borrows/${id}/renew`,
-    method: 'put',
-    data
+    method: 'post',
+    params: { days: data?.extendDays || data?.days }
   })
 }
 
@@ -68,26 +68,5 @@ export function getMyBorrows(params) {
     url: '/borrows/my',
     method: 'get',
     params
-  })
-}
-
-/**
- * 获取借阅统计
- */
-export function getBorrowStats() {
-  return request({
-    url: '/borrows/stats',
-    method: 'get'
-  })
-}
-
-/**
- * 取消借阅预约
- * @param {Number|String} id - 预约ID
- */
-export function cancelReservation(id) {
-  return request({
-    url: `/borrows/reservation/${id}`,
-    method: 'delete'
   })
 }

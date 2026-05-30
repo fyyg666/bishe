@@ -13,6 +13,7 @@ import com.library.system.mapper.UserMapper;
 import com.library.system.util.JwtUtils;
 import com.library.system.service.AccountLockService;
 import com.library.system.service.AuthService;
+import com.library.system.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 认证服务实现类
@@ -40,14 +40,20 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    private final StringRedisTemplate redisTemplate;
+    private final TokenBlacklistService tokenBlacklistService;
     private final AccountLockService accountLockService;  
+    private final StringRedisTemplate redisTemplate;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    private static final String CAPTCHA_REDIS_PREFIX = "captcha:";
 
     @Override
     @Transactional
     public LoginResponse login(LoginRequest request) {
+        // 验证码校验
+        validateCaptcha(request.getCaptchaKey(), request.getCaptchaCode());
+
         // 查询用户
         User user = userMapper.selectByUsername(request.getUsername());
         if (user == null) {
@@ -78,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 生成Token
         String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getUsername(), user.getRole());
-        String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getUsername(), user.getRole());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getUsername());
 
         accountLockService.clearLoginFailures(user.getId());
 
@@ -96,6 +102,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse.UserInfo register(RegisterRequest request) {
+        // 检查两次输入的密码是否一致
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException(ErrorCode.AUTH_FAILED, "两次输入的密码不一致");
+        }
+
         // 检查用户名是否存在
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, request.getUsername());
@@ -135,6 +146,17 @@ public class AuthServiceImpl implements AuthService {
 
         Long userId = jwtUtils.getUserIdFromToken(refreshToken);
 
+        // 将旧Refresh Token加入黑名单（轮换）
+        String oldJti = jwtUtils.getJtiFromToken(refreshToken);
+        if (oldJti != null) {
+            String oldBlacklistKey = Constants.Token.BLACKLIST_PREFIX + oldJti;
+            long remainingTtl = getTokenRemainingTtl(refreshToken);
+            if (remainingTtl > 0) {
+                tokenBlacklistService.addToBlacklist(oldBlacklistKey, remainingTtl);
+                log.info("Refresh Token轮换: 旧Token已加入黑名单, jti={}", oldJti);
+            }
+        }
+
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new ResourceNotFoundException(ErrorCode.READER_NOT_FOUND, "用户不存在");
@@ -146,7 +168,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 生成新Token
         String newAccessToken = jwtUtils.generateAccessToken(userId, username, role);
-        String newRefreshToken = jwtUtils.generateRefreshToken(userId, username, role);
+        String newRefreshToken = jwtUtils.generateRefreshToken(userId, username);
 
         return LoginResponse.builder()
                 .accessToken(newAccessToken)
@@ -160,13 +182,19 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(String token) {
         // 将token加入黑名单
-        String blacklistKey = Constants.Token.BLACKLIST_PREFIX + token;
+        // FIXED: CRITICAL-BUG - 统一使用JTI作为黑名单key，与JwtFilter保持一致
+        String jti = jwtUtils.getJtiFromToken(token);
+        if (jti == null) {
+            log.warn("登出时无法提取Token的JTI");
+            return;
+        }
+        String blacklistKey = Constants.Token.BLACKLIST_PREFIX + jti;
         // 获取token剩余有效期
         Long ttl = getTokenRemainingTtl(token);
         if (ttl > 0) {
-            redisTemplate.opsForValue().set(blacklistKey, "1", ttl, TimeUnit.SECONDS);
+            tokenBlacklistService.addToBlacklist(blacklistKey, ttl);
         }
-        log.info("用户登出，Token已加入黑名单");
+        log.info("用户登出，Token已加入黑名单: jti={}", jti);
     }
 
     @Override
@@ -283,5 +311,25 @@ public class AuthServiceImpl implements AuthService {
             log.warn("获取Token剩余有效期失败: {}", e.getMessage());
         }
         return 0L;
+    }
+
+    /**
+     * 验证码校验
+     * 当captchaKey和captchaCode都不为空时进行校验
+     */
+    private void validateCaptcha(String captchaKey, String captchaCode) {
+        if (captchaKey == null || captchaCode == null) {
+            throw new BusinessException(ErrorCode.AUTH_FAILED, "验证码不能为空");
+        }
+        String redisKey = CAPTCHA_REDIS_PREFIX + captchaKey;
+        String storedCode = redisTemplate.opsForValue().get(redisKey);
+        if (storedCode == null) {
+            throw new BusinessException(ErrorCode.AUTH_FAILED, "验证码已过期，请重新获取");
+        }
+        // 验证后立即删除（一次性使用）
+        redisTemplate.delete(redisKey);
+        if (!storedCode.equals(captchaCode.toLowerCase())) {
+            throw new BusinessException(ErrorCode.AUTH_FAILED, "验证码错误");
+        }
     }
 }

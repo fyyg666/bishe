@@ -1,18 +1,16 @@
 package com.library.system.controller;
 
-import com.library.system.annotation.AuditLog;
-import com.library.system.dto.*;
-import com.library.system.entity.User;
-import com.library.system.service.ReaderService;
+import com.library.system.dto.ApiResponse;
+import com.library.system.dto.PageResult;
+import com.library.system.dto.VolunteerRequest;
+import com.library.system.dto.VolunteerResponse;
+import com.library.system.dto.VolunteerStatsDto;
 import com.library.system.service.VolunteerService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,14 +38,13 @@ import org.springframework.web.bind.annotation.*;
 public class VolunteerController {
 
     private final VolunteerService volunteerService;
-    private final ReaderService readerService; // FIXED: ARCH-003 替代直接注入UserMapper
 
     /**
      * 获取志愿服务列表
      */
     @Operation(summary = "获取志愿服务列表", description = "分页查询志愿服务记录")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping
     public ApiResponse<PageResult<VolunteerResponse>> listVolunteers(
@@ -66,7 +63,7 @@ public class VolunteerController {
      */
     @Operation(summary = "获取我的志愿服务", description = "查询当前用户的志愿服务记录")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping("/my")
     public ApiResponse<PageResult<VolunteerResponse>> getMyVolunteers(
@@ -76,9 +73,9 @@ public class VolunteerController {
             @RequestParam(defaultValue = "10") Long size,
             Authentication authentication) {
         log.debug("查询我的志愿服务记录: current={}, size={}", current, size);
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User user = readerService.findByUsername(authentication.getName());
-        return ApiResponse.success(volunteerService.getMyVolunteers(current, size, user.getId()));
+        // FIXED: 从JWT的principal中直接获取userId（authentication.getName()返回的是userId字符串）
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        return ApiResponse.success(volunteerService.getMyVolunteers(current, size, userId));
     }
 
     /**
@@ -86,8 +83,8 @@ public class VolunteerController {
      */
     @Operation(summary = "获取志愿服务详情", description = "根据ID查询志愿服务详情")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "404", description = "志愿服务记录不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "志愿服务记录不存在")
     })
     @GetMapping("/{id}")
     public ApiResponse<VolunteerResponse> getVolunteerById(
@@ -102,10 +99,9 @@ public class VolunteerController {
      */
     @Operation(summary = "申请志愿服务", description = "提交志愿服务申请")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "申请成功"),
-        @ApiResponse(responseCode = "400", description = "参数错误")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "申请成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误")
     })
-    @AuditLog(module = "志愿管理", operation = "申请志愿服务")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN', 'READER', 'VOLUNTEER')")
     public ApiResponse<VolunteerResponse> createVolunteer(
@@ -113,10 +109,9 @@ public class VolunteerController {
             @RequestBody @Valid VolunteerRequest request,
             Authentication authentication) {
         log.info("申请志愿服务");
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User user = readerService.findByUsername(authentication.getName());
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
         return ApiResponse.success("志愿服务申请成功",
-                volunteerService.createVolunteer(user.getId(), request));
+                volunteerService.createVolunteer(userId, request));
     }
 
     /**
@@ -124,11 +119,10 @@ public class VolunteerController {
      */
     @Operation(summary = "更新志愿服务", description = "更新志愿服务记录")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "更新成功"),
-        @ApiResponse(responseCode = "403", description = "无权修改"),
-        @ApiResponse(responseCode = "404", description = "记录不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "更新成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权修改"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "记录不存在")
     })
-    @AuditLog(module = "志愿管理", operation = "更新志愿服务")
     @PutMapping("/{id}")
     public ApiResponse<VolunteerResponse> updateVolunteer(
             @Parameter(description = "志愿服务ID", required = true)
@@ -137,10 +131,9 @@ public class VolunteerController {
             @RequestBody @Valid VolunteerRequest request,
             Authentication authentication) {
         log.info("更新志愿服务记录: id={}", id);
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User user = readerService.findByUsername(authentication.getName());
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
         return ApiResponse.success("志愿服务记录更新成功",
-                volunteerService.updateVolunteer(id, user.getId(), request));
+                volunteerService.updateVolunteer(id, userId, request));
     }
 
     /**
@@ -148,8 +141,8 @@ public class VolunteerController {
      */
     @Operation(summary = "取消志愿服务申请", description = "取消已提交的志愿服务申请")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "取消成功"),
-        @ApiResponse(responseCode = "403", description = "无权取消")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "取消成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权取消")
     })
     @PostMapping("/{id}/cancel")
     public ApiResponse<Void> cancelVolunteer(
@@ -157,9 +150,8 @@ public class VolunteerController {
             @PathVariable Long id,
             Authentication authentication) {
         log.info("取消志愿服务: id={}", id);
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User user = readerService.findByUsername(authentication.getName());
-        volunteerService.cancelVolunteer(id, user.getId());
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        volunteerService.cancelVolunteer(id, userId);
         return ApiResponse.success("志愿服务申请已取消", null);
     }
 
@@ -168,10 +160,9 @@ public class VolunteerController {
      */
     @Operation(summary = "审核志愿服务", description = "审核志愿服务申请（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "审核成功"),
-        @ApiResponse(responseCode = "403", description = "无权审核")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "审核成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权审核")
     })
-    @AuditLog(module = "志愿管理", operation = "审核志愿服务")
     @PostMapping("/{id}/review")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<VolunteerResponse> reviewVolunteer(
@@ -183,10 +174,9 @@ public class VolunteerController {
             @RequestParam(required = false) String remark,
             Authentication authentication) {
         log.info("审核志愿服务: id={}, approved={}", id, approved);
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User reviewer = readerService.findByUsername(authentication.getName());
+        Long reviewerId = Long.valueOf(authentication.getPrincipal().toString());
         return ApiResponse.success("志愿服务审核完成",
-                volunteerService.reviewVolunteer(id, reviewer != null ? reviewer.getId() : null, approved, remark));
+                volunteerService.reviewVolunteer(id, reviewerId, approved, remark));
     }
 
     /**
@@ -194,8 +184,8 @@ public class VolunteerController {
      */
     @Operation(summary = "获取待审核志愿服务", description = "查询待审核的志愿服务列表（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -213,8 +203,8 @@ public class VolunteerController {
      */
     @Operation(summary = "删除志愿服务记录", description = "删除志愿服务记录（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "删除成功"),
-        @ApiResponse(responseCode = "403", description = "无权删除")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "删除成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权删除")
     })
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
@@ -231,12 +221,11 @@ public class VolunteerController {
      */
     @Operation(summary = "获取志愿服务统计", description = "获取当前用户的志愿服务统计信息")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping("/stats")
-    public ApiResponse<VolunteerService.VolunteerStatsDto> getVolunteerStats(Authentication authentication) {
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User user = readerService.findByUsername(authentication.getName());
-        return ApiResponse.success(volunteerService.getVolunteerStats(user.getId()));
+    public ApiResponse<VolunteerStatsDto> getVolunteerStats(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        return ApiResponse.success(volunteerService.getVolunteerStats(userId));
     }
 }

@@ -43,7 +43,7 @@ public enum ErrorCode {
     PASSWORD_COMPLEXITY(1006, "密码复杂度不足", HttpStatus.BAD_REQUEST),
     ACCOUNT_DISABLED(1007, "账户已禁用", HttpStatus.FORBIDDEN),
     REFRESH_TOKEN_INVALID(1008, "刷新令牌无效", HttpStatus.UNAUTHORIZED),
-    TOO_MANY_LOGIN_ATTEMPTS(1009, "登录尝试次数过多", HttpStatus.FORBIDDEN),
+    TOO_MANY_LOGIN_ATTEMPTS(1009, "登录尝试次数过多", HttpStatus.UNAUTHORIZED),
 
     // ========== 图书模块 3000-3999 ==========
     BOOK_NOT_FOUND(3001, "图书不存在", HttpStatus.NOT_FOUND),

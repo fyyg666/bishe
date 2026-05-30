@@ -28,17 +28,22 @@ public class Seat implements Serializable {
     /** 阅览室ID */
     private Long roomId;
 
-    /** 座位编号 */
+    /** 座位编号（如：A01） */
     private String seatNumber;
 
-    /** 位置描述（如：A区-01） */
-    private String location;
+    /** 行号（数据库表无此字段，保留供后续扩展） */
+    @TableField(exist = false)
+    private Integer rowNum;
 
-    /** 状态：AVAILABLE/OCCUPIED/RESERVED/MAINTENANCE */
+    /** 列号（数据库表无此字段，保留供后续扩展） */
+    @TableField(exist = false)
+    private Integer colNum;
+
+    /** 状态：AVAILABLE/MAINTENANCE */
     private String status;
 
     /** 创建时间 */
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private String createTime;
 
     /** 逻辑删除标记 */

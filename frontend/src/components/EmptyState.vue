@@ -1,8 +1,15 @@
 <template>
   <div class="empty-state">
-    <el-empty :image-size="imageSize" :description="description">
+    <el-empty
+      :image-size="imageSize"
+      :description="description"
+    >
       <slot>
-        <el-button v-if="showButton" type="primary" @click="$emit('action')">
+        <el-button
+          v-if="showButton"
+          type="primary"
+          @click="$emit('action')"
+        >
           {{ actionText }}
         </el-button>
       </slot>

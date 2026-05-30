@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
+    <!-- 排除实体类中的 Lombok 相关警告 -->
+    <Match>
+        <Class name="~.*entity\..*"/>
+    </Match>
+    <!-- 排除测试代码 -->
+    <Match>
+        <Class name="~.*test\..*"/>
+    </Match>
+    <!-- 排除 DTO 和 VO 类 -->
+    <Match>
+        <Class name="~.*dto\..*"/>
+    </Match>
+    <!-- 排除 MyBatis Plus 生成的代码 -->
+    <Match>
+        <Class name="~.*mapper\..*"/>
+    </Match>
+</FindBugsFilter>

@@ -58,10 +58,18 @@ public class User implements Serializable {
     private Integer creditScore;
 
     /** 读者卡号 */
+    @TableField("card_number")
     private String cardNumber;
 
     /** 借阅数量 */
+    @TableField("borrow_count")
     private Integer borrowCount;
+
+    /** 违约次数 */
+    private Integer violationCount;
+
+    /** 封禁到期时间 */
+    private LocalDateTime banUntil;
 
     /** 最大可借数量（非数据库字段，由业务逻辑计算） */ 
     @TableField(exist = false)
@@ -81,8 +89,7 @@ public class User implements Serializable {
         return maxBorrowCount != null ? maxBorrowCount : 5;
     }
 
-    /** 版本号（乐观锁） */
-    @Version
+    /** 版本号（乐观锁，用于并发控制） */
     private Integer version;
 
     /** 创建时间 */

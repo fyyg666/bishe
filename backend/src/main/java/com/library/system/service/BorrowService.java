@@ -56,6 +56,16 @@ public interface BorrowService {
     PageResult<BorrowResponse> getMyBorrows(Long userId, Long current, Long size, String status);
 
     /**
+     * 获取所有借阅列表（管理员用）
+     *
+     * @param current 当前页
+     * @param size 每页大小
+     * @param status 借阅状态筛选
+     * @return 分页结果
+     */
+    PageResult<BorrowResponse> getAllBorrows(Long current, Long size, String status);
+
+    /**
      * 获取借阅详情
      *
      * @param borrowId 借阅记录ID

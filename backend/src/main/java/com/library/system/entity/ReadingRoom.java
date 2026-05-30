@@ -28,13 +28,22 @@ public class ReadingRoom implements Serializable {
     /** 阅览室名称 */
     private String name;
 
+    /** 阅览室编码（数据库暂无此列） */
+    @TableField(exist = false)
+    private String code;
+
     /** 位置描述 */
     private String location;
 
-    /** 总座位数 */
-    private Integer totalSeats;
+    /** 楼层（数据库暂无此列） */
+    @TableField(exist = false)
+    private String floor;
 
-    /** 开放时间（如：08:00-22:00） */
+    /** 座位容量（映射SQL中的total_seats字段） */
+    @TableField("total_seats")
+    private Integer capacity;
+
+    /** 开放时间 */
     private String openTime;
 
     /** 关闭时间 */
@@ -42,9 +51,6 @@ public class ReadingRoom implements Serializable {
 
     /** 状态：OPEN/CLOSED/MAINTENANCE */
     private String status;
-
-    /** 描述 */
-    private String description;
 
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)

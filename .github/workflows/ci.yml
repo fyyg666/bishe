@@ -1,0 +1,319 @@
+# ============================================
+# CI 工作流 — 自动构建、测试、代码质量检查
+# 触发条件：push（所有分支）和 PR（所有分支）
+# ============================================
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'fix/**']
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Docker 镜像配置
+  DOCKER_REGISTRY: ghcr.io
+  DOCKER_IMAGE_BACKEND: ${{ github.repository }}/backend
+  DOCKER_IMAGE_FRONTEND: ${{ github.repository }}/frontend
+  # Java 配置
+  JAVA_VERSION: '17'
+  # Node 配置
+  NODE_VERSION: '18'
+
+jobs:
+  # ============================================
+  # Job 1: 代码质量检查（并行执行，快速失败）
+  # ============================================
+  lint:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        module: [backend, frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java (Backend)
+        if: matrix.module == 'backend'
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Backend Checkstyle
+        if: matrix.module == 'backend'
+        run: |
+          cd backend
+          mvn checkstyle:check -q || echo "Checkstyle warnings found (non-blocking)"
+
+      - name: Setup Node.js (Frontend)
+        if: matrix.module == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        if: matrix.module == 'frontend'
+        run: |
+          cd frontend
+          npm ci --prefer-offline
+
+      - name: Run Frontend ESLint
+        if: matrix.module == 'frontend'
+        run: |
+          cd frontend
+          npm run lint:ci || echo "Lint warnings found (non-blocking)"
+
+  # ============================================
+  # Job 2: 后端单元测试 + 覆盖率
+  # ============================================
+  backend-unit-test:
+    name: Backend Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      # 仅运行单元测试（不依赖 MySQL/Redis）
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run Unit Tests with Coverage
+        run: |
+          cd backend
+          mvn test -T 4 -B jacoco:report
+
+      - name: Upload Coverage Report (Backend)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend
+          path: backend/target/site/jacoco/
+          retention-days: 7
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-backend
+          path: backend/target/surefire-reports/
+          retention-days: 7
+
+  # ============================================
+  # Job 3: 后端集成测试（使用 Testcontainers）
+  # ============================================
+  backend-integration-test:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run Integration Tests
+        run: |
+          cd backend
+          mvn verify -T 2 -B -P integration-test
+
+      - name: Upload Integration Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-integration
+          path: backend/target/failsafe-reports/
+          retention-days: 7
+
+  # ============================================
+  # Job 4: 前端单元测试
+  # ============================================
+  frontend-unit-test:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          npm ci --prefer-offline
+
+      - name: Run Vitest Tests with Coverage
+        run: |
+          cd frontend
+          npx vitest run --coverage
+
+      - name: Upload Coverage Report (Frontend)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: frontend/coverage/
+          retention-days: 7
+
+  # ============================================
+  # Job 5: 前端构建验证
+  # ============================================
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          npm ci --prefer-offline
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 3
+
+  # ============================================
+  # Job 6: Docker 镜像构建验证（不推送）
+  # ============================================
+  docker-build-check:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [backend-unit-test, frontend-unit-test, frontend-build]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: library-system-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: library-system-frontend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify Docker Images
+        run: |
+          docker images
+          docker run --rm library-system-backend:ci java -version 2>&1 || true
+
+  # ============================================
+  # Job 7: 覆盖率汇总报告
+  # ============================================
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [backend-unit-test, frontend-unit-test]
+    if: always()
+    steps:
+      - name: Download Backend Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-backend
+          path: coverage/backend
+
+      - name: Download Frontend Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-frontend
+          path: coverage/frontend
+
+      - name: Generate Coverage Summary
+        run: |
+          echo "## 📊 测试覆盖率报告" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f coverage/backend/jacoco.csv ]; then
+            echo "### 后端 (JaCoCo)" >> $GITHUB_STEP_SUMMARY
+            cat coverage/backend/jacoco.csv | head -20 >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ 后端覆盖率报告未生成" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 前端 (Vitest)" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/frontend/coverage-summary.json ]; then
+            cat coverage/frontend/coverage-summary.json | head -30 >> $GITHUB_STEP_SUMMARY
+          elif [ -f coverage/frontend/coverage-final.json ]; then
+            echo "覆盖率文件已生成" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ 前端覆盖率报告未生成" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "⏱️ 测试时间: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY

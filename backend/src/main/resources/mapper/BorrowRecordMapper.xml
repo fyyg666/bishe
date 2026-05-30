@@ -30,4 +30,58 @@
         AND deleted = 0
     </select>
 
+    <!-- ==================== 带关联查询的映射（填充 @TableField(exist=false) 字段） ==================== -->
+
+    <!-- 带用户和图书关联信息的 ResultMap -->
+    <resultMap id="borrowWithUserAndBook" type="com.library.system.entity.BorrowRecord" autoMapping="true">
+        <id column="id" property="id"/>
+        <result column="join_username" property="username"/>
+        <result column="join_book_title" property="bookTitle"/>
+        <result column="join_book_isbn" property="bookIsbn"/>
+    </resultMap>
+
+    <!-- 查询指定用户的借阅记录（带用户名、书名、ISBN） -->
+    <select id="selectMyBorrowsWithJoin" resultMap="borrowWithUserAndBook">
+        SELECT br.*,
+               u.username AS join_username,
+               b.title   AS join_book_title,
+               b.isbn    AS join_book_isbn
+        FROM borrow_record br
+        LEFT JOIN sys_user u ON br.user_id = u.id
+        LEFT JOIN book b ON br.book_id = b.id
+        WHERE br.user_id = #{userId} AND br.deleted = 0
+        <if test="status != null and status != ''">
+            AND br.status = #{status}
+        </if>
+        ORDER BY br.create_time DESC
+    </select>
+
+    <!-- 查询所有借阅记录（带用户名、书名、ISBN） -->
+    <select id="selectAllBorrowsWithJoin" resultMap="borrowWithUserAndBook">
+        SELECT br.*,
+               u.username AS join_username,
+               b.title   AS join_book_title,
+               b.isbn    AS join_book_isbn
+        FROM borrow_record br
+        LEFT JOIN sys_user u ON br.user_id = u.id
+        LEFT JOIN book b ON br.book_id = b.id
+        WHERE br.deleted = 0
+        <if test="status != null and status != ''">
+            AND br.status = #{status}
+        </if>
+        ORDER BY br.create_time DESC
+    </select>
+
+    <!-- 根据ID查询借阅记录（带用户名、书名、ISBN） -->
+    <select id="selectBorrowWithJoinById" resultMap="borrowWithUserAndBook">
+        SELECT br.*,
+               u.username AS join_username,
+               b.title   AS join_book_title,
+               b.isbn    AS join_book_isbn
+        FROM borrow_record br
+        LEFT JOIN sys_user u ON br.user_id = u.id
+        LEFT JOIN book b ON br.book_id = b.id
+        WHERE br.id = #{id}
+    </select>
+
 </mapper>

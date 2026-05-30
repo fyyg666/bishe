@@ -67,11 +67,18 @@ public class Constants {
 
     /** 图书状态常量 */
     public static class BookStatus {
-        /** 上架 */
+        /** 上架（可借阅） */
         public static final Integer NORMAL = 0;
         
-        /** 下架 */
+        /** 下架（不可借阅） */
         public static final Integer OFFLINE = 1;
+        
+        // 语义别名，方便理解
+        /** 上架（可借阅）— NORMAL 的语义别名 */
+        public static final Integer ON_SHELF = 0;
+        
+        /** 下架（不可借阅） */
+        public static final Integer OFF_SHELF = 1;
     }
 
     /** 借阅状态常量 */
@@ -133,17 +140,35 @@ public class Constants {
         /** 最低积分 */
         public static final int MIN_SCORE = 0;
         
-        /** 按时归还加分 */
+        /** 借阅奖励积分 */
+        public static final int BORROW_REWARD = 5;
+        
+        /** 按时归还奖励积分 */
         public static final int RETURN_ON_TIME = 1;
         
-        /** 逾期每天扣分 */
-        public static final int OVERDUE_PER_DAY = 1;
+        /** 提前归还奖励积分 */
+        public static final int RETURN_EARLY = 2;
         
-        /** 座位未签到扣分 */
+        /** 逾期每天扣分 */
+        public static final int OVERDUE_PER_DAY = 5;
+        
+        /** 座位未签到扣分（常量名保持不变，值由业务逻辑使用） */
         public static final int NO_SHOW = 2;
         
-        /** 志愿服务12小时加1分 */
+        /** 图书损坏扣分 */
+        public static final int DAMAGE_PENALTY = 50;
+        
+        /** 图书丢失扣分 */
+        public static final int LOST_PENALTY = 100;
+        
+        /** 志愿服务每小时积分 */
+        public static final int VOLUNTEER_PER_HOUR = 10;
+        
+        /** 志愿服务12小时加1分（旧规则保留用于兼容） */
         public static final int VOLUNTEER_HOURS_PER_CREDIT = 12;
+        
+        /** 签到奖励积分 */
+        public static final int CHECKIN_REWARD = 1;
         
         /** 铜牌等级下限 */
         public static final int BRONZE_THRESHOLD = 60;

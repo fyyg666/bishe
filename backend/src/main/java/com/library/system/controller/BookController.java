@@ -1,15 +1,14 @@
 package com.library.system.controller;
 
-import com.library.system.annotation.AuditLog;
 import com.library.system.dto.*;
 import com.library.system.service.BookService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +33,7 @@ import java.util.List;
 @RequestMapping("/books")
 @RequiredArgsConstructor
 @Tag(name = "图书管理", description = "图书的CRUD、分页查询、热门图书推荐等")
+@SecurityRequirement(name = "bearerAuth")
 public class BookController {
 
     private final BookService bookService;
@@ -43,10 +43,10 @@ public class BookController {
      */
     @Operation(summary = "分页查询图书列表", description = "支持按关键词（标题/作者/ISBN）和分类筛选")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = PageResult.class))),
-        @ApiResponse(responseCode = "400", description = "参数错误")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误")
     })
     @GetMapping
     public ApiResponse<PageResult<BookResponse>> listBooks(
@@ -65,8 +65,8 @@ public class BookController {
      */
     @Operation(summary = "获取热门图书", description = "按借阅次数排序，返回热门图书列表")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "400", description = "参数错误")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误")
     })
     @GetMapping("/hot")
     public ApiResponse<List<BookResponse>> getHotBooks(
@@ -77,12 +77,28 @@ public class BookController {
     }
 
     /**
+     * 获取新书推荐
+     */
+    @Operation(summary = "获取新书推荐", description = "按上架时间排序，返回最新图书列表")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误")
+    })
+    @GetMapping("/new")
+    public ApiResponse<List<BookResponse>> getNewBooks(
+            @Parameter(description = "数量限制（默认10）") @RequestParam(defaultValue = "10") Integer limit) {
+        log.debug("查询新书: limit={}", limit);
+        List<BookResponse> books = bookService.getNewBooks(limit);
+        return ApiResponse.success(books);
+    }
+
+    /**
      * 获取图书详情
      */
     @Operation(summary = "获取图书详情", description = "根据图书ID查询详细信息")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "404", description = "图书不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "图书不存在")
     })
     @GetMapping("/{id}")
     public ApiResponse<BookResponse> getBookById(
@@ -97,11 +113,10 @@ public class BookController {
      */
     @Operation(summary = "新增图书", description = "新增图书记录，需要ADMIN或LIBRARIAN角色")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "创建成功"),
-        @ApiResponse(responseCode = "400", description = "参数错误"),
-        @ApiResponse(responseCode = "403", description = "权限不足")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "创建成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "权限不足")
     })
-    @AuditLog(module = "图书管理", operation = "新增图书")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<BookResponse> createBook(
@@ -116,12 +131,11 @@ public class BookController {
      */
     @Operation(summary = "更新图书", description = "更新图书信息，需要ADMIN或LIBRARIAN角色")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "更新成功"),
-        @ApiResponse(responseCode = "400", description = "参数错误"),
-        @ApiResponse(responseCode = "403", description = "权限不足"),
-        @ApiResponse(responseCode = "404", description = "图书不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "更新成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数错误"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "权限不足"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "图书不存在")
     })
-    @AuditLog(module = "图书管理", operation = "更新图书")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<BookResponse> updateBook(
@@ -137,11 +151,10 @@ public class BookController {
      */
     @Operation(summary = "删除图书", description = "删除图书记录，需要ADMIN或LIBRARIAN角色")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "删除成功"),
-        @ApiResponse(responseCode = "403", description = "权限不足"),
-        @ApiResponse(responseCode = "404", description = "图书不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "删除成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "权限不足"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "图书不存在")
     })
-    @AuditLog(module = "图书管理", operation = "删除图书")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<Void> deleteBook(
@@ -156,7 +169,7 @@ public class BookController {
      */
     @Operation(summary = "检查ISBN是否存在", description = "检查指定ISBN是否已被使用")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping("/check-isbn")
     public ApiResponse<Boolean> checkIsbn(

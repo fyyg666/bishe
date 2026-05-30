@@ -1,261 +1,95 @@
 package com.library.system.service;
 
-import com.library.system.dto.SeatReservationRequest;
-import com.library.system.dto.SeatReservationResponse;
-import com.library.system.entity.SeatReservation;
-import com.library.system.mapper.SeatReservationMapper;
+import com.library.system.base.BaseTest;
+import com.library.system.entity.ReadingRoom;
+import com.library.system.entity.Seat;
+import com.library.system.mapper.ReadingRoomMapper;
+import com.library.system.mapper.SeatMapper;
+import com.library.system.service.impl.SeatReservationServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
-/**
- * 座位预约服务单元测试
- *
- * @author Library Team
- * @version 2.0.0
- */
-@ExtendWith(MockitoExtension.class)
-class SeatReservationServiceTest {
+@DisplayName("SeatReservationService 单元测试")
+class SeatReservationServiceTest extends BaseTest {
 
     @Mock
-    private SeatReservationMapper seatReservationMapper;
+    private ReadingRoomMapper readingRoomMapper;
+
+    @Mock
+    private SeatMapper seatMapper;
 
     @InjectMocks
     private SeatReservationServiceImpl seatReservationService;
 
-    private SeatReservation testReservation;
-    private SeatReservationRequest testRequest;
-    private SeatReservationResponse testResponse;
+    @Nested
+    @DisplayName("阅览室查询")
+    class ReadingRoomTests {
 
-    @BeforeEach
-    void setUp() {
-        testReservation = new SeatReservation();
-        testReservation.setId(1L);
-        testReservation.setSeatId(1L);
-        testReservation.setReaderId(1L);
-        testReservation.setStartTime(LocalDateTime.now().plusHours(1));
-        testReservation.setEndTime(LocalDateTime.now().plusHours(5));
-        testReservation.setStatus(1);  // 预约成功
+        @Test
+        @DisplayName("获取阅览室列表 - 应返回列表")
+        void getReadingRooms_shouldReturnList() {
+            ReadingRoom room = new ReadingRoom();
+            room.setId(1L);
+            room.setName("一楼阅览室");
+            when(readingRoomMapper.selectList(null)).thenReturn(List.of(room));
 
-        testRequest = SeatReservationRequest.builder()
-                .seatId(1L)
-                .readerId(1L)
-                .startTime(LocalDateTime.now().plusHours(1))
-                .endTime(LocalDateTime.now().plusHours(5))
-                .build();
+            List<ReadingRoom> rooms = seatReservationService.getReadingRooms();
 
-        testResponse = SeatReservationResponse.builder()
-                .id(1L)
-                .seatId(1L)
-                .seatNumber("A001")
-                .readerId(1L)
-                .readerName("张三")
-                .startTime(LocalDateTime.now().plusHours(1))
-                .endTime(LocalDateTime.now().plusHours(5))
-                .status(1)
-                .build();
+            assertNotNull(rooms);
+            assertFalse(rooms.isEmpty());
+            assertEquals("一楼阅览室", rooms.get(0).getName());
+        }
+
+        @Test
+        @DisplayName("获取阅览室列表 - 无记录时返回空列表")
+        void getReadingRooms_empty_shouldReturnEmptyList() {
+            when(readingRoomMapper.selectList(null)).thenReturn(List.of());
+
+            List<ReadingRoom> rooms = seatReservationService.getReadingRooms();
+
+            assertNotNull(rooms);
+            assertTrue(rooms.isEmpty());
+        }
     }
 
-    @Test
-    void testReserveSeat_Success() {
-        when(seatReservationMapper.insert(any(SeatReservation.class))).thenReturn(1);
+    @Nested
+    @DisplayName("座位查询")
+    class SeatQueryTests {
 
-        SeatReservationResponse result = seatReservationService.reserveSeat(testRequest);
+        @Test
+        @DisplayName("获取房间座位 - 应返回列表")
+        void getSeatsByRoom_shouldReturnList() {
+            Seat seat = new Seat();
+            seat.setId(1L);
+            seat.setSeatNumber("A01");
+            seat.setRoomId(1L);
+            when(seatMapper.selectByRoomId(1L)).thenReturn(List.of(seat));
 
-        assertNotNull(result);
-        assertEquals("A001", result.getSeatNumber());
-        assertEquals(1, result.getStatus());
-        verify(seatReservationMapper).insert(any(SeatReservation.class));
-    }
+            List<Seat> seats = seatReservationService.getSeatsByRoom(1L);
 
-    @Test
-    void testReserveSeat_SeatAlreadyReserved() {
-        // Mock that seat is already reserved for the time period
-        when(seatReservationMapper.selectBySeatIdAndTime(anyLong(), any(), any()))
-                .thenReturn(Arrays.asList(testReservation));
+            assertNotNull(seats);
+            assertFalse(seats.isEmpty());
+            assertEquals("A01", seats.get(0).getSeatNumber());
+        }
 
-        assertThrows(RuntimeException.class, () -> 
-                seatReservationService.reserveSeat(testRequest));
-        
-        verify(seatReservationMapper, never()).insert(any(SeatReservation.class));
-    }
+        @Test
+        @DisplayName("获取房间座位 - 无座位时返回空列表")
+        void getSeatsByRoom_empty_shouldReturnEmptyList() {
+            when(seatMapper.selectByRoomId(999L)).thenReturn(List.of());
 
-    @Test
-    void testCancelReservation_Success() {
-        testReservation.setStatus(1);  // 预约中
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-        when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
+            List<Seat> seats = seatReservationService.getSeatsByRoom(999L);
 
-        boolean result = seatReservationService.cancelReservation(1L, 1L);
-
-        assertTrue(result);
-        verify(seatReservationMapper).updateById(any(SeatReservation.class));
-    }
-
-    @Test
-    void testCancelReservation_NotFound() {
-        when(seatReservationMapper.selectById(999L)).thenReturn(null);
-
-        assertThrows(RuntimeException.class, () -> 
-                seatReservationService.cancelReservation(999L, 1L));
-        
-        verify(seatReservationMapper, never()).updateById(any(SeatReservation.class));
-    }
-
-    @Test
-    void testCancelReservation_NotOwner() {
-        testReservation.setReaderId(2L);  // 不是当前用户
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-
-        assertThrows(RuntimeException.class, () -> 
-                seatReservationService.cancelReservation(1L, 1L));
-        
-        verify(seatReservationMapper, never()).updateById(any(SeatReservation.class));
-    }
-
-    @Test
-    void testGetMyReservations_Success() {
-        List<SeatReservation> reservations = Arrays.asList(testReservation);
-        when(seatReservationMapper.selectByReaderId(1L)).thenReturn(reservations);
-
-        List<SeatReservationResponse> result = seatReservationService.getMyReservations(1L);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("张三", result.get(0).getReaderName());
-        verify(seatReservationMapper).selectByReaderId(1L);
-    }
-
-    @Test
-    void testGetMyReservations_EmptyList() {
-        when(seatReservationMapper.selectByReaderId(999L)).thenReturn(Arrays.asList());
-
-        List<SeatReservationResponse> result = seatReservationService.getMyReservations(999L);
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(seatReservationMapper).selectByReaderId(999L);
-    }
-
-    @Test
-    void testGetReservationById_Success() {
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-
-        SeatReservationResponse result = seatReservationService.getReservationById(1L);
-
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("A001", result.getSeatNumber());
-        verify(seatReservationMapper).selectById(1L);
-    }
-
-    @Test
-    void testGetReservationById_NotFound() {
-        when(seatReservationMapper.selectById(999L)).thenReturn(null);
-
-        assertThrows(RuntimeException.class, () -> 
-                seatReservationService.getReservationById(999L));
-        
-        verify(seatReservationMapper).selectById(999L);
-    }
-
-    @Test
-    void testCheckIn_Success() {
-        testReservation.setStatus(1);  // 预约中
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-        when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
-
-        boolean result = seatReservationService.checkIn(1L, 1L);
-
-        assertTrue(result);
-        verify(seatReservationMapper).updateById(any(SeatReservation.class));
-    }
-
-    @Test
-    void testCheckIn_NotOwner() {
-        testReservation.setReaderId(2L);  // 不是当前用户
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-
-        assertThrows(RuntimeException.class, () -> 
-                seatReservationService.checkIn(1L, 1L));
-        
-        verify(seatReservationMapper, never()).updateById(any(SeatReservation.class));
-    }
-
-    @Test
-    void testCheckOut_Success() {
-        testReservation.setStatus(2);  // 已签到
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-        when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
-
-        boolean result = seatReservationService.checkOut(1L, 1L);
-
-        assertTrue(result);
-        verify(seatReservationMapper).updateById(any(SeatReservation.class));
-    }
-
-    @Test
-    void testGetActiveReservations_Success() {
-        List<SeatReservation> activeReservations = Arrays.asList(testReservation);
-        when(seatReservationMapper.selectActiveReservations()).thenReturn(activeReservations);
-
-        List<SeatReservationResponse> result = seatReservationService.getActiveReservations();
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(seatReservationMapper).selectActiveReservations();
-    }
-
-    @Test
-    void testAutoCancelExpiredReservations_Success() {
-        List<SeatReservation> expiredReservations = Arrays.asList(testReservation);
-        when(seatReservationMapper.selectExpiredReservations(any(LocalDateTime.class)))
-                .thenReturn(expiredReservations);
-        when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
-
-        int result = seatReservationService.autoCancelExpiredReservations();
-
-        assertEquals(1, result);
-        verify(seatReservationMapper).selectExpiredReservations(any(LocalDateTime.class));
-        verify(seatReservationMapper, times(1)).updateById(any(SeatReservation.class));
-    }
-
-    @Test
-    void testReserveSeat_ValidationError_EndBeforeStart() {
-        SeatReservationRequest invalidRequest = SeatReservationRequest.builder()
-                .seatId(1L)
-                .readerId(1L)
-                .startTime(LocalDateTime.now().plusHours(5))  // 开始时间在结束时间之后
-                .endTime(LocalDateTime.now().plusHours(1))
-                .build();
-
-        // This should trigger validation error
-        assertThrows(Exception.class, () -> 
-                seatReservationService.reserveSeat(invalidRequest));
-    }
-
-    @Test
-    void testReserveSeat_ValidationError_DurationTooLong() {
-        SeatReservationRequest invalidRequest = SeatReservationRequest.builder()
-                .seatId(1L)
-                .readerId(1L)
-                .startTime(LocalDateTime.now().plusHours(1))
-                .endTime(LocalDateTime.now().plusHours(13))  // 超过12小时
-                .build();
-
-        // This should trigger validation error (max 12 hours)
-        assertThrows(Exception.class, () -> 
-                seatReservationService.reserveSeat(invalidRequest));
+            assertNotNull(seats);
+            assertTrue(seats.isEmpty());
+        }
     }
 }

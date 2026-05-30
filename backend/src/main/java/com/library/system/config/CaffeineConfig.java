@@ -3,10 +3,10 @@ package com.library.system.config;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.concurrent.TimeUnit;
@@ -22,11 +22,10 @@ import java.util.concurrent.TimeUnit;
  *   - hotBooksCacheManager: 热门数据专用（更短的过期时间，使用"hotBooksCacheManager"注入）
  */
 @Configuration
-@EnableCaching
 public class CaffeineConfig {
 
-    @Value("${spring.cache.redis-ttl-hours:1}")
-    private long redisTtlHours;
+    @Value("${spring.cache.redis-ttl-minutes:30}")
+    private long redisTtlMinutes;
 
     @Value("${spring.cache.prefix:'library:cache:'}")
     private String cachePrefix;
@@ -41,16 +40,35 @@ public class CaffeineConfig {
      */
     @Bean
     @Primary
+    @Profile("!no-redis")
     public CacheManager twoLevelCacheManager(RedisTemplate<String, Object> redisTemplate) {
+        Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
+                .maximumSize(5000)
+                .expireAfterWrite(60, TimeUnit.SECONDS)
+                .recordStats()
+                .softValues();
+
+        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions", "statistics", "announcements"};
+        return new TwoLevelCacheManager(caffeine, redisTemplate, cacheNames,
+                cachePrefix, redisTtlMinutes);
+    }
+
+    /**
+     * 纯Caffeine缓存管理器（no-redis模式使用）
+     * 注意：仅在 @Profile("no-redis") 激活时生效，不与 twoLevelCacheManager 冲突
+     */
+    @Bean
+    @Profile("no-redis")
+    public CacheManager noRedisCacheManager() {
         Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
                 .maximumSize(5000)
                 .expireAfterAccess(30, TimeUnit.MINUTES)
                 .recordStats()
                 .softValues();
 
-        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions", "statistics"};
-        return new TwoLevelCacheManager(caffeine, redisTemplate, cacheNames,
-                cachePrefix, redisTtlHours);
+        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions", "statistics", "announcements"};
+        return new TwoLevelCacheManager(caffeine, null, cacheNames,
+                "local:", redisTtlMinutes);
     }
 
     /**
@@ -65,9 +83,9 @@ public class CaffeineConfig {
                 .recordStats()
                 .softValues();
 
-        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions"};
+        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions", "announcements"};
         return new TwoLevelCacheManager(caffeine, null, cacheNames,
-                "local:", redisTtlHours);
+                "local:", redisTtlMinutes);
     }
 
     /**
@@ -75,6 +93,7 @@ public class CaffeineConfig {
      * 更短的过期时间，保证数据新鲜度
      */
     @Bean("hotBooksCacheManager")
+    @Profile("!no-redis")
     public CacheManager hotBooksCacheManager(RedisTemplate<String, Object> redisTemplate) {
         Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
                 .maximumSize(100)
@@ -82,6 +101,6 @@ public class CaffeineConfig {
                 .recordStats();
 
         return new TwoLevelCacheManager(caffeine, redisTemplate,
-                new String[]{"hotBooks"}, cachePrefix + "hot:", redisTtlHours);
+                new String[]{"hotBooks"}, cachePrefix + "hot:", redisTtlMinutes);
     }
 }

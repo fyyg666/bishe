@@ -3,6 +3,7 @@ package com.library.system.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.system.dto.ApiResponse;
 import com.library.system.security.SecurityAuditLogger;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -31,6 +33,7 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Profile("!no-redis")
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final StringRedisTemplate redisTemplate;
@@ -39,6 +42,24 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Value("${rate-limiter.enabled:true}")
     private boolean enabled;
+
+    /** 标记Redis是否在启动时可用，避免每次限流检查都重复输出警告 */
+    private volatile boolean redisAvailable = true;
+
+    /**
+     * 启动时检查Redis连接可用性
+     */
+    @PostConstruct
+    public void checkRedisAvailable() {
+        try {
+            redisTemplate.opsForValue().get("_rate_limit_health_check_");
+            redisAvailable = true;
+            log.info("RateLimitFilter: Redis连接正常，限流功能已启用");
+        } catch (Exception e) {
+            redisAvailable = false;
+            log.error("RateLimitFilter: Redis连接失败！限流功能将降级为透传模式。请检查Redis服务。错误: {}", e.getMessage());
+        }
+    }
 
     @Value("${rate-limiter.default-limit:60}")
     private int defaultLimit;
@@ -61,8 +82,24 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/auth/register"
     );
 
+    /** 高消耗接口路径（10分钟10次） */
+    private static final Set<String> HEAVY_PATHS = Set.of(
+            "/statistics/export",
+            "/statistics/monthly",
+            "/books/export"
+    );
+
     /** 登录限流key前缀 */
     private static final String LOGIN_RATE_PREFIX = "login_rate:";
+
+    /** 高消耗接口限流key前缀 */
+    private static final String HEAVY_RATE_PREFIX = "heavy_rate:";
+
+    @Value("${rate-limiter.heavy-limit:10}")
+    private int heavyLimit;
+
+    @Value("${rate-limiter.heavy-window-seconds:600}")
+    private int heavyWindowSeconds;
 
     /**
      * Lua脚本: 滑动窗口限流
@@ -99,9 +136,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return {count, limit}
             """;
 
+    @SuppressWarnings("rawtypes")
     private final DefaultRedisScript<List> slidingWindowScript = new DefaultRedisScript<>();
 
-    public RateLimitFilter() {
+    {
         slidingWindowScript.setScriptText(SLIDING_WINDOW_LUA_SCRIPT);
         slidingWindowScript.setResultType(List.class);
     }
@@ -119,6 +157,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (SENSITIVE_PATHS.contains(relativePath)) {
             if (!checkLoginRateLimit(request, response)) {
                 return; // 登录限流触发，直接返回
+            }
+        }
+
+        // 高消耗接口独立限流（每10分钟10次）
+        if (HEAVY_PATHS.contains(relativePath)) {
+            String clientId = getClientIp(request);
+            String key = HEAVY_RATE_PREFIX + clientId + ":" + relativePath;
+            if (!checkHeavyPathRateLimit(request, response, key)) {
+                return;
             }
         }
 
@@ -170,7 +217,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             }
 
         } catch (Exception e) {
-            log.error("滑动窗口限流检查异常: {}", e.getMessage());
+            if (redisAvailable) {
+                redisAvailable = false;
+                log.error("滑动窗口限流检查异常(Redis不可用)，限流已降级: {}", e.getMessage());
+            }
             // 限流异常时降级放行
         }
 
@@ -232,6 +282,46 @@ public class RateLimitFilter extends OncePerRequestFilter {
             // 限流异常时降级放行
         }
 
+        return true;
+    }
+
+    /**
+     * 高消耗接口独立限流检查（10分钟10次）
+     */
+    private boolean checkHeavyPathRateLimit(HttpServletRequest request, HttpServletResponse response, String key) throws IOException {
+        try {
+            long now = System.currentTimeMillis();
+            long windowMillis = heavyWindowSeconds * 1000L;
+
+            @SuppressWarnings("unchecked")
+            List<Object> result = redisTemplate.execute(
+                    slidingWindowScript,
+                    Collections.singletonList(key),
+                    String.valueOf(now),
+                    String.valueOf(windowMillis),
+                    String.valueOf(heavyLimit));
+
+            if (result != null && result.size() >= 2) {
+                long currentCount = ((Number) result.get(0)).longValue();
+                if (currentCount > heavyLimit) {
+                    log.warn("高消耗接口限流触发: uri={}, count={}/{}",
+                            request.getRequestURI(), currentCount, heavyLimit);
+
+                    response.setStatus(429);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setHeader("X-RateLimit-Limit", String.valueOf(heavyLimit));
+                    response.setHeader("X-RateLimit-Remaining", "0");
+                    response.setHeader("Retry-After", String.valueOf(heavyWindowSeconds));
+
+                    ApiResponse<Void> apiResponse = ApiResponse.error(
+                            429, "该接口调用频率过高，请稍后再试");
+                    response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+                    return false;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("高消耗接口限流检查异常，降级放行: {}", e.getMessage());
+        }
         return true;
     }
 

@@ -63,4 +63,10 @@ public interface StatisticsService {
      * 获取月度统计
      */
     List<Map<String, Object>> getMonthlyStats(Integer months);
+
+    /**
+     * 获取座位使用率热力图数据（论文§5.2(4)）
+     * 返回各时间段各区域的座位使用率
+     */
+    List<Map<String, Object>> getSeatHeatmap();
 }

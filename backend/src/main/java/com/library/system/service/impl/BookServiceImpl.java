@@ -2,6 +2,7 @@ package com.library.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.library.system.common.Constants;
 import com.library.system.config.BloomFilterConfig;
 import com.library.system.dto.*;
 import com.library.system.entity.Book;
@@ -100,8 +101,8 @@ public class BookServiceImpl implements BookService {
                 .title(request.getTitle())
                 .author(request.getAuthor())
                 .publisher(request.getPublisher())
-                .publishDate(request.getPublishDate() != null && !request.getPublishDate().isEmpty() ? 
-                    java.time.LocalDate.parse(request.getPublishDate().substring(0, 7) + "-01") : null)
+                .publishDate(request.getPublishDate() != null && request.getPublishDate().length() >= 7 ?
+                    safeParsePublishDate(request.getPublishDate()) : null)
                 .categoryId(request.getCategoryId())
                 .description(request.getDescription())
                 .coverImage(request.getCoverImage())
@@ -110,8 +111,9 @@ public class BookServiceImpl implements BookService {
                 .availableCount(request.getTotalCount())
                 .price(request.getPrice())
                 .borrowCount(0)
-                .status(request.getStatus() != null ? request.getStatus() : 1)
+                .status(request.getStatus() != null ? request.getStatus() : Constants.BookStatus.NORMAL)
                 .build();
+
 
         bookMapper.insert(book);
 
@@ -145,8 +147,8 @@ public class BookServiceImpl implements BookService {
         book.setTitle(request.getTitle());
         book.setAuthor(request.getAuthor());
         book.setPublisher(request.getPublisher());
-        book.setPublishDate(request.getPublishDate() != null && !request.getPublishDate().isEmpty() ? 
-            java.time.LocalDate.parse(request.getPublishDate().substring(0, 7) + "-01") : null);
+        book.setPublishDate(request.getPublishDate() != null && request.getPublishDate().length() >= 7 ?
+            safeParsePublishDate(request.getPublishDate()) : null);
         book.setCategoryId(request.getCategoryId());
         book.setDescription(request.getDescription());
         book.setCoverImage(request.getCoverImage());
@@ -193,8 +195,37 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Cacheable(key = "'new:' + #limit", unless = "#result == null || #result.isEmpty()")
+    public List<BookResponse> getNewBooks(Integer limit) {
+        if (limit == null || limit <= 0) {
+            limit = 10;
+        }
+        List<Book> books = bookMapper.selectNewBooks(limit);
+        return books.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public boolean isIsbnExists(String isbn) {
         return bookMapper.selectByIsbn(isbn) != null;
+    }
+
+    /**
+     * 安全解析出版日期字符串为 LocalDate
+     * 支持 "yyyy-MM" 或 "yyyy-MM-dd" 格式，防止 StringIndexOutOfBoundsException
+     */
+    private java.time.LocalDate safeParsePublishDate(String dateStr) {
+        try {
+            if (dateStr.length() >= 10) {
+                return java.time.LocalDate.parse(dateStr.substring(0, 10));
+            } else if (dateStr.length() >= 7) {
+                return java.time.LocalDate.parse(dateStr.substring(0, 7) + "-01");
+            }
+        } catch (Exception e) {
+            log.warn("出版日期解析失败: dateStr={}, error={}", dateStr, e.getMessage());
+        }
+        return null;
     }
 
     private BookResponse convertToResponse(Book book) {

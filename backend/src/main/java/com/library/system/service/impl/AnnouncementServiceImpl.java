@@ -141,13 +141,14 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(allEntries = true)
-    public AnnouncementResponse createAnnouncement(AnnouncementRequest request, Long publisherId) {
+    public AnnouncementResponse createAnnouncement(AnnouncementRequest request, String username) {
         Announcement announcement = new Announcement();
         announcement.setTitle(request.getTitle());
         announcement.setContent(request.getContent());
         announcement.setType(request.getType() != null ? request.getType() : "NOTICE");
         announcement.setPriority(request.getPriority() != null ? request.getPriority() : 0);
-        announcement.setPublisherId(publisherId);
+        User publisher = userMapper.selectByUsername(username);
+        announcement.setPublisherId(publisher != null ? publisher.getId() : null);
         announcement.setStatus("DRAFT");
 
         announcementMapper.insert(announcement);

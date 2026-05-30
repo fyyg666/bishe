@@ -49,11 +49,11 @@ public interface AnnouncementService {
     /**
      * 新增公告
      *
-     * @param request   公告请求
-     * @param publisherId 发布人ID
+     * @param request  公告请求
+     * @param username 发布人用户名
      * @return 新增的公告
      */
-    AnnouncementResponse createAnnouncement(AnnouncementRequest request, Long publisherId);
+    AnnouncementResponse createAnnouncement(AnnouncementRequest request, String username);
 
     /**
      * 更新公告

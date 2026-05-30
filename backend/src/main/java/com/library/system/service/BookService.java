@@ -70,6 +70,14 @@ public interface BookService {
     List<BookResponse> getHotBooks(Integer limit);
 
     /**
+     * 获取新书推荐
+     *
+     * @param limit 数量限制
+     * @return 新书列表
+     */
+    List<BookResponse> getNewBooks(Integer limit);
+
+    /**
      * 检查ISBN是否已存在
      *
      * @param isbn ISBN号

@@ -3,8 +3,7 @@ package com.library.system.service;
 import com.library.system.dto.PageResult;
 import com.library.system.dto.VolunteerRequest;
 import com.library.system.dto.VolunteerResponse;
-
-import java.math.BigDecimal;
+import com.library.system.dto.VolunteerStatsDto;
 
 /**
  * 志愿服务接口 
@@ -68,17 +67,4 @@ public interface VolunteerService {
      * 获取用户志愿服务时长统计
      */
     VolunteerStatsDto getVolunteerStats(Long userId);
-
-    /**
-     * 志愿服务统计DTO
-     */
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
-    class VolunteerStatsDto {
-        private Long totalRecords;
-        private BigDecimal totalHours;
-        private Long pendingCount;
-    }
 }

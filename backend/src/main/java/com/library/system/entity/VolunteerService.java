@@ -53,13 +53,14 @@ public class VolunteerService implements Serializable {
     /** 服务类型 */
     private String serviceType;
 
-    /** 服务描述 */
+    /** 服务内容 */
     private String description;
 
-    /** 状态：PENDING/APPROVED/REJECTED/CANCELLED */
+    /** 状态：PENDING/APPROVED/REJECTED */
     private String status;
 
     /** 审核人ID */
+    @TableField("reviewer_id")
     private Long reviewerId;
 
     /** 审核人姓名 */
@@ -67,21 +68,23 @@ public class VolunteerService implements Serializable {
     private String reviewerName;
 
     /** 审核时间 */
+    @TableField("review_time")
     private LocalDateTime reviewTime;
 
     /** 审核备注 */
+    @TableField("review_remark")
     private String reviewRemark;
 
-    /** 版本号（乐观锁） */
-    @Version
+    /** 版本号（乐观锁，数据库暂无此列） */
+    @TableField(exist = false)
     private Integer version;
 
     /** 创建时间 */
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     /** 更新时间 */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
     /** 逻辑删除标记 */

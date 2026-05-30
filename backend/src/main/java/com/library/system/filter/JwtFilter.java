@@ -2,6 +2,7 @@ package com.library.system.filter;
 
 import com.library.system.common.Constants;
 import com.library.system.security.SecurityAuditLogger;
+import com.library.system.service.TokenBlacklistService;
 import com.library.system.util.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,11 +10,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -30,7 +31,7 @@ import java.util.Collections;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final StringRedisTemplate redisTemplate;
+    private final TokenBlacklistService tokenBlacklistService;
     private final SecurityAuditLogger securityAuditLogger;
 
     // Token黑名单前缀 
@@ -61,19 +62,34 @@ public class JwtFilter extends OncePerRequestFilter {
                         "uri=" + request.getRequestURI());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"code\":401,\"message\":\"Token无效或已过期\"}");
+                response.getWriter().flush();
+                return;
+            }
+
+            // 校验Token类型 — 仅允许Access Token通过
+            String tokenType = jwtUtils.getTokenType(token);
+            if (!Constants.Token.TOKEN_TYPE_ACCESS.equals(tokenType)) {
+                log.warn("Token类型不匹配: expected=ACCESS, actual={}, uri={}",
+                        tokenType, request.getRequestURI());
+                securityAuditLogger.logTokenSecurityEvent("TOKEN_TYPE_MISMATCH",
+                        "uri=" + request.getRequestURI() + ", type=" + tokenType);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"code\":401,\"message\":\"Token类型无效\"}");
+                response.getWriter().flush();
                 return;
             }
 
             // 检查Token是否在黑名单中
             String jti = jwtUtils.getJtiFromToken(token);
             String blacklistKey = TOKEN_BLACKLIST_PREFIX + jti;
-            if (Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey))) {
+            if (tokenBlacklistService.isBlacklisted(blacklistKey)) {
                 log.warn("Token已被吊销: {}", request.getRequestURI());
                 
                 securityAuditLogger.logTokenSecurityEvent("TOKEN_REVOKED",
                         "uri=" + request.getRequestURI());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"code\":401,\"message\":\"Token已被吊销\"}");
+                response.getWriter().flush();
                 return;
             }
 
@@ -104,20 +120,76 @@ public class JwtFilter extends OncePerRequestFilter {
                     "uri=" + request.getRequestURI() + ", error=" + e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("{\"code\":401,\"message\":\"Token处理异常\"}");
+            response.getWriter().flush();
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
+    /** AntPathMatcher 用于精确路径匹配，防止路径绕过漏洞 */
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
+    /** 公开接口路径模式列表（不需要JWT认证） */
+    private static final String[] PUBLIC_PATHS = {
+            "/auth/login",
+            "/auth/register",
+            "/auth/refresh",
+            "/actuator/health",
+            "/actuator/health/**",
+            "/actuator/info",
+            "/actuator/prometheus",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/webjars/**",
+            "/doc.html",
+            "/favicon.ico"
+    };
+
+    /** 公开GET接口路径模式列表 */
+    private static final String[] PUBLIC_GET_PATHS = {
+            "/books",
+            "/books/hot",
+            "/books/**",
+            "/books/check-isbn",
+            "/categories",
+            "/seats",
+            "/seats/check-availability"
+    };
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // 登录、注册等公开接口不需要验证Token
+        // FIXED: 去掉 context-path 后再匹配，避免 /api/v1 + /auth/login 无法匹配 /auth/login
         String path = request.getRequestURI();
-        return path.contains("/auth/login")
-                || path.contains("/auth/register")
-                || path.contains("/auth/refresh")
-                || path.contains("/actuator")
-                || (path.contains("/books") && "GET".equalsIgnoreCase(request.getMethod()));
+        String contextPath = request.getContextPath();
+        if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        // 确保路径以 / 开头
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+        String method = request.getMethod();
+
+        // 1. 检查是否命中公开接口（所有HTTP方法）
+        for (String pattern : PUBLIC_PATHS) {
+            if (PATH_MATCHER.match(pattern, path)) {
+                return true;
+            }
+        }
+
+        // 2. 检查是否命中公开GET接口
+        if ("GET".equalsIgnoreCase(method)) {
+            for (String pattern : PUBLIC_GET_PATHS) {
+                if (PATH_MATCHER.match(pattern, path)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

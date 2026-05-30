@@ -2,14 +2,20 @@
   <div class="page-container">
     <div class="page-header">
       <h2>读者管理</h2>
-      <el-button type="primary" @click="handleCreate">
+      <el-button
+        type="primary"
+        @click="handleCreate"
+      >
         <el-icon><Plus /></el-icon>注册读者
       </el-button>
     </div>
 
     <!-- 搜索筛选 -->
     <el-card class="filter-card">
-      <el-form :inline="true" :model="filterForm">
+      <el-form
+        :inline="true"
+        :model="filterForm"
+      >
         <el-form-item label="关键词">
           <el-input
             v-model="filterForm.keyword"
@@ -19,22 +25,54 @@
           />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="filterForm.role" placeholder="选择角色" clearable>
-            <el-option label="全部" value="" />
-            <el-option label="普通读者" value="READER" />
-            <el-option label="志愿者" value="VOLUNTEER" />
+          <el-select
+            v-model="filterForm.role"
+            placeholder="选择角色"
+            clearable
+          >
+            <el-option
+              label="全部"
+              value=""
+            />
+            <el-option
+              label="普通读者"
+              value="READER"
+            />
+            <el-option
+              label="志愿者"
+              value="VOLUNTEER"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="filterForm.status" placeholder="选择状态" clearable>
-            <el-option label="全部" value="" />
-            <el-option label="正常" value="NORMAL" />
-            <el-option label="禁用" value="DISABLED" />
-            <el-option label="锁定" value="LOCKED" />
+          <el-select
+            v-model="filterForm.status"
+            placeholder="选择状态"
+            clearable
+          >
+            <el-option
+              label="全部"
+              value=""
+            />
+            <el-option
+              label="正常"
+              value="NORMAL"
+            />
+            <el-option
+              label="禁用"
+              value="DISABLED"
+            />
+            <el-option
+              label="锁定"
+              value="LOCKED"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">
+          <el-button
+            type="primary"
+            @click="handleSearch"
+          >
             <el-icon><Search /></el-icon>搜索
           </el-button>
           <el-button @click="handleReset">
@@ -47,7 +85,11 @@
     <!-- 数据表格 -->
     <el-card class="table-card">
       <!-- 骨架屏加载状态 -->
-      <el-skeleton v-if="loading && readerList.length === 0" :rows="5" animated />
+      <el-skeleton
+        v-if="loading && readerList.length === 0"
+        :rows="5"
+        animated
+      />
       
       <!-- 空状态 -->
       <EmptyState 
@@ -59,47 +101,123 @@
       />
       
       <!-- 数据表格 -->
-      <el-table v-else v-loading="loading" :data="readerList" stripe>
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="username" label="用户名" width="120" align="center" />
-        <el-table-column prop="realName" label="姓名" width="100" align="center" />
-        <el-table-column prop="cardNumber" label="读者卡号" width="150" align="center" />
-        <el-table-column prop="phone" label="手机号" width="130" align="center" />
-        <el-table-column prop="role" label="角色" width="100" align="center">
+      <el-table
+        v-else
+        v-loading="loading"
+        :data="readerList"
+        stripe
+      >
+        <el-table-column
+          prop="id"
+          label="ID"
+          width="80"
+          align="center"
+        />
+        <el-table-column
+          prop="username"
+          label="用户名"
+          width="120"
+          align="center"
+        />
+        <el-table-column
+          prop="realName"
+          label="姓名"
+          width="100"
+          align="center"
+        />
+        <el-table-column
+          prop="cardNumber"
+          label="读者卡号"
+          width="150"
+          align="center"
+        />
+        <el-table-column
+          prop="phone"
+          label="手机号"
+          width="130"
+          align="center"
+        />
+        <el-table-column
+          prop="role"
+          label="角色"
+          width="100"
+          align="center"
+        >
           <template #default="{ row }">
-            <el-tag :type="row.role === 'VOLUNTEER' ? 'success' : 'primary'" size="small">
+            <el-tag
+              :type="row.role === 'VOLUNTEER' ? 'success' : 'primary'"
+              size="small"
+            >
               {{ row.role === 'VOLUNTEER' ? '志愿者' : '读者' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="creditScore" label="积分" width="80" align="center">
+        <el-table-column
+          prop="creditScore"
+          label="积分"
+          width="80"
+          align="center"
+        >
           <template #default="{ row }">
-            <el-tag :type="getCreditTagType(row.creditScore)">{{ row.creditScore }}</el-tag>
+            <el-tag :type="getCreditTagType(row.creditScore)">
+              {{ row.creditScore }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="borrowCount" label="借阅数" width="80" align="center">
+        <el-table-column
+          prop="borrowCount"
+          label="借阅数"
+          width="80"
+          align="center"
+        >
           <template #default="{ row }">
             {{ row.borrowCount || 0 }}/{{ row.maxBorrowCount || 5 }}
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="80" align="center">
+        <el-table-column
+          prop="status"
+          label="状态"
+          width="80"
+          align="center"
+        >
           <template #default="{ row }">
-            <el-tag :type="getStatusTagType(row.status)" size="small">
+            <el-tag
+              :type="getStatusTagType(row.status)"
+              size="small"
+            >
               {{ getStatusName(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="注册时间" width="120" align="center">
+        <el-table-column
+          prop="createTime"
+          label="注册时间"
+          width="120"
+          align="center"
+        >
           <template #default="{ row }">
             {{ formatDate(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="250" align="center" fixed="right">
+        <el-table-column
+          label="操作"
+          width="250"
+          align="center"
+          fixed="right"
+        >
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleView(row)">
+            <el-button
+              type="primary"
+              link
+              @click="handleView(row)"
+            >
               <el-icon><View /></el-icon>详情
             </el-button>
-            <el-button type="warning" link @click="handleEdit(row)">
+            <el-button
+              type="warning"
+              link
+              @click="handleEdit(row)"
+            >
               <el-icon><Edit /></el-icon>编辑
             </el-button>
             <el-button
@@ -123,7 +241,10 @@
       </el-table>
 
       <!-- 分页 -->
-      <div v-if="readerList.length > 0" class="pagination">
+      <div
+        v-if="readerList.length > 0"
+        class="pagination"
+      >
         <el-pagination
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
@@ -143,66 +264,169 @@
       width="600px"
       @close="handleDialogClose"
     >
-      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        label-width="100px"
+      >
         <template v-if="!isEdit">
-          <el-form-item label="用户名" prop="username">
-            <el-input v-model="formData.username" placeholder="请输入用户名" />
+          <el-form-item
+            label="用户名"
+            prop="username"
+          >
+            <el-input
+              v-model="formData.username"
+              placeholder="请输入用户名"
+            />
           </el-form-item>
-          <el-form-item label="密码" prop="password">
-            <el-input v-model="formData.password" type="password" placeholder="请输入密码" show-password />
+          <el-form-item
+            label="密码"
+            prop="password"
+          >
+            <el-input
+              v-model="formData.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password
+            />
           </el-form-item>
-          <el-form-item label="确认密码" prop="confirmPassword">
-            <el-input v-model="formData.confirmPassword" type="password" placeholder="请确认密码" show-password />
+          <el-form-item
+            label="确认密码"
+            prop="confirmPassword"
+          >
+            <el-input
+              v-model="formData.confirmPassword"
+              type="password"
+              placeholder="请确认密码"
+              show-password
+            />
           </el-form-item>
         </template>
-        <el-form-item label="姓名" prop="realName">
-          <el-input v-model="formData.realName" placeholder="请输入真实姓名" />
+        <el-form-item
+          label="姓名"
+          prop="realName"
+        >
+          <el-input
+            v-model="formData.realName"
+            placeholder="请输入真实姓名"
+          />
         </el-form-item>
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="formData.phone" placeholder="请输入手机号" />
+        <el-form-item
+          label="手机号"
+          prop="phone"
+        >
+          <el-input
+            v-model="formData.phone"
+            placeholder="请输入手机号"
+          />
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="formData.email" placeholder="请输入邮箱" />
+        <el-form-item
+          label="邮箱"
+          prop="email"
+        >
+          <el-input
+            v-model="formData.email"
+            placeholder="请输入邮箱"
+          />
         </el-form-item>
         <template v-if="isAdmin && isEdit">
-          <el-form-item label="角色" prop="role">
-            <el-select v-model="formData.role" placeholder="选择角色">
-              <el-option label="普通读者" value="READER" />
-              <el-option label="志愿者" value="VOLUNTEER" />
+          <el-form-item
+            label="角色"
+            prop="role"
+          >
+            <el-select
+              v-model="formData.role"
+              placeholder="选择角色"
+            >
+              <el-option
+                label="普通读者"
+                value="READER"
+              />
+              <el-option
+                label="志愿者"
+                value="VOLUNTEER"
+              />
             </el-select>
           </el-form-item>
-          <el-form-item label="积分" prop="creditScore">
-            <el-input-number v-model="formData.creditScore" :min="0" :max="100" />
+          <el-form-item
+            label="积分"
+            prop="creditScore"
+          >
+            <el-input-number
+              v-model="formData.creditScore"
+              :min="0"
+              :max="100"
+            />
           </el-form-item>
-          <el-form-item label="最大借阅数" prop="maxBorrowCount">
-            <el-input-number v-model="formData.maxBorrowCount" :min="1" :max="20" />
+          <el-form-item
+            label="最大借阅数"
+            prop="maxBorrowCount"
+          >
+            <el-input-number
+              v-model="formData.maxBorrowCount"
+              :min="1"
+              :max="20"
+            />
           </el-form-item>
         </template>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="submitLoading"
+          @click="handleSubmit"
+        >
           确定
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 详情对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="读者详情" width="600px">
-      <el-descriptions v-if="currentReader" :column="2" border>
-        <el-descriptions-item label="ID">{{ currentReader.id }}</el-descriptions-item>
-        <el-descriptions-item label="用户名">{{ currentReader.username }}</el-descriptions-item>
-        <el-descriptions-item label="姓名">{{ currentReader.realName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="读者卡号">{{ currentReader.cardNumber || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="手机号">{{ currentReader.phone || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="邮箱">{{ currentReader.email || '-' }}</el-descriptions-item>
+    <el-dialog
+      v-model="viewDialogVisible"
+      title="读者详情"
+      width="600px"
+    >
+      <el-descriptions
+        v-if="currentReader"
+        :column="2"
+        border
+      >
+        <el-descriptions-item label="ID">
+          {{ currentReader.id }}
+        </el-descriptions-item>
+        <el-descriptions-item label="用户名">
+          {{ currentReader.username }}
+        </el-descriptions-item>
+        <el-descriptions-item label="姓名">
+          {{ currentReader.realName || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="读者卡号">
+          {{ currentReader.cardNumber || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="手机号">
+          {{ currentReader.phone || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="邮箱">
+          {{ currentReader.email || '-' }}
+        </el-descriptions-item>
         <el-descriptions-item label="角色">
-          <el-tag :type="currentReader.role === 'VOLUNTEER' ? 'success' : 'primary'" size="small">
+          <el-tag
+            :type="currentReader.role === 'VOLUNTEER' ? 'success' : 'primary'"
+            size="small"
+          >
             {{ currentReader.role === 'VOLUNTEER' ? '志愿者' : '读者' }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="getStatusTagType(currentReader.status)" size="small">
+          <el-tag
+            :type="getStatusTagType(currentReader.status)"
+            size="small"
+          >
             {{ getStatusName(currentReader.status) }}
           </el-tag>
         </el-descriptions-item>
@@ -214,7 +438,9 @@
         <el-descriptions-item label="当前借阅">
           {{ currentReader.borrowCount || 0 }}/{{ currentReader.maxBorrowCount || 5 }}
         </el-descriptions-item>
-        <el-descriptions-item label="注册时间">{{ formatDate(currentReader.createTime) }}</el-descriptions-item>
+        <el-descriptions-item label="注册时间">
+          {{ formatDate(currentReader.createTime) }}
+        </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -223,14 +449,13 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/store/modules/user'
+import { useUserStore } from '@/stores/user'
 import {
   getReaderList,
   getReaderDetail,
   registerReader,
   updateReader,
-  updateReaderStatus,
-  resetPassword
+  updateReaderStatus
 } from '@/api/reader'
 import EmptyState from '@/components/EmptyState.vue'
 

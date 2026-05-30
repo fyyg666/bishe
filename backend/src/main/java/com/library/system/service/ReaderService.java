@@ -115,4 +115,20 @@ public interface ReaderService {
      * @return 用户信息，不存在返回null
      */
     User findByUsername(String username);
+
+    /**
+     * 根据用户名获取用户ID
+     *
+     * @param username 用户名
+     * @return 用户ID，不存在返回null
+     */
+    Long getUserIdByUsername(String username);
+
+    /**
+     * 判断当前用户是否为管理员或图书管理员
+     *
+     * @param username 用户名
+     * @return true=是管理员，false=否
+     */
+    boolean isCurrentUserAdmin(String username);
 }

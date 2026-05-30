@@ -3,7 +3,7 @@ package com.library.system.config;
 import com.library.system.filter.JwtFilter;
 import com.library.system.filter.RateLimitFilter;
 import com.library.system.filter.XssFilter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +29,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Spring Security配置类
@@ -38,13 +37,20 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
-    private final RateLimitFilter rateLimitFilter;
     private final XssFilter xssFilter;
     private final UserDetailsService userDetailsService;
+
+    public SecurityConfig(JwtFilter jwtFilter, XssFilter xssFilter, UserDetailsService userDetailsService) {
+        this.jwtFilter = jwtFilter;
+        this.xssFilter = xssFilter;
+        this.userDetailsService = userDetailsService;
+    }
+
+    @Autowired(required = false)
+    private RateLimitFilter rateLimitFilter;
 
     // FIXED: SEC-003 CORS配置从application.yml读取，支持环境变量覆盖
     @Value("${cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000}")
@@ -82,7 +88,6 @@ public class SecurityConfig {
      * 认证提供者
      */
     @Bean
-    @SuppressWarnings("deprecation")
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
@@ -143,6 +148,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-resources", "/swagger-resources/**").permitAll()
                         .requestMatchers("/webjars/**", "/doc.html", "/favicon.ico").permitAll()
+                        .requestMatchers("/captcha").permitAll()
 
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/actuator/**").hasAnyRole("ADMIN", "LIBRARIAN")
@@ -150,6 +156,7 @@ public class SecurityConfig {
                         // 图书查询接口允许所有人访问
                         .requestMatchers(HttpMethod.GET, "/books", "/books/hot", "/books/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/books/check-isbn").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/categories").permitAll()
 
                         // 座位查询接口允许所有人访问
                         .requestMatchers(HttpMethod.GET, "/seats", "/seats/check-availability").permitAll()
@@ -159,9 +166,13 @@ public class SecurityConfig {
                 )
 
                 // 添加过滤器
-                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(xssFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // 条件添加RateLimitFilter（仅在Redis可用时）
+        if (rateLimitFilter != null) {
+            http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
+        }
 
         return http.build();
     }

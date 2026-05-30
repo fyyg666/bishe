@@ -1,18 +1,12 @@
 package com.library.system.controller;
 
-import com.library.system.annotation.AuditLog;
 import com.library.system.dto.*;
-import com.library.system.entity.User;
 import com.library.system.service.AnnouncementService;
-import com.library.system.service.ReaderService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,14 +38,13 @@ import java.util.List;
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
-    private final ReaderService readerService; // FIXED: ARCH-003 替代直接注入UserMapper
 
     /**
      * 获取公告列表
      */
     @Operation(summary = "获取公告列表", description = "分页查询公告列表")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping
     public ApiResponse<PageResult<AnnouncementResponse>> listAnnouncements(
@@ -73,8 +66,8 @@ public class AnnouncementController {
      */
     @Operation(summary = "获取公告详情", description = "根据ID查询公告详情")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "404", description = "公告不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "公告不存在")
     })
     @GetMapping("/{id}")
     public ApiResponse<AnnouncementResponse> getAnnouncementById(
@@ -89,7 +82,7 @@ public class AnnouncementController {
      */
     @Operation(summary = "获取最新公告", description = "获取最新发布的公告列表")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping("/latest")
     public ApiResponse<List<AnnouncementResponse>> getLatestAnnouncements(
@@ -104,10 +97,9 @@ public class AnnouncementController {
      */
     @Operation(summary = "新增公告", description = "创建新公告（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "创建成功"),
-        @ApiResponse(responseCode = "403", description = "无权操作")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "创建成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权操作")
     })
-    @AuditLog(module = "公告管理", operation = "新增公告")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @CacheEvict(value = "announcements", allEntries = true)
@@ -116,11 +108,8 @@ public class AnnouncementController {
             @RequestBody @Valid AnnouncementRequest request,
             Authentication authentication) {
         log.info("新增公告: {}", request.getTitle());
-        String username = authentication.getName();
-        // FIXED: ARCH-003 通过Service层获取用户信息
-        User publisher = readerService.findByUsername(username);
-        Long publisherId = publisher != null ? publisher.getId() : null;
-        return ApiResponse.success("公告创建成功", announcementService.createAnnouncement(request, publisherId));
+        return ApiResponse.success("公告创建成功",
+                announcementService.createAnnouncement(request, authentication.getName()));
     }
 
     /**
@@ -128,11 +117,10 @@ public class AnnouncementController {
      */
     @Operation(summary = "更新公告", description = "更新公告信息（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "更新成功"),
-        @ApiResponse(responseCode = "403", description = "无权操作"),
-        @ApiResponse(responseCode = "404", description = "公告不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "更新成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权操作"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "公告不存在")
     })
-    @AuditLog(module = "公告管理", operation = "更新公告")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @CacheEvict(value = "announcements", allEntries = true)
@@ -150,10 +138,9 @@ public class AnnouncementController {
      */
     @Operation(summary = "发布公告", description = "发布指定公告（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "发布成功"),
-        @ApiResponse(responseCode = "403", description = "无权操作")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "发布成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权操作")
     })
-    @AuditLog(module = "公告管理", operation = "发布公告")
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @CacheEvict(value = "announcements", allEntries = true)
@@ -170,11 +157,10 @@ public class AnnouncementController {
      */
     @Operation(summary = "删除公告", description = "删除公告（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "删除成功"),
-        @ApiResponse(responseCode = "403", description = "无权操作"),
-        @ApiResponse(responseCode = "404", description = "公告不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "删除成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权操作"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "公告不存在")
     })
-    @AuditLog(module = "公告管理", operation = "删除公告")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @CacheEvict(value = "announcements", allEntries = true)

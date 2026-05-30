@@ -298,6 +298,20 @@ public class ReaderServiceImpl implements ReaderService {
         return userMapper.selectByUsername(username);
     }
 
+    @Override
+    public Long getUserIdByUsername(String username) {
+        User user = userMapper.selectByUsername(username);
+        return user != null ? user.getId() : null;
+    }
+
+    @Override
+    public boolean isCurrentUserAdmin(String username) {
+        User user = userMapper.selectByUsername(username);
+        if (user == null) return false;
+        return Constants.Role.ADMIN.equals(user.getRole()) ||
+               Constants.Role.LIBRARIAN.equals(user.getRole());
+    }
+
     /**
      * 生成读者卡号
      * FIXED: P2-007 使用SecureRandom替代Math.random()，防止卡号可预测

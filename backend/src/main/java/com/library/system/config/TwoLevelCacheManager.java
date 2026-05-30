@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 二级缓存管理器
@@ -34,24 +33,24 @@ public class TwoLevelCacheManager implements CacheManager {
     private final Caffeine<Object, Object> caffeine;
     private final RedisTemplate<String, Object> redisTemplate;
     private final String cachePrefix;
-    private final long redisTtlHours;
+    private final long redisTtlMinutes;
 
     /**
      * @param caffeine        Caffeine配置
      * @param redisTemplate   Redis模板
      * @param cacheNames      缓存名称列表
      * @param cachePrefix     Redis key前缀
-     * @param redisTtlHours   Redis缓存过期时间（小时）
+     * @param redisTtlMinutes Redis缓存过期时间（分钟）
      */
     public TwoLevelCacheManager(Caffeine<Object, Object> caffeine,
                                 RedisTemplate<String, Object> redisTemplate,
                                 String[] cacheNames,
                                 String cachePrefix,
-                                long redisTtlHours) {
+                                long redisTtlMinutes) {
         this.caffeine = caffeine;
         this.redisTemplate = redisTemplate;
         this.cachePrefix = cachePrefix;
-        this.redisTtlHours = redisTtlHours;
+        this.redisTtlMinutes = redisTtlMinutes;
         for (String name : cacheNames) {
             caches.put(name, new TwoLevelCache(name));
         }
@@ -69,7 +68,7 @@ public class TwoLevelCacheManager implements CacheManager {
 
     /**
      * 二级缓存实现
-     * L1: Caffeine本地缓存（毫秒级响应，最大1000条，10分钟过期）
+     * L1: Caffeine本地缓存（毫秒级响应，最大5000条，30分钟过期）
      * L2: Redis分布式缓存（集群共享，1小时过期）
      */
     class TwoLevelCache extends AbstractValueAdaptingCache {
@@ -79,7 +78,7 @@ public class TwoLevelCacheManager implements CacheManager {
         private final String redisKeyPrefix;
 
         protected TwoLevelCache(String name) {
-            super(true); // allowNullValues = false
+            super(true); // allowNullValues = true — 允许缓存null值以缓存空结果防止重复查询
             this.name = name;
             this.l1Cache = caffeine.build();
             this.redisKeyPrefix = cachePrefix + name + ":";
@@ -94,16 +93,18 @@ public class TwoLevelCacheManager implements CacheManager {
                 return value;
             }
 
-            // L2查找（Redis）
-            try {
-                String redisKey = redisKeyPrefix + key;
-                value = redisTemplate.opsForValue().get(redisKey);
-                if (value != null) {
-                    log.debug("L2缓存命中,回填L1: cache={}, key={}", name, key);
-                    l1Cache.put(key, value);
+            // L2查找（Redis），如redisTemplate为null则直接降级
+            if (redisTemplate != null) {
+                try {
+                    String redisKey = redisKeyPrefix + key;
+                    value = redisTemplate.opsForValue().get(redisKey);
+                    if (value != null) {
+                        log.debug("L2缓存命中,回填L1: cache={}, key={}", name, key);
+                        l1Cache.put(key, value);
+                    }
+                } catch (Exception e) {
+                    log.warn("L2缓存查询异常,降级到数据库: cache={}, key={}, error={}", name, key, e.getMessage());
                 }
-            } catch (Exception e) {
-                log.warn("L2缓存查询异常,降级到数据库: cache={}, key={}, error={}", name, key, e.getMessage());
             }
 
             return value;
@@ -120,6 +121,7 @@ public class TwoLevelCacheManager implements CacheManager {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public <T> T get(Object key, Callable<T> valueLoader) {
             Object value = lookup(key);
             if (value != null) {
@@ -144,14 +146,17 @@ public class TwoLevelCacheManager implements CacheManager {
                 evict(key);
                 return;
             }
-            // 同时写入L1和L2
+            // 写入L1
             l1Cache.put(key, value);
-            try {
-                String redisKey = redisKeyPrefix + key;
-                redisTemplate.opsForValue().set(redisKey, value,
-                        java.time.Duration.ofHours(redisTtlHours));
-            } catch (Exception e) {
-                log.warn("L2缓存写入异常: cache={}, key={}, error={}", name, key, e.getMessage());
+            // 写入L2（Redis），如redisTemplate为null则跳过
+            if (redisTemplate != null) {
+                try {
+                    String redisKey = redisKeyPrefix + key;
+                    redisTemplate.opsForValue().set(redisKey, value,
+                            java.time.Duration.ofMinutes(redisTtlMinutes));
+                } catch (Exception e) {
+                    log.warn("L2缓存写入异常: cache={}, key={}, error={}", name, key, e.getMessage());
+                }
             }
         }
 
@@ -167,49 +172,56 @@ public class TwoLevelCacheManager implements CacheManager {
 
         @Override
         public void evict(Object key) {
-            // 同时清除L1和L2
+            // 清除L1
             l1Cache.invalidate(key);
-            try {
-                String redisKey = redisKeyPrefix + key;
-                redisTemplate.delete(redisKey);
-            } catch (Exception e) {
-                log.warn("L2缓存删除异常: cache={}, key={}, error={}", name, key, e.getMessage());
+            // 清除L2（Redis），如redisTemplate为null则跳过
+            if (redisTemplate != null) {
+                try {
+                    String redisKey = redisKeyPrefix + key;
+                    redisTemplate.delete(redisKey);
+                } catch (Exception e) {
+                    log.warn("L2缓存删除异常: cache={}, key={}, error={}", name, key, e.getMessage());
+                }
             }
         }
 
         @Override
         public boolean evictIfPresent(Object key) {
             boolean l1Evicted = l1Cache.asMap().remove(key) != null;
-            try {
-                String redisKey = redisKeyPrefix + key;
-                Boolean deleted = redisTemplate.delete(redisKey);
-                return l1Evicted || Boolean.TRUE.equals(deleted);
-            } catch (Exception e) {
-                log.warn("L2缓存删除异常: cache={}, key={}", name, key);
-                return l1Evicted;
+            if (redisTemplate != null) {
+                try {
+                    String redisKey = redisKeyPrefix + key;
+                    Boolean deleted = redisTemplate.delete(redisKey);
+                    return l1Evicted || Boolean.TRUE.equals(deleted);
+                } catch (Exception e) {
+                    log.warn("L2缓存删除异常: cache={}, key={}", name, key);
+                    return l1Evicted;
+                }
             }
+            return l1Evicted;
         }
 
         @Override
         public void clear() {
             l1Cache.invalidateAll();
-            try {
-                
-                Set<String> keys = new HashSet<>();
-                ScanOptions options = ScanOptions.scanOptions()
-                        .match(redisKeyPrefix + "*")
-                        .count(100)
-                        .build();
-                try (Cursor<byte[]> cursor = redisTemplate.scan(options)) {
-                    while (cursor.hasNext()) {
-                        keys.add(new String(cursor.next()));
+            if (redisTemplate != null) {
+                try {
+                    Set<String> keys = new HashSet<>();
+                    ScanOptions options = ScanOptions.scanOptions()
+                            .match(redisKeyPrefix + "*")
+                            .count(100)
+                            .build();
+                    try (Cursor<String> cursor = redisTemplate.scan(options)) {
+                        while (cursor.hasNext()) {
+                            keys.add(cursor.next());
+                        }
                     }
+                    if (!keys.isEmpty()) {
+                        redisTemplate.delete(keys);
+                    }
+                } catch (Exception e) {
+                    log.warn("L2缓存清空异常: cache={}, error={}", name, e.getMessage());
                 }
-                if (!keys.isEmpty()) {
-                    redisTemplate.delete(keys);
-                }
-            } catch (Exception e) {
-                log.warn("L2缓存清空异常: cache={}, error={}", name, e.getMessage());
             }
         }
 

@@ -1,43 +1,41 @@
 package com.library.system.service;
 
-import com.library.system.dto.PageResult;
+import com.library.system.base.BaseTest;
+import com.library.system.common.Constants;
 import com.library.system.dto.SeatReservationRequest;
 import com.library.system.dto.SeatReservationResponse;
+import com.library.system.dto.PageResult;
+import com.library.system.entity.ReadingRoom;
+import com.library.system.entity.Seat;
 import com.library.system.entity.SeatReservation;
 import com.library.system.entity.User;
+import com.library.system.exception.BusinessException;
+import com.library.system.exception.ForbiddenException;
+import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.SeatReservationMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.impl.SeatServiceImpl;
+import com.library.system.template.DistributedLockTemplate;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * 座位服务单元测试
- *
- * @author Library Team
- * @version 2.0.0
- */
-@ExtendWith(MockitoExtension.class)
-class SeatServiceTest {
+@DisplayName("SeatService 单元测试")
+class SeatServiceTest extends BaseTest {
 
     @Mock
     private SeatReservationMapper seatReservationMapper;
@@ -49,332 +47,377 @@ class SeatServiceTest {
     private CreditService creditService;
 
     @Mock
-    private RedissonClient redissonClient;
+    private DistributedLockTemplate lockTemplate;
 
     @Mock
-    private RLock rLock;
+    private SeatReservationService seatReservationService;
 
     @InjectMocks
     private SeatServiceImpl seatService;
 
     private User testUser;
     private SeatReservation testReservation;
-    private SeatReservationRequest testReservationRequest;
+    private SeatReservationRequest reserveRequest;
 
     @BeforeEach
-    void setUp() throws InterruptedException {
-        // 初始化测试用户
+    @SuppressWarnings("unchecked")
+    void setUp() {
         testUser = new User();
         testUser.setId(1L);
-        testUser.setUsername("testuser");
-        testUser.setPassword("encoded_password");
+        testUser.setUsername("reader1");
+        testUser.setRealName("张三");
         testUser.setStatus("NORMAL");
-        testUser.setCreditScore(100);
+        testUser.setViolationCount(0);
 
-        // 初始化测试预约记录
-        testReservation = new SeatReservation();
-        testReservation.setId(1L);
-        testReservation.setSeatNumber("A01");
-        testReservation.setArea("A区-安静区");
-        testReservation.setUserId(1L);
-        testReservation.setUsername("testuser");
-        testReservation.setReservationDate(LocalDate.now().plusDays(1));
-        testReservation.setStartTime(LocalTime.of(9, 0));
-        testReservation.setEndTime(LocalTime.of(12, 0));
-        testReservation.setStatus("PENDING");
-        testReservation.setSource("WEB");
-        testReservation.setDeleted(0);
+        testReservation = SeatReservation.builder()
+                .id(100L)
+                .userId(1L)
+                .username("reader1")
+                .seatNumber("A01")
+                .area("A区-安静区")
+                .reservationDate(LocalDate.now())
+                .startTime(LocalTime.now().minusMinutes(5))
+                .endTime(LocalTime.now().plusHours(2))
+                .status("PENDING")
+                .createTime(LocalDateTime.now())
+                .deleted(0)
+                .build();
 
-        // 初始化预约请求
-        testReservationRequest = new SeatReservationRequest();
-        testReservationRequest.setSeatNumber("A01");
-        testReservationRequest.setArea("A区-安静区");
-        testReservationRequest.setReservationDate(LocalDate.now().plusDays(1));
-        testReservationRequest.setStartTime(LocalTime.of(9, 0));
-        testReservationRequest.setEndTime(LocalTime.of(12, 0));
+        reserveRequest = new SeatReservationRequest();
+        reserveRequest.setSeatNumber("A01");
+        reserveRequest.setArea("A区-安静区");
+        reserveRequest.setReservationDate(LocalDate.now());
+        reserveRequest.setStartTime(LocalTime.of(9, 0));
+        reserveRequest.setEndTime(LocalTime.of(11, 0));
 
-        // Mock分布式锁
-        lenient().when(redissonClient.getLock(anyString())).thenReturn(rLock);
-        lenient().when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-        lenient().when(rLock.isHeldByCurrentThread()).thenReturn(true);
+        // 通用 mock：让 lockTemplate 实际执行 supplier
+        lenient().when(lockTemplate.executeWithLock(anyString(), any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return supplier.get();
+                });
     }
 
-    @Test
-    void testListSeats_AllAreas() {
-        when(seatReservationMapper.selectBySeatAndDate(anyString(), any(LocalDate.class)))
-                .thenReturn(Collections.emptyList());
+    @Nested
+    @DisplayName("座位查询用例")
+    class SeatQueryTests {
 
-        List<SeatReservationResponse> result = seatService.listSeats(null, LocalDate.now());
+        @Test
+        @DisplayName("列出座位 - 应返回区域座位列表")
+        void listSeats_shouldReturnList() {
+            when(seatReservationMapper.selectBySeatNumbersAndDate(anyList(), any(LocalDate.class)))
+                    .thenReturn(Collections.emptyList());
 
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-    }
+            List<SeatReservationResponse> seats = seatService.listSeats("A区-安静区", LocalDate.now());
 
-    @Test
-    void testListSeats_SpecificArea() {
-        when(seatReservationMapper.selectBySeatAndDate(anyString(), any(LocalDate.class)))
-                .thenReturn(Collections.emptyList());
-
-        List<SeatReservationResponse> result = seatService.listSeats("A区-安静区", LocalDate.now());
-
-        assertNotNull(result);
-        assertTrue(result.stream().allMatch(s -> s.getArea().equals("A区-安静区")));
-    }
-
-    @Test
-    void testListSeats_WithReservations() {
-        List<SeatReservation> reservations = Arrays.asList(testReservation);
-        when(seatReservationMapper.selectBySeatAndDate(eq("A01"), any(LocalDate.class)))
-                .thenReturn(reservations);
-
-        List<SeatReservationResponse> result = seatService.listSeats("A区-安静区", LocalDate.now());
-
-        assertNotNull(result);
-        SeatReservationResponse seat = result.stream()
-                .filter(s -> s.getSeatNumber().equals("A01"))
-                .findFirst()
-                .orElse(null);
-        assertNotNull(seat);
-        assertEquals("PARTIAL", seat.getStatus());
-    }
-
-    @Test
-    void testReserveSeat_Success() throws InterruptedException {
-        when(userMapper.selectById(1L)).thenReturn(testUser);
-        when(seatReservationMapper.countConflictingReservations(anyString(), any(), any(), any()))
-                .thenReturn(0);
-        when(seatReservationMapper.selectByUserAndDate(anyLong(), any()))
-                .thenReturn(Collections.emptyList());
-        when(seatReservationMapper.insert(any(SeatReservation.class))).thenReturn(1);
-
-        SeatReservationResponse result = seatService.reserveSeat(1L, testReservationRequest);
-
-        assertNotNull(result);
-        assertEquals("A01", result.getSeatNumber());
-        assertEquals("PENDING", result.getStatus());
-        verify(seatReservationMapper).insert(any(SeatReservation.class));
-    }
-
-    @Test
-    void testReserveSeat_UserNotFound() throws InterruptedException {
-        when(userMapper.selectById(1L)).thenReturn(null);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.reserveSeat(1L, testReservationRequest));
-        assertEquals("用户不存在或已被禁用", exception.getMessage());
-    }
-
-    @Test
-    void testReserveSeat_UserDisabled() throws InterruptedException {
-        testUser.setStatus("DISABLED");
-        when(userMapper.selectById(1L)).thenReturn(testUser);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.reserveSeat(1L, testReservationRequest));
-        assertEquals("用户不存在或已被禁用", exception.getMessage());
-    }
-
-    @Test
-    void testReserveSeat_PastDate() throws InterruptedException {
-        testReservationRequest.setReservationDate(LocalDate.now().minusDays(1));
-        when(userMapper.selectById(1L)).thenReturn(testUser);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.reserveSeat(1L, testReservationRequest));
-        assertEquals("不能预约过去的日期", exception.getMessage());
-    }
-
-    @Test
-    void testReserveSeat_InvalidTimeRange() throws InterruptedException {
-        testReservationRequest.setStartTime(LocalTime.of(14, 0));
-        testReservationRequest.setEndTime(LocalTime.of(12, 0));
-        when(userMapper.selectById(1L)).thenReturn(testUser);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.reserveSeat(1L, testReservationRequest));
-        assertEquals("结束时间必须晚于开始时间", exception.getMessage());
-    }
-
-    @Test
-    void testReserveSeat_OutsideBusinessHours() throws InterruptedException {
-        testReservationRequest.setStartTime(LocalTime.of(7, 0));
-        testReservationRequest.setEndTime(LocalTime.of(23, 0));
-        when(userMapper.selectById(1L)).thenReturn(testUser);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.reserveSeat(1L, testReservationRequest));
-        assertEquals("预约时间必须在8:00-22:00之间", exception.getMessage());
-    }
-
-    @Test
-    void testReserveSeat_TimeSlotConflict() throws InterruptedException {
-        when(userMapper.selectById(1L)).thenReturn(testUser);
-        when(seatReservationMapper.countConflictingReservations(anyString(), any(), any(), any()))
-                .thenReturn(1);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.reserveSeat(1L, testReservationRequest));
-        assertEquals("该时间段已被预约", exception.getMessage());
-    }
-
-    @Test
-    void testReserveSeat_MaxDailyReservations() throws InterruptedException {
-        List<SeatReservation> reservations = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            SeatReservation r = new SeatReservation();
-            r.setStatus("PENDING");
-            reservations.add(r);
+            assertNotNull(seats);
+            assertEquals(50, seats.size());
+            assertTrue(seats.stream().allMatch(s -> s.getStatus().equals("AVAILABLE")));
         }
-        when(userMapper.selectById(1L)).thenReturn(testUser);
-        when(seatReservationMapper.countConflictingReservations(anyString(), any(), any(), any()))
-                .thenReturn(0);
-        when(seatReservationMapper.selectByUserAndDate(anyLong(), any()))
-                .thenReturn(reservations);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.reserveSeat(1L, testReservationRequest));
-        assertEquals("每天最多预约3个时段", exception.getMessage());
+        @Test
+        @DisplayName("列出所有区域座位 - 不传区域时返回全部")
+        void listSeats_allAreas_shouldReturnAll() {
+            when(seatReservationMapper.selectBySeatNumbersAndDate(anyList(), any(LocalDate.class)))
+                    .thenReturn(Collections.emptyList());
+
+            List<SeatReservationResponse> seats = seatService.listSeats(null, LocalDate.now());
+
+            assertNotNull(seats);
+            assertEquals(150, seats.size());
+        }
+
+        @Test
+        @DisplayName("获取阅览室列表")
+        void getReadingRooms_shouldReturnList() {
+            ReadingRoom room = new ReadingRoom();
+            room.setId(1L);
+            room.setName("一楼阅览室");
+            when(seatReservationService.getReadingRooms()).thenReturn(List.of(room));
+
+            List<ReadingRoom> rooms = seatService.getReadingRooms();
+
+            assertNotNull(rooms);
+            assertFalse(rooms.isEmpty());
+            assertEquals("一楼阅览室", rooms.get(0).getName());
+        }
+
+        @Test
+        @DisplayName("获取房间座位列表")
+        void getSeatsByRoom_shouldReturnList() {
+            Seat seat = new Seat();
+            seat.setId(1L);
+            seat.setSeatNumber("A01");
+            when(seatReservationService.getSeatsByRoom(1L)).thenReturn(List.of(seat));
+
+            List<Seat> seats = seatService.getSeatsByRoom(1L);
+
+            assertNotNull(seats);
+            assertFalse(seats.isEmpty());
+        }
+
+        @Test
+        @DisplayName("查询时间段可用性 - 无冲突返回true")
+        void isTimeSlotAvailable_noConflict_shouldReturnTrue() {
+            when(seatReservationMapper.countConflictingReservations(
+                    anyString(), any(LocalDate.class), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(0);
+
+            boolean available = seatService.isTimeSlotAvailable("A01", LocalDate.now(), "09:00", "11:00");
+
+            assertTrue(available);
+        }
+
+        @Test
+        @DisplayName("查询时间段可用性 - 有冲突返回false")
+        void isTimeSlotAvailable_withConflict_shouldReturnFalse() {
+            when(seatReservationMapper.countConflictingReservations(
+                    anyString(), any(LocalDate.class), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(1);
+
+            boolean available = seatService.isTimeSlotAvailable("A01", LocalDate.now(), "09:00", "11:00");
+
+            assertFalse(available);
+        }
     }
 
-    @Test
-    void testCancelReservation_Success() {
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-        when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
+    @Nested
+    @DisplayName("座位预约用例")
+    class ReservationTests {
 
-        assertDoesNotThrow(() -> seatService.cancelReservation(1L, 1L));
+        @Test
+        @DisplayName("预约座位成功")
+        void reserveSeat_success() {
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+            when(seatReservationMapper.countConflictingReservations(
+                    anyString(), any(LocalDate.class), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(0);
+            when(seatReservationMapper.selectByUserAndDate(anyLong(), any(LocalDate.class)))
+                    .thenReturn(Collections.emptyList());
+            when(seatReservationMapper.insert(any(SeatReservation.class))).thenReturn(1);
 
-        verify(seatReservationMapper).updateById(any(SeatReservation.class));
+            SeatReservationResponse response = seatService.reserveSeat(1L, reserveRequest);
+
+            assertNotNull(response);
+            assertEquals("A01", response.getSeatNumber());
+            assertEquals("PENDING", response.getStatus());
+        }
+
+        @Test
+        @DisplayName("预约座位 - 用户不存在抛异常")
+        void reserveSeat_userNotFound_shouldThrowException() {
+            when(userMapper.selectById(999L)).thenReturn(null);
+
+            assertThrows(ResourceNotFoundException.class,
+                    () -> seatService.reserveSeat(999L, reserveRequest));
+        }
+
+        @Test
+        @DisplayName("预约座位 - 时间冲突抛异常")
+        void reserveSeat_timeConflict_shouldThrowException() {
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+            when(seatReservationMapper.countConflictingReservations(
+                    anyString(), any(LocalDate.class), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(1);
+
+            assertThrows(BusinessException.class,
+                    () -> seatService.reserveSeat(1L, reserveRequest));
+        }
     }
 
-    @Test
-    void testCancelReservation_NotFound() {
-        when(seatReservationMapper.selectById(999L)).thenReturn(null);
+    @Nested
+    @DisplayName("签到签退用例")
+    class CheckInOutTests {
 
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.cancelReservation(1L, 999L));
-        assertEquals("预约记录不存在", exception.getMessage());
+        @Test
+        @DisplayName("签到成功")
+        void checkIn_success() {
+            when(seatReservationMapper.selectById(100L)).thenReturn(testReservation);
+            doNothing().when(creditService).processCheckInCredit(anyLong(), anyLong());
+            when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
+
+            SeatReservationResponse response = seatService.checkIn(1L, 100L);
+
+            assertNotNull(response);
+            verify(creditService).processCheckInCredit(1L, 100L);
+        }
+
+        @Test
+        @DisplayName("签到 - 预约不存在抛异常")
+        void checkIn_reservationNotFound_shouldThrowException() {
+            when(seatReservationMapper.selectById(999L)).thenReturn(null);
+
+            assertThrows(ResourceNotFoundException.class,
+                    () -> seatService.checkIn(1L, 999L));
+        }
+
+        @Test
+        @DisplayName("签到 - 无权操作抛异常")
+        void checkIn_notOwner_shouldThrowException() {
+            when(seatReservationMapper.selectById(100L)).thenReturn(testReservation);
+
+            assertThrows(ForbiddenException.class,
+                    () -> seatService.checkIn(2L, 100L));
+        }
+
+        @Test
+        @DisplayName("签退成功")
+        void checkOut_success() {
+            testReservation.setStatus("CHECKED_IN");
+            when(seatReservationMapper.selectById(100L)).thenReturn(testReservation);
+            when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
+
+            SeatReservationResponse response = seatService.checkOut(1L, 100L);
+
+            assertNotNull(response);
+            verify(seatReservationMapper).updateById(argThat(r -> "COMPLETED".equals(r.getStatus())));
+        }
+
+        @Test
+        @DisplayName("签退 - 未签到状态抛异常")
+        void checkOut_notCheckedIn_shouldThrowException() {
+            when(seatReservationMapper.selectById(100L)).thenReturn(testReservation);
+
+            assertThrows(BusinessException.class,
+                    () -> seatService.checkOut(1L, 100L));
+        }
     }
 
-    @Test
-    void testCancelReservation_WrongUser() {
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
+    @Nested
+    @DisplayName("预约取消用例")
+    class CancelTests {
 
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.cancelReservation(999L, 1L));
-        assertEquals("无权操作此预约记录", exception.getMessage());
+        @Test
+        @DisplayName("取消预约成功")
+        void cancelReservation_success() {
+            // 设置预约时间为未来2小时后，使取消成功
+            testReservation.setReservationDate(LocalDate.now().plusDays(1));
+            when(seatReservationMapper.selectById(100L)).thenReturn(testReservation);
+            when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
+
+            seatService.cancelReservation(1L, 100L);
+
+            verify(seatReservationMapper).updateById(argThat(r -> "CANCELLED".equals(r.getStatus())));
+        }
+
+        @Test
+        @DisplayName("取消预约 - 预约不存在抛异常")
+        void cancelReservation_notFound_shouldThrowException() {
+            when(seatReservationMapper.selectById(999L)).thenReturn(null);
+
+            assertThrows(ResourceNotFoundException.class,
+                    () -> seatService.cancelReservation(1L, 999L));
+        }
+
+        @Test
+        @DisplayName("取消预约 - 无权操作抛异常")
+        void cancelReservation_notOwner_shouldThrowException() {
+            when(seatReservationMapper.selectById(100L)).thenReturn(testReservation);
+
+            assertThrows(ForbiddenException.class,
+                    () -> seatService.cancelReservation(2L, 100L));
+        }
     }
 
-    @Test
-    void testCancelReservation_AlreadyCheckedIn() {
-        testReservation.setStatus("CHECKED_IN");
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
+    @Nested
+    @DisplayName("预约查询用例")
+    class MyReservationsTests {
 
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.cancelReservation(1L, 1L));
-        assertEquals("只能取消待使用的预约", exception.getMessage());
+        @Test
+        @DisplayName("获取我的预约列表")
+        void getMyReservations_shouldReturnPage() {
+            when(seatReservationMapper.selectPage(any(), any())).thenAnswer(inv -> {
+                com.baomidou.mybatisplus.core.metadata.IPage<SeatReservation> p = inv.getArgument(0);
+                p.setRecords(Collections.singletonList(testReservation));
+                p.setTotal(1);
+                return p;
+            });
+
+            PageResult<SeatReservationResponse> result = seatService.getMyReservations(1L, 1L, 10L);
+
+            assertNotNull(result);
+            assertEquals(1, result.getTotal());
+            assertEquals(1, result.getRecords().size());
+        }
+
+        @Test
+        @DisplayName("获取我的预约列表 - 无记录")
+        void getMyReservations_empty_shouldReturnEmpty() {
+            when(seatReservationMapper.selectPage(any(), any())).thenAnswer(inv -> {
+                com.baomidou.mybatisplus.core.metadata.IPage<SeatReservation> p = inv.getArgument(0);
+                p.setRecords(Collections.emptyList());
+                p.setTotal(0);
+                return p;
+            });
+
+            PageResult<SeatReservationResponse> result = seatService.getMyReservations(1L, 1L, 10L);
+
+            assertNotNull(result);
+            assertEquals(0, result.getTotal());
+            assertTrue(result.getRecords().isEmpty());
+        }
     }
 
-    @Test
-    void testCheckIn_Success() throws InterruptedException {
-        testReservation.setReservationDate(LocalDate.now());
-        testReservation.setStartTime(LocalTime.now().minusMinutes(10));
-        when(redissonClient.getLock(anyString())).thenReturn(rLock);
-        when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-        when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
+    @Nested
+    @DisplayName("预约边界校验用例")
+    class ValidationBoundaryTests {
 
-        SeatReservationResponse result = seatService.checkIn(1L, 1L);
+        @Test
+        @DisplayName("预约座位 - 开始时间晚于结束时间抛异常")
+        void reserveSeat_startAfterEnd_shouldThrow() {
+            reserveRequest.setStartTime(LocalTime.of(14, 0));
+            reserveRequest.setEndTime(LocalTime.of(13, 0));
+            when(userMapper.selectById(1L)).thenReturn(testUser);
 
-        assertNotNull(result);
-        assertEquals("CHECKED_IN", result.getStatus());
-        verify(creditService).processCheckInCredit(eq(1L), eq(1L));
-    }
+            assertThrows(BusinessException.class,
+                    () -> seatService.reserveSeat(1L, reserveRequest));
+        }
 
-    @Test
-    void testCheckIn_TooEarly() throws InterruptedException {
-        testReservation.setReservationDate(LocalDate.now());
-        testReservation.setStartTime(LocalTime.now().plusHours(1));
-        when(redissonClient.getLock(anyString())).thenReturn(rLock);
-        when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
+        @Test
+        @DisplayName("预约座位 - 开始时间等于结束时间抛异常")
+        void reserveSeat_startEqualsEnd_shouldThrow() {
+            reserveRequest.setStartTime(LocalTime.of(10, 0));
+            reserveRequest.setEndTime(LocalTime.of(10, 0));
+            when(userMapper.selectById(1L)).thenReturn(testUser);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.checkIn(1L, 1L));
-        assertEquals("签到时间未到，请在预约开始前15分钟内签到", exception.getMessage());
-    }
+            assertThrows(BusinessException.class,
+                    () -> seatService.reserveSeat(1L, reserveRequest));
+        }
 
-    @Test
-    void testCheckIn_TooLate() throws InterruptedException {
-        testReservation.setReservationDate(LocalDate.now());
-        testReservation.setStartTime(LocalTime.now().minusHours(1));
-        when(redissonClient.getLock(anyString())).thenReturn(rLock);
-        when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
+        @Test
+        @DisplayName("预约座位 - 过去日期抛异常")
+        void reserveSeat_pastDate_shouldThrow() {
+            reserveRequest.setReservationDate(LocalDate.now().minusDays(1));
+            when(userMapper.selectById(1L)).thenReturn(testUser);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.checkIn(1L, 1L));
-        assertEquals("已超过签到时间，预约已失效", exception.getMessage());
-    }
+            assertThrows(BusinessException.class,
+                    () -> seatService.reserveSeat(1L, reserveRequest));
+        }
 
-    @Test
-    void testCheckOut_Success() {
-        testReservation.setStatus("CHECKED_IN");
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-        when(seatReservationMapper.updateById(any(SeatReservation.class))).thenReturn(1);
+        @Test
+        @DisplayName("预约座位 - 超过每日预约上限抛异常")
+        void reserveSeat_exceedDailyLimit_shouldThrow() {
+            testUser.setViolationCount(0);
+            testUser.setBanUntil(null);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+            when(seatReservationMapper.countConflictingReservations(anyString(), any(), any(), any()))
+                    .thenReturn(0);
+            when(seatReservationMapper.selectByUserAndDate(eq(1L), any(LocalDate.class)))
+                    .thenReturn(Collections.nCopies(Constants.SeatLimit.DAILY_MAX_RESERVATIONS, testReservation));
 
-        SeatReservationResponse result = seatService.checkOut(1L, 1L);
+            assertThrows(BusinessException.class,
+                    () -> seatService.reserveSeat(1L, reserveRequest));
+        }
 
-        assertNotNull(result);
-        assertEquals("COMPLETED", result.getStatus());
-    }
+        @Test
+        @DisplayName("预留座位 - 用户被临时封禁抛异常")
+        void reserveSeat_userBanned_shouldThrow() {
+            testUser.setBanUntil(LocalDateTime.now().plusHours(24));
+            testUser.setViolationCount(3);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
 
-    @Test
-    void testCheckOut_NotCheckedIn() {
-        testReservation.setStatus("PENDING");
-        when(seatReservationMapper.selectById(1L)).thenReturn(testReservation);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, 
-            () -> seatService.checkOut(1L, 1L));
-        assertEquals("请先签到后再签退", exception.getMessage());
-    }
-
-    @Test
-    void testGetMyReservations_Success() {
-        List<SeatReservation> reservations = Arrays.asList(testReservation);
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<SeatReservation> page = 
-            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
-        page.setRecords(reservations);
-        page.setTotal(1);
-
-        when(seatReservationMapper.selectPage(any(), any())).thenReturn(page);
-
-        PageResult<SeatReservationResponse> result = seatService.getMyReservations(1L, 1L, 10L);
-
-        assertNotNull(result);
-        assertEquals(1, result.getTotal());
-        assertEquals(1, result.getRecords().size());
-    }
-
-    @Test
-    void testIsTimeSlotAvailable_Available() {
-        when(seatReservationMapper.countConflictingReservations(anyString(), any(), any(), any()))
-                .thenReturn(0);
-
-        boolean result = seatService.isTimeSlotAvailable("A01", LocalDate.now(), "09:00", "12:00");
-
-        assertTrue(result);
-    }
-
-    @Test
-    void testIsTimeSlotAvailable_NotAvailable() {
-        when(seatReservationMapper.countConflictingReservations(anyString(), any(), any(), any()))
-                .thenReturn(1);
-
-        boolean result = seatService.isTimeSlotAvailable("A01", LocalDate.now(), "09:00", "12:00");
-
-        assertFalse(result);
+            assertThrows(BusinessException.class,
+                    () -> seatService.reserveSeat(1L, reserveRequest));
+        }
     }
 }

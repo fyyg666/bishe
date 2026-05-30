@@ -30,15 +30,15 @@ request.interceptors.request.use(
     }
 
     return config
-  },
-  (error) => {
-    return Promise.reject(error)
   }
+  // FIXED: QUAL-05 移除无意义的空错误处理器
 )
 
 // 响应拦截器 - 处理错误和Token过期
 let isRefreshing = false
 let pendingRequests = []
+const MAX_PENDING_REQUESTS = 50 // FIXED: PERF-01 防止pendingRequests无限增长
+const MAX_RETRY_COUNT = 1 // FIXED: SEC-05 限制重试次数，防止无限循环
 
 request.interceptors.response.use(
   (response) => {
@@ -51,12 +51,12 @@ request.interceptors.response.use(
     }
 
     // 标准响应格式: code: 0 = 成功, 200 = 兼容旧版
-    if (data.code !== undefined) {
+    if (data.code !== undefined && data.code !== null) {
       if (data.code === 0 || data.code === 200) {
         return data
       } else {
         ElMessage.error(data.message || '请求失败')
-        return Promise.reject(new Error(data.message))
+        return Promise.reject(new Error(data.message || '请求失败'))
       }
     }
 
@@ -68,12 +68,31 @@ request.interceptors.response.use(
     if (response) {
       switch (response.status) {
         case 401: {
+          // FIXED: SEC-05 检查重试次数，防止无限循环
+          if (config._retryCount >= MAX_RETRY_COUNT) {
+            clearAuthCookies()
+            ElMessage.error('登录已过期，请重新登录')
+            router.push('/login')
+            return Promise.reject(error)
+          }
+          config._retryCount = (config._retryCount || 0) + 1
+
           // Token过期 - 尝试刷新
           if (!isRefreshing) {
             isRefreshing = true
             try {
               const res = await apiRefreshToken()
-              const newToken = res.data?.token || res.token
+              const newToken = res.data?.accessToken || res.data?.token || res.accessToken || res.token
+              
+              // FIXED: BUG-02 检查newToken有效性，防止传入undefined
+              if (!newToken) {
+                pendingRequests = []
+                clearAuthCookies()
+                ElMessage.error('登录已过期，请重新登录')
+                router.push('/login')
+                return Promise.reject(new Error('Token刷新失败'))
+              }
+
               setToken(newToken)
 
               // 重试所有挂起的请求
@@ -85,7 +104,6 @@ request.interceptors.response.use(
               return request(config)
             } catch (refreshError) {
               // 刷新失败，清除认证信息并跳转登录
-              // FIXED: P2-FE-03 - 刷新失败时清空pendingRequests，防止内存泄漏
               pendingRequests = []
               clearAuthCookies()
               ElMessage.error('登录已过期，请重新登录')
@@ -95,11 +113,20 @@ request.interceptors.response.use(
               isRefreshing = false
             }
           } else {
-            // 正在刷新中，将请求加入队列
+            // FIXED: PERF-01 限制待处理请求队列长度
+            if (pendingRequests.length >= MAX_PENDING_REQUESTS) {
+              clearAuthCookies()
+              ElMessage.error('系统繁忙，请重新登录')
+              router.push('/login')
+              return Promise.reject(new Error('待处理请求队列已满'))
+            }
+
+            // 正在刷新中，将请求加入队列（使用config快照防止闭包引用过期）
+            const configSnapshot = { ...config, headers: { ...config.headers } }
             return new Promise((resolve) => {
               pendingRequests.push((token) => {
-                config.headers.Authorization = `Bearer ${token}`
-                resolve(request(config))
+                configSnapshot.headers.Authorization = `Bearer ${token}`
+                resolve(request(configSnapshot))
               })
             })
           }

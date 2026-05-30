@@ -129,6 +129,12 @@ const routes = [
         name: 'Credit',
         component: () => import('@/views/profile/CreditView.vue'),
         meta: { requiresAuth: true, title: '信用积分', icon: 'Coin' }
+      },
+      {
+        path: '/compensations',
+        name: 'Compensations',
+        component: () => import('@/views/compensation/CompensationList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '赔偿管理', icon: 'Warning' }
       }
     ]
   },
@@ -166,13 +172,20 @@ router.beforeEach(async (to, from, next) => {
     }
     
     // Fetch user info if not loaded
-    if (!userStore.userInfo) {
+    // FIXED: PERF-02 增加fetching锁防止并发请求
+    if (!userStore.userInfo && !userStore._fetchingUserInfo) {
       try {
+        userStore._fetchingUserInfo = true
         await userStore.fetchUserInfo()
-      } catch (error) {
-        userStore.logout()
-        next('/login')
-        return
+      } catch {
+        // fetchUserInfo内部已处理，如果已有userInfo不会登出
+        if (!userStore.userInfo) {
+          userStore.logout()
+          next('/login')
+          return
+        }
+      } finally {
+        userStore._fetchingUserInfo = false
       }
     }
     
@@ -182,7 +195,9 @@ router.beforeEach(async (to, from, next) => {
       const hasPermission = to.meta.roles.includes(userRole)
       if (!hasPermission) {
         ElMessage.error('您没有权限访问该页面')
-        next(from.path || '/dashboard')
+        // FIXED: QUAL-04 当来源页是公开页面时，跳转dashboard
+        const fromIsPublic = from.meta?.public || false
+        next(fromIsPublic ? '/dashboard' : (from.path || '/dashboard'))
         return
       }
     }

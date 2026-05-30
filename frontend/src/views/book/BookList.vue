@@ -2,32 +2,67 @@
   <div class="book-list">
     <!-- 搜索栏 -->
     <el-card class="search-card">
-      <el-form :model="searchForm" inline>
+      <el-form
+        :model="searchForm"
+        inline
+      >
         <el-form-item label="书名">
-          <el-input v-model="searchForm.name" placeholder="请输入书名" clearable />
+          <el-input
+            v-model="searchForm.name"
+            placeholder="请输入书名"
+            clearable
+          />
         </el-form-item>
         <el-form-item label="作者">
-          <el-input v-model="searchForm.author" placeholder="请输入作者" clearable />
+          <el-input
+            v-model="searchForm.author"
+            placeholder="请输入作者"
+            clearable
+          />
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="searchForm.category" placeholder="请选择分类" clearable>
-            <el-option label="文学" value="文学" />
-            <el-option label="科技" value="科技" />
-            <el-option label="历史" value="历史" />
-            <el-option label="艺术" value="艺术" />
+          <el-select
+            v-model="searchForm.category"
+            placeholder="请选择分类"
+            clearable
+          >
+            <el-option
+              v-for="cat in categoryOptions"
+              :key="cat.value"
+              :label="cat.label"
+              :value="cat.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button
+            type="primary"
+            @click="handleSearch"
+          >
+            搜索
+          </el-button>
+          <el-button @click="handleReset">
+            重置
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
     <!-- 操作栏 -->
     <div class="table-toolbar">
-      <el-button type="primary" :icon="Plus" @click="$router.push('/books/add')">添加图书</el-button>
-      <el-button :icon="Download" @click="handleExport">导出</el-button>
+      <el-button
+        type="primary"
+        :icon="Plus"
+        @click="$router.push('/books/add')"
+      >
+        添加图书
+      </el-button>
+      <el-button
+        :icon="Download"
+        @click="handleExport"
+      >
+        导出
+      </el-button>
     </div>
 
     <!-- 表格 -->
@@ -38,26 +73,83 @@
         stripe
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="name" label="书名" min-width="150" />
-        <el-table-column prop="author" label="作者" width="120" />
-        <el-table-column prop="isbn" label="ISBN" width="150" />
-        <el-table-column prop="category" label="分类" width="100" />
-        <el-table-column prop="publisher" label="出版社" width="150" />
-        <el-table-column prop="stock" label="库存" width="80" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column
+          type="selection"
+          width="55"
+        />
+        <el-table-column
+          prop="id"
+          label="ID"
+          width="80"
+        />
+        <el-table-column
+          prop="title"
+          label="书名"
+          min-width="150"
+        />
+        <el-table-column
+          prop="author"
+          label="作者"
+          width="120"
+        />
+        <el-table-column
+          prop="isbn"
+          label="ISBN"
+          width="150"
+        />
+        <el-table-column
+          prop="category"
+          label="分类"
+          width="100"
+        />
+        <el-table-column
+          prop="publisher"
+          label="出版社"
+          width="150"
+        />
+        <el-table-column
+          prop="availableCount"
+          label="库存"
+          width="80"
+        />
+        <el-table-column
+          prop="status"
+          label="状态"
+          width="100"
+        >
           <template #default="{ row }">
-            <el-tag :type="row.stock > 0 ? 'success' : 'danger'">
-              {{ row.stock > 0 ? '在架' : '借出' }}
+            <el-tag :type="row.availableCount > 0 ? 'success' : 'danger'">
+              {{ row.availableCount > 0 ? '在架' : '借出' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column
+          label="操作"
+          width="200"
+          fixed="right"
+        >
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
-            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+            <el-button
+              type="primary"
+              link
+              @click="handleDetail(row)"
+            >
+              详情
+            </el-button>
+            <el-button
+              type="primary"
+              link
+              @click="handleEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              type="danger"
+              link
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -65,7 +157,7 @@
       <!-- 分页 -->
       <div class="pagination">
         <el-pagination
-          v-model:current-page="pagination.page"
+          v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
           :total="total"
           :page-sizes="PAGE_SIZE_OPTIONS"
@@ -84,6 +176,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Download } from '@element-plus/icons-vue'
 import { useBookStore } from '@/stores/book'
+import { getCategories } from '@/api/category'
 
 // P3-003: 消除魔法值 - 提取分页常量
 const DEFAULT_PAGE = 1
@@ -98,6 +191,31 @@ const books = ref([])
 const total = ref(0)
 const selectedBooks = ref([])
 
+// 分类选项：优先从API加载，API不可用时使用硬编码兜底
+const categoryOptions = ref([
+  { label: '文学', value: '文学' },
+  { label: '科技', value: '科技' },
+  { label: '历史', value: '历史' },
+  { label: '艺术', value: '艺术' }
+])
+const HARDCODED_CATEGORIES = ['文学', '科技', '历史', '艺术', '哲学', '经济']
+
+async function loadCategories() {
+  try {
+    const res = await getCategories()
+    const list = res.data || []
+    if (Array.isArray(list) && list.length > 0) {
+      categoryOptions.value = list.map(c => ({
+        label: c.name || c,
+        value: c.id || c
+      }))
+    }
+  } catch {
+    // API不可用，使用硬编码兜底
+    categoryOptions.value = HARDCODED_CATEGORIES.map(c => ({ label: c, value: c }))
+  }
+}
+
 const searchForm = reactive({
   name: '',
   author: '',
@@ -105,26 +223,33 @@ const searchForm = reactive({
 })
 
 const pagination = reactive({
-  page: DEFAULT_PAGE,
+  current: DEFAULT_PAGE,
   size: DEFAULT_PAGE_SIZE
 })
 
 onMounted(() => {
   loadBooks()
+  loadCategories()
 })
 
 async function loadBooks() {
   loading.value = true
   try {
     const params = {
-      ...searchForm,
-      page: pagination.page,
+      keyword: searchForm.name || undefined,
+      current: pagination.current,
       size: pagination.size
+    }
+    if (searchForm.author) {
+      params.author = searchForm.author
+    }
+    if (searchForm.category) {
+      params.categoryId = searchForm.category
     }
     await bookStore.fetchBooks(params)
     books.value = bookStore.books
     total.value = bookStore.total
-  } catch (error) {
+  } catch {
     ElMessage.error('加载图书列表失败')
   } finally {
     loading.value = false
@@ -132,7 +257,7 @@ async function loadBooks() {
 }
 
 function handleSearch() {
-  pagination.page = DEFAULT_PAGE
+  pagination.current = DEFAULT_PAGE
   loadBooks()
 }
 
@@ -164,12 +289,14 @@ async function handleDelete(row) {
     ElMessage.success('删除成功')
     loadBooks()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && error !== 'close') {
       ElMessage.error('删除失败')
     }
   }
 }
 
+// 导出功能：需要后端导出API支持后才可实现真实导出
+// 当前仅展示提示信息，后续可对接 GET /books/export 接口
 function handleExport() {
   ElMessage.info('导出功能开发中')
 }

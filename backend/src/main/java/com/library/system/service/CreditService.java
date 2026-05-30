@@ -1,6 +1,7 @@
 package com.library.system.service;
 
 import com.library.system.dto.*;
+import java.time.LocalDateTime;
 
 /**
  * 信用积分服务接口
@@ -23,6 +24,14 @@ public interface CreditService {
      * @return 当前积分
      */
     Integer getUserCredit(Long userId);
+
+    /**
+     * 获取用户信用等级
+     *
+     * @param userId 用户ID
+     * @return 信用等级信息（积分、等级名称、下一等级所需积分）
+     */
+    CreditLevelResponse getUserLevel(Long userId);
 
     /**
      * 获取用户积分日志
@@ -74,8 +83,11 @@ public interface CreditService {
      * @param userId 用户ID
      * @param borrowId 借阅记录ID
      * @param overdueDays 逾期天数
+     * @param dueDate 应还日期（用于判断提前还书）
+     * @param returnDate 实际归还日期（用于判断提前还书）
      */
-    void processReturnCredit(Long userId, Long borrowId, Integer overdueDays);
+    void processReturnCredit(Long userId, Long borrowId, Integer overdueDays,
+                             LocalDateTime dueDate, LocalDateTime returnDate);
 
     /**
      * 处理签到积分奖励

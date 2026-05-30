@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getBorrowList, getMyBorrows, borrowBook, returnBook, renewBook } from '@/api/borrow'
+import { getMyBorrows, borrowBook, returnBook, renewBook } from '@/api/borrow'
 
 export const useBorrowStore = defineStore('borrow', () => {
   // 状态
@@ -10,18 +10,6 @@ export const useBorrowStore = defineStore('borrow', () => {
   const loading = ref(false)
 
   // 方法
-  async function fetchBorrows(params) {
-    loading.value = true
-    try {
-      const res = await getBorrowList(params)
-      borrows.value = res.data?.records || res.data || []
-      total.value = res.data?.total || res.total || 0
-      return borrows.value
-    } finally {
-      loading.value = false
-    }
-  }
-
   async function fetchMyBorrows(params) {
     loading.value = true
     try {
@@ -54,7 +42,6 @@ export const useBorrowStore = defineStore('borrow', () => {
     myBorrows,
     total,
     loading,
-    fetchBorrows,
     fetchMyBorrows,
     borrow,
     returnBookById,

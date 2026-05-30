@@ -95,3 +95,13 @@ export function getMonthlyStats(months = 12) {
     params: { months }
   })
 }
+
+/**
+ * 获取座位使用率热力图数据（论文§5.2(4)）
+ */
+export function getSeatHeatmap() {
+  return request({
+    url: '/statistics/seat-heatmap',
+    method: 'get'
+  })
+}

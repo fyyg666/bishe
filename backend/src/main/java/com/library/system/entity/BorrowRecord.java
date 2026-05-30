@@ -77,9 +77,11 @@ public class BorrowRecord implements Serializable {
     /** 罚款金额 */
     private BigDecimal fineAmount;
 
-    /** 版本号（乐观锁） */
-    @Version
+    /** 版本号（乐观锁，用于并发控制） */
     private Integer version;
+
+    /** 备注 */
+    private String remark;
 
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)

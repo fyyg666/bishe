@@ -1,7 +1,5 @@
 package com.library.system.service;
 
-import com.library.system.entity.User;
-
 /**
  * 账户锁定服务接口
  * FIXED: SEC-002 使用Redis进行分布式账户锁定

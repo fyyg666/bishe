@@ -16,6 +16,7 @@ import com.library.system.mapper.BorrowRecordMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.BorrowService;
 import com.library.system.service.CreditService;
+import com.library.system.util.HolidayUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -44,11 +45,12 @@ public class BorrowServiceImpl implements BorrowService {
     private final UserMapper userMapper;
     private final CreditService creditService;
     private final RedissonClient redissonClient;
+    private final HolidayUtil holidayUtil;
 
     // 默认借阅天数
     private static final int DEFAULT_BORROW_DAYS = Constants.BorrowLimit.BORROW_DAYS;
     // 逾期罚款每天金额
-    private static final BigDecimal DAILY_FINE = new BigDecimal("0.50");
+    private static final BigDecimal DAILY_FINE = new BigDecimal("0.10");
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -60,6 +62,7 @@ public class BorrowServiceImpl implements BorrowService {
             acquireLockOrThrow(lock);
 
             User user = validateAndGetUser(userId);
+            validateCreditScore(user);
             validateNoOverdueBooks(userId);
 
             int currentBorrowCount = countCurrentBorrows(userId);
@@ -107,7 +110,7 @@ public class BorrowServiceImpl implements BorrowService {
             updateBookStock(book);
             updateUserBorrowCount(user);
 
-            creditService.processReturnCredit(userId, borrowId, overdueDays);
+            creditService.processReturnCredit(userId, borrowId, overdueDays, record.getDueDate(), returnDateTime);
 
             log.info("图书归还成功: user={}, book={}, overdueDays={}",
                     user.getUsername(), book.getTitle(), overdueDays);
@@ -153,18 +156,23 @@ public class BorrowServiceImpl implements BorrowService {
 
     @Override
     public PageResult<BorrowResponse> getMyBorrows(Long userId, Long current, Long size, String status) {
-        LambdaQueryWrapper<BorrowRecord> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BorrowRecord::getUserId, userId);
-        wrapper.eq(BorrowRecord::getDeleted, 0);
-
-        if (status != null && !status.isEmpty()) {
-            wrapper.eq(BorrowRecord::getStatus, status);
-        }
-
-        wrapper.orderByDesc(BorrowRecord::getCreateTime);
-
         Page<BorrowRecord> page = new Page<>(current, size);
-        Page<BorrowRecord> recordPage = borrowRecordMapper.selectPage(page, wrapper);
+        String statusParam = (status != null && !status.isEmpty()) ? status : null;
+        Page<BorrowRecord> recordPage = borrowRecordMapper.selectMyBorrowsWithJoin(page, userId, statusParam);
+
+        List<BorrowResponse> records = recordPage.getRecords().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+
+        return PageResult.of(recordPage.getCurrent(), recordPage.getSize(),
+                recordPage.getTotal(), records);
+    }
+
+    @Override
+    public PageResult<BorrowResponse> getAllBorrows(Long current, Long size, String status) {
+        Page<BorrowRecord> page = new Page<>(current, size);
+        String statusParam = (status != null && !status.isEmpty()) ? status : null;
+        Page<BorrowRecord> recordPage = borrowRecordMapper.selectAllBorrowsWithJoin(page, statusParam);
 
         List<BorrowResponse> records = recordPage.getRecords().stream()
                 .map(this::convertToResponse)
@@ -176,7 +184,7 @@ public class BorrowServiceImpl implements BorrowService {
 
     @Override
     public BorrowResponse getBorrowById(Long borrowId) {
-        BorrowRecord record = borrowRecordMapper.selectById(borrowId);
+        BorrowRecord record = borrowRecordMapper.selectBorrowWithJoinById(borrowId);
         if (record == null || record.getDeleted() == 1) {
             throw new ResourceNotFoundException(ErrorCode.BORROW_RECORD_NOT_FOUND, "借阅记录不存在");
         }
@@ -185,7 +193,7 @@ public class BorrowServiceImpl implements BorrowService {
 
     @Override
     public BorrowResponse getBorrowByIdWithOwnershipCheck(Long borrowId, Long currentUserId, String currentRole) {
-        BorrowRecord record = borrowRecordMapper.selectById(borrowId);
+        BorrowRecord record = borrowRecordMapper.selectBorrowWithJoinById(borrowId);
         if (record == null || record.getDeleted() == 1) {
             throw new ResourceNotFoundException(ErrorCode.BORROW_RECORD_NOT_FOUND, "借阅记录不存在");
         }
@@ -243,6 +251,16 @@ public class BorrowServiceImpl implements BorrowService {
             throw new ResourceNotFoundException(ErrorCode.READER_NOT_FOUND, "用户不存在或已被禁用");
         }
         return user;
+    }
+
+    /**
+     * 验证用户信用积分是否满足借阅门槛
+     * 论文§3.2(2): 信用积分需达到60分的最低要求
+     */
+    private void validateCreditScore(User user) {
+        if (user.getCreditScore() == null || user.getCreditScore() < Constants.Credit.BRONZE_THRESHOLD) {
+            throw new BusinessException(ErrorCode.CREDIT_SCORE_LOW, "信用积分不足60分，无法借阅");
+        }
     }
 
     /**
@@ -319,7 +337,7 @@ public class BorrowServiceImpl implements BorrowService {
             throw new BusinessException(ErrorCode.BOOK_STOCK_ERROR, "图书库存更新失败，请重试");
         }
 
-        int borrowCountResult = userMapper.updateBorrowCount(userId, 1, user.getVersion());
+        int borrowCountResult = userMapper.updateBorrowCount(user.getId(), 1, user.getVersion());
         if (borrowCountResult == 0) {
             throw new BusinessException(ErrorCode.CONCURRENT_OPERATION, "借阅数量更新失败，请重试");
         }
@@ -354,7 +372,7 @@ public class BorrowServiceImpl implements BorrowService {
      * 验证并获取借阅记录
      */
     private BorrowRecord validateAndGetRecord(Long borrowId, Long userId) {
-        BorrowRecord record = borrowRecordMapper.selectById(borrowId);
+        BorrowRecord record = borrowRecordMapper.selectBorrowWithJoinById(borrowId);
         if (record == null || record.getDeleted() == 1) {
             throw new ResourceNotFoundException(ErrorCode.BORROW_RECORD_NOT_FOUND, "借阅记录不存在");
         }
@@ -368,11 +386,14 @@ public class BorrowServiceImpl implements BorrowService {
     }
 
     /**
-     * 计算逾期天数
+     * 计算逾期天数（排除寒暑假）
      */
     private int calculateOverdueDays(LocalDateTime dueDate, LocalDateTime returnDate) {
         if (returnDate.isAfter(dueDate)) {
-            return (int) ChronoUnit.DAYS.between(dueDate, returnDate);
+            long totalDays = ChronoUnit.DAYS.between(dueDate, returnDate);
+            long holidayDays = holidayUtil.countHolidayDaysBetween(
+                    dueDate.toLocalDate(), returnDate.toLocalDate());
+            return (int) Math.max(0, totalDays - holidayDays);
         }
         return 0;
     }
@@ -401,9 +422,13 @@ public class BorrowServiceImpl implements BorrowService {
 
     /**
      * 更新图书库存
+     * FIXED: MEDIUM-FIX 检查updateAvailableCount返回值，防止库存不一致
      */
     private void updateBookStock(Book book) {
-        bookMapper.updateAvailableCount(book.getId(), 1, book.getVersion(), 0);
+        int updated = bookMapper.updateAvailableCount(book.getId(), 1, book.getVersion(), 0);
+        if (updated == 0) {
+            throw new BusinessException(ErrorCode.CONCURRENT_OPERATION, "图书库存更新失败，请重试");
+        }
     }
 
     /**

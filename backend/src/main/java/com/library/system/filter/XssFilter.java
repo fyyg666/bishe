@@ -11,7 +11,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 /**
@@ -102,12 +101,15 @@ public class XssFilter extends OncePerRequestFilter {
         String lowerContent = content.toLowerCase();
         for (String pattern : DANGEROUS_PATTERNS) {
             // 检查是否是事件处理器（on开头）或危险标签
-            if (pattern.startsWith("on") || pattern.equals("script")) {
-                if (lowerContent.contains("<" + pattern) || lowerContent.contains(" " + pattern)) {
+            if (pattern.startsWith("on")) {
+                if (lowerContent.contains("<" + pattern) || lowerContent.contains(" " + pattern)
+                        || lowerContent.contains("\"" + pattern) || lowerContent.contains("'" + pattern)
+                        || lowerContent.contains("=" + pattern)) {
                     return false;
                 }
             } else if (pattern.equals("script")) {
-                if (lowerContent.contains("<script") || lowerContent.contains("javascript:")) {
+                if (lowerContent.contains("<script") || lowerContent.contains("javascript:")
+                        || lowerContent.contains("vbscript:")) {
                     return false;
                 }
             } else {

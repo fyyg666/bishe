@@ -2,21 +2,31 @@
   <div class="page-container">
     <div class="page-header">
       <h2>志愿服务</h2>
-      <el-button type="primary" @click="handleCreate">
+      <el-button
+        type="primary"
+        @click="handleCreate"
+      >
         <el-icon><Plus /></el-icon>申请志愿服务
       </el-button>
     </div>
 
     <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
+    <el-row
+      :gutter="20"
+      class="stats-row"
+    >
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-icon volunteer-icon">
             <el-icon><Medal /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ myStats.totalRecords || 0 }}</div>
-            <div class="stat-label">累计服务次数</div>
+            <div class="stat-value">
+              {{ myStats.totalRecords || 0 }}
+            </div>
+            <div class="stat-label">
+              累计服务次数
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -26,8 +36,12 @@
             <el-icon><Clock /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ myStats.totalHours || 0 }}</div>
-            <div class="stat-label">累计服务时长(h)</div>
+            <div class="stat-value">
+              {{ myStats.totalHours || 0 }}
+            </div>
+            <div class="stat-label">
+              累计服务时长(h)
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -37,30 +51,65 @@
             <el-icon><Timer /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ myStats.pendingCount || 0 }}</div>
-            <div class="stat-label">待审核</div>
+            <div class="stat-value">
+              {{ myStats.pendingCount || 0 }}
+            </div>
+            <div class="stat-label">
+              待审核
+            </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 标签页 -->
-    <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-      <el-tab-pane label="我的服务" name="my">
+    <el-tabs
+      v-model="activeTab"
+      @tab-change="handleTabChange"
+    >
+      <el-tab-pane
+        label="我的服务"
+        name="my"
+      >
         <!-- 筛选 -->
         <el-card class="filter-card">
-          <el-form :inline="true" :model="filterForm">
+          <el-form
+            :inline="true"
+            :model="filterForm"
+          >
             <el-form-item label="状态">
-              <el-select v-model="filterForm.status" placeholder="选择状态" clearable>
-                <el-option label="全部" value="" />
-                <el-option label="待审核" value="PENDING" />
-                <el-option label="已通过" value="APPROVED" />
-                <el-option label="已拒绝" value="REJECTED" />
-                <el-option label="已取消" value="CANCELLED" />
+              <el-select
+                v-model="filterForm.status"
+                placeholder="选择状态"
+                clearable
+              >
+                <el-option
+                  label="全部"
+                  value=""
+                />
+                <el-option
+                  label="待审核"
+                  value="PENDING"
+                />
+                <el-option
+                  label="已通过"
+                  value="APPROVED"
+                />
+                <el-option
+                  label="已拒绝"
+                  value="REJECTED"
+                />
+                <el-option
+                  label="已取消"
+                  value="CANCELLED"
+                />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSearch">
+              <el-button
+                type="primary"
+                @click="handleSearch"
+              >
                 <el-icon><Search /></el-icon>搜索
               </el-button>
               <el-button @click="handleReset">
@@ -71,22 +120,89 @@
         </el-card>
       </el-tab-pane>
       
-      <el-tab-pane label="待审核" name="pending" v-if="isAdmin">
-        <el-table v-loading="loading" :data="pendingList" stripe>
-          <el-table-column prop="id" label="ID" width="80" align="center" />
-          <el-table-column prop="realName" label="申请人" width="100" align="center" />
-          <el-table-column prop="serviceDate" label="服务日期" width="120" align="center" />
-          <el-table-column prop="startTime" label="开始时间" width="160" align="center" />
-          <el-table-column prop="endTime" label="结束时间" width="160" align="center" />
-          <el-table-column prop="serviceHours" label="服务时长" width="100" align="center">
-            <template #default="{ row }">{{ row.serviceHours }}h</template>
-          </el-table-column>
-          <el-table-column prop="serviceType" label="服务类型" width="120" align="center" />
-          <el-table-column prop="description" label="服务描述" min-width="150" show-overflow-tooltip />
-          <el-table-column label="操作" width="150" align="center" fixed="right">
+      <el-tab-pane
+        v-if="isAdmin"
+        label="待审核"
+        name="pending"
+      >
+        <el-table
+          v-loading="loading"
+          :data="pendingList"
+          stripe
+        >
+          <el-table-column
+            prop="id"
+            label="ID"
+            width="80"
+            align="center"
+          />
+          <el-table-column
+            prop="realName"
+            label="申请人"
+            width="100"
+            align="center"
+          />
+          <el-table-column
+            prop="serviceDate"
+            label="服务日期"
+            width="120"
+            align="center"
+          />
+          <el-table-column
+            prop="startTime"
+            label="开始时间"
+            width="160"
+            align="center"
+          />
+          <el-table-column
+            prop="endTime"
+            label="结束时间"
+            width="160"
+            align="center"
+          />
+          <el-table-column
+            prop="serviceHours"
+            label="服务时长"
+            width="100"
+            align="center"
+          >
             <template #default="{ row }">
-              <el-button type="success" size="small" @click="handleReview(row, true)">通过</el-button>
-              <el-button type="danger" size="small" @click="handleReview(row, false)">拒绝</el-button>
+              {{ row.serviceHours }}h
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="serviceType"
+            label="服务类型"
+            width="120"
+            align="center"
+          />
+          <el-table-column
+            prop="description"
+            label="服务描述"
+            min-width="150"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            label="操作"
+            width="150"
+            align="center"
+            fixed="right"
+          >
+            <template #default="{ row }">
+              <el-button
+                type="success"
+                size="small"
+                @click="handleReview(row, true)"
+              >
+                通过
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                @click="handleReview(row, false)"
+              >
+                拒绝
+              </el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -105,9 +221,16 @@
     </el-tabs>
 
     <!-- 我的服务列表 -->
-    <el-card v-show="activeTab === 'my'" class="table-card">
+    <el-card
+      v-show="activeTab === 'my'"
+      class="table-card"
+    >
       <!-- 骨架屏加载状态 -->
-      <el-skeleton v-if="loading && volunteerList.length === 0" :rows="5" animated />
+      <el-skeleton
+        v-if="loading && volunteerList.length === 0"
+        :rows="5"
+        animated
+      />
       
       <!-- 空状态 -->
       <EmptyState 
@@ -119,36 +242,92 @@
       />
       
       <!-- 数据表格 -->
-      <el-table v-else v-loading="loading" :data="volunteerList" stripe>
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="serviceDate" label="服务日期" width="120" align="center">
+      <el-table
+        v-else
+        v-loading="loading"
+        :data="volunteerList"
+        stripe
+      >
+        <el-table-column
+          prop="id"
+          label="ID"
+          width="80"
+          align="center"
+        />
+        <el-table-column
+          prop="serviceDate"
+          label="服务日期"
+          width="120"
+          align="center"
+        >
           <template #default="{ row }">
             {{ formatDate(row.serviceDate) }}
           </template>
         </el-table-column>
-        <el-table-column prop="startTime" label="开始时间" width="160" align="center" />
-        <el-table-column prop="endTime" label="结束时间" width="160" align="center" />
-        <el-table-column prop="serviceHours" label="服务时长" width="100" align="center">
+        <el-table-column
+          prop="startTime"
+          label="开始时间"
+          width="160"
+          align="center"
+        />
+        <el-table-column
+          prop="endTime"
+          label="结束时间"
+          width="160"
+          align="center"
+        />
+        <el-table-column
+          prop="serviceHours"
+          label="服务时长"
+          width="100"
+          align="center"
+        >
           <template #default="{ row }">
-            <el-tag type="success">{{ row.serviceHours }}h</el-tag>
+            <el-tag type="success">
+              {{ row.serviceHours }}h
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="serviceType" label="服务类型" width="120" align="center">
+        <el-table-column
+          prop="serviceType"
+          label="服务类型"
+          width="120"
+          align="center"
+        >
           <template #default="{ row }">
             {{ getServiceTypeName(row.serviceType) }}
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="服务描述" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column
+          prop="description"
+          label="服务描述"
+          min-width="150"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="status"
+          label="状态"
+          width="100"
+          align="center"
+        >
           <template #default="{ row }">
             <el-tag :type="getStatusTagType(row.status)">
               {{ getStatusName(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed="right">
+        <el-table-column
+          label="操作"
+          width="150"
+          align="center"
+          fixed="right"
+        >
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleView(row)">
+            <el-button
+              type="primary"
+              link
+              @click="handleView(row)"
+            >
               <el-icon><View /></el-icon>详情
             </el-button>
             <el-button
@@ -162,7 +341,10 @@
           </template>
         </el-table-column>
       </el-table>
-      <div v-if="volunteerList.length > 0" class="pagination">
+      <div
+        v-if="volunteerList.length > 0"
+        class="pagination"
+      >
         <el-pagination
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
@@ -176,45 +358,91 @@
     </el-card>
 
     <!-- 创建申请对话框 -->
-    <el-dialog v-model="dialogVisible" title="申请志愿服务" width="600px" @close="handleDialogClose">
-      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
-        <el-form-item label="服务日期" prop="serviceDate">
+    <el-dialog
+      v-model="dialogVisible"
+      title="申请志愿服务"
+      width="600px"
+      @close="handleDialogClose"
+    >
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        label-width="100px"
+      >
+        <el-form-item
+          label="服务日期"
+          prop="serviceDate"
+        >
           <el-date-picker
             v-model="formData.serviceDate"
             type="date"
             placeholder="选择日期"
             format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ss"
             :disabled-date="disabledDate"
           />
         </el-form-item>
-        <el-form-item label="开始时间" prop="startTime">
+        <el-form-item
+          label="开始时间"
+          prop="startTime"
+        >
           <el-time-picker
             v-model="formData.startTime"
             placeholder="选择开始时间"
             format="HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ss"
           />
         </el-form-item>
-        <el-form-item label="结束时间" prop="endTime">
+        <el-form-item
+          label="结束时间"
+          prop="endTime"
+        >
           <el-time-picker
             v-model="formData.endTime"
             placeholder="选择结束时间"
             format="HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ss"
           />
         </el-form-item>
-        <el-form-item label="服务类型" prop="serviceType">
-          <el-select v-model="formData.serviceType" placeholder="选择服务类型">
-            <el-option label="图书整理" value="BOOK_SORTING" />
-            <el-option label="阅读引导" value="READING_GUIDE" />
-            <el-option label="场地维护" value="VENUE_MAINTENANCE" />
-            <el-option label="活动协助" value="ACTIVITY_ASSIST" />
-            <el-option label="咨询导引" value="INFO_GUIDE" />
-            <el-option label="其他" value="OTHER" />
+        <el-form-item
+          label="服务类型"
+          prop="serviceType"
+        >
+          <el-select
+            v-model="formData.serviceType"
+            placeholder="选择服务类型"
+          >
+            <el-option
+              label="图书整理"
+              value="BOOK_SORTING"
+            />
+            <el-option
+              label="阅读引导"
+              value="READING_GUIDE"
+            />
+            <el-option
+              label="场地维护"
+              value="VENUE_MAINTENANCE"
+            />
+            <el-option
+              label="活动协助"
+              value="ACTIVITY_ASSIST"
+            />
+            <el-option
+              label="咨询导引"
+              value="INFO_GUIDE"
+            />
+            <el-option
+              label="其他"
+              value="OTHER"
+            />
           </el-select>
         </el-form-item>
-        <el-form-item label="服务描述" prop="description">
+        <el-form-item
+          label="服务描述"
+          prop="description"
+        >
           <el-input
             v-model="formData.description"
             type="textarea"
@@ -226,44 +454,102 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">提交申请</el-button>
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="submitLoading"
+          @click="handleSubmit"
+        >
+          提交申请
+        </el-button>
       </template>
     </el-dialog>
 
     <!-- 详情对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="志愿服务详情" width="600px">
-      <el-descriptions v-if="currentVolunteer" :column="2" border>
-        <el-descriptions-item label="服务日期">{{ formatDate(currentVolunteer.serviceDate) }}</el-descriptions-item>
-        <el-descriptions-item label="服务时长">{{ currentVolunteer.serviceHours }}h</el-descriptions-item>
-        <el-descriptions-item label="开始时间" :span="2">{{ currentVolunteer.startTime }}</el-descriptions-item>
-        <el-descriptions-item label="结束时间" :span="2">{{ currentVolunteer.endTime }}</el-descriptions-item>
-        <el-descriptions-item label="服务类型">{{ getServiceTypeName(currentVolunteer.serviceType) }}</el-descriptions-item>
+    <el-dialog
+      v-model="viewDialogVisible"
+      title="志愿服务详情"
+      width="600px"
+    >
+      <el-descriptions
+        v-if="currentVolunteer"
+        :column="2"
+        border
+      >
+        <el-descriptions-item label="服务日期">
+          {{ formatDate(currentVolunteer.serviceDate) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="服务时长">
+          {{ currentVolunteer.serviceHours }}h
+        </el-descriptions-item>
+        <el-descriptions-item
+          label="开始时间"
+          :span="2"
+        >
+          {{ currentVolunteer.startTime }}
+        </el-descriptions-item>
+        <el-descriptions-item
+          label="结束时间"
+          :span="2"
+        >
+          {{ currentVolunteer.endTime }}
+        </el-descriptions-item>
+        <el-descriptions-item label="服务类型">
+          {{ getServiceTypeName(currentVolunteer.serviceType) }}
+        </el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="getStatusTagType(currentVolunteer.status)">
             {{ getStatusName(currentVolunteer.status) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="服务描述" :span="2">{{ currentVolunteer.description }}</el-descriptions-item>
-        <el-descriptions-item v-if="currentVolunteer.reviewerName" label="审核人">
+        <el-descriptions-item
+          label="服务描述"
+          :span="2"
+        >
+          {{ currentVolunteer.description }}
+        </el-descriptions-item>
+        <el-descriptions-item
+          v-if="currentVolunteer.reviewerName"
+          label="审核人"
+        >
           {{ currentVolunteer.reviewerName }}
         </el-descriptions-item>
-        <el-descriptions-item v-if="currentVolunteer.reviewTime" label="审核时间">
+        <el-descriptions-item
+          v-if="currentVolunteer.reviewTime"
+          label="审核时间"
+        >
           {{ currentVolunteer.reviewTime }}
         </el-descriptions-item>
-        <el-descriptions-item v-if="currentVolunteer.reviewRemark" label="审核备注" :span="2">
+        <el-descriptions-item
+          v-if="currentVolunteer.reviewRemark"
+          label="审核备注"
+          :span="2"
+        >
           {{ currentVolunteer.reviewRemark }}
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
 
     <!-- 审核对话框 -->
-    <el-dialog v-model="reviewDialogVisible" title="审核志愿服务" width="500px">
-      <el-form :model="reviewForm" label-width="100px">
+    <el-dialog
+      v-model="reviewDialogVisible"
+      title="审核志愿服务"
+      width="500px"
+    >
+      <el-form
+        :model="reviewForm"
+        label-width="100px"
+      >
         <el-form-item label="审核结果">
           <el-radio-group v-model="reviewForm.approved">
-            <el-radio :label="true">通过</el-radio>
-            <el-radio :label="false">拒绝</el-radio>
+            <el-radio :value="true">
+              通过
+            </el-radio>
+            <el-radio :value="false">
+              拒绝
+            </el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="审核备注">
@@ -276,8 +562,16 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="reviewDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleReviewSubmit">确定</el-button>
+        <el-button @click="reviewDialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="submitLoading"
+          @click="handleReviewSubmit"
+        >
+          确定
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -286,7 +580,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/store/modules/user'
+import { useUserStore } from '@/stores/user'
 import {
   getMyVolunteers,
   getPendingVolunteers,

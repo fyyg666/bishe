@@ -2,35 +2,63 @@
   <div class="page-container">
     <div class="page-header">
       <h2>座位预约</h2>
-      <el-button type="primary" @click="$router.push('/seats/reserve')">
+      <el-button
+        type="success"
+        @click="$router.push('/seats/map')"
+      >
+        <el-icon><Grid /></el-icon>可视化选座
+      </el-button>
+      <el-button
+        type="primary"
+        @click="$router.push('/seats/reserve')"
+      >
         <el-icon><Calendar /></el-icon>预约座位
       </el-button>
     </div>
 
     <!-- 座位状态概览 -->
-    <el-row :gutter="20" class="stats-row">
+    <el-row
+      :gutter="20"
+      class="stats-row"
+    >
       <el-col :span="6">
         <el-card class="stat-card">
-          <div class="stat-value">{{ seatStats.total }}</div>
-          <div class="stat-label">座位总数</div>
+          <div class="stat-value">
+            {{ seatStats.total }}
+          </div>
+          <div class="stat-label">
+            座位总数
+          </div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card class="stat-card">
-          <div class="stat-value available">{{ seatStats.available }}</div>
-          <div class="stat-label">可用座位</div>
+          <div class="stat-value available">
+            {{ seatStats.available }}
+          </div>
+          <div class="stat-label">
+            可用座位
+          </div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card class="stat-card">
-          <div class="stat-value occupied">{{ seatStats.occupied }}</div>
-          <div class="stat-label">已占用</div>
+          <div class="stat-value occupied">
+            {{ seatStats.occupied }}
+          </div>
+          <div class="stat-label">
+            已占用
+          </div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card class="stat-card">
-          <div class="stat-value maintenance">{{ seatStats.maintenance }}</div>
-          <div class="stat-label">维护中</div>
+          <div class="stat-value maintenance">
+            {{ seatStats.maintenance }}
+          </div>
+          <div class="stat-label">
+            维护中
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -40,12 +68,22 @@
       <template #header>
         <div class="card-header">
           <span>我的预约</span>
-          <el-button type="primary" link @click="loadReservations">刷新</el-button>
+          <el-button
+            type="primary"
+            link
+            @click="loadReservations"
+          >
+            刷新
+          </el-button>
         </div>
       </template>
       
       <!-- 骨架屏加载状态 -->
-      <el-skeleton v-if="loading && reservations.length === 0" :rows="5" animated />
+      <el-skeleton
+        v-if="loading && reservations.length === 0"
+        :rows="5"
+        animated
+      />
       
       <!-- 空状态 -->
       <EmptyState 
@@ -57,21 +95,60 @@
       />
       
       <!-- 数据表格 -->
-      <el-table v-else :data="reservations" stripe v-loading="loading">
-        <el-table-column prop="seatNumber" label="座位号" width="100" />
-        <el-table-column prop="area" label="区域" width="120" />
-        <el-table-column prop="date" label="预约日期" width="120" />
-        <el-table-column prop="startTime" label="开始时间" width="100" />
-        <el-table-column prop="endTime" label="结束时间" width="100" />
-        <el-table-column prop="status" label="状态" width="100" align="center">
+      <el-table
+        v-else
+        v-loading="loading"
+        :data="reservations"
+        stripe
+      >
+        <el-table-column
+          prop="seatNumber"
+          label="座位号"
+          width="100"
+        />
+        <el-table-column
+          prop="area"
+          label="区域"
+          width="120"
+        />
+        <el-table-column
+          prop="reservationDate"
+          label="预约日期"
+          width="120"
+        />
+        <el-table-column
+          prop="startTime"
+          label="开始时间"
+          width="100"
+        />
+        <el-table-column
+          prop="endTime"
+          label="结束时间"
+          width="100"
+        />
+        <el-table-column
+          prop="status"
+          label="状态"
+          width="100"
+          align="center"
+        >
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
+            <el-tag
+              :type="getStatusType(row.status)"
+              size="small"
+            >
+              {{ getStatusText(row.status) }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
+        <el-table-column
+          label="操作"
+          width="120"
+          align="center"
+        >
           <template #default="{ row }">
             <el-button
-              v-if="row.status === 'RESERVED'"
+              v-if="row.status === 'PENDING'"
               type="danger"
               link
               size="small"
@@ -79,13 +156,34 @@
             >
               取消预约
             </el-button>
+            <el-button
+              v-if="row.status === 'PENDING'"
+              type="success"
+              link
+              size="small"
+              @click="handleCheckIn(row)"
+            >
+              签到
+            </el-button>
+            <el-button
+              v-if="row.status === 'CHECKED_IN'"
+              type="warning"
+              link
+              size="small"
+              @click="handleCheckOut(row)"
+            >
+              签退
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <div v-if="reservations.length > 0" class="pagination">
+      <div
+        v-if="reservations.length > 0"
+        class="pagination"
+      >
         <el-pagination
-          v-model:current-page="pagination.page"
+          v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
           :total="total"
           layout="total, prev, pager, next"
@@ -100,7 +198,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSeatMap, getMyReservations, cancelReserve } from '@/api/seat'
+import { getSeatMap, getMyReservations, cancelReserve, checkIn, checkOut } from '@/api/seat'
 import EmptyState from '@/components/EmptyState.vue'
 import { useStatusMap } from '@/composables/useStatusMap'
 
@@ -119,7 +217,7 @@ const seatStats = reactive({
 })
 
 const pagination = reactive({
-  page: 1,
+  current: 1,
   size: 10
 })
 
@@ -147,12 +245,12 @@ async function loadReservations() {
   loading.value = true
   try {
     const res = await getMyReservations({
-      page: pagination.page,
+      page: pagination.current,
       size: pagination.size
     })
     reservations.value = res.data?.records || res.data || []
     total.value = res.data?.total || 0
-  } catch (error) {
+  } catch {
     ElMessage.error('加载预约列表失败')
   } finally {
     loading.value = false
@@ -173,6 +271,40 @@ async function handleCancel(row) {
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('取消失败')
+    }
+  }
+}
+
+async function handleCheckIn(row) {
+  try {
+    await ElMessageBox.confirm('确认签到吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
+    await checkIn(row.id)
+    ElMessage.success('签到成功')
+    loadReservations()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('签到失败')
+    }
+  }
+}
+
+async function handleCheckOut(row) {
+  try {
+    await ElMessageBox.confirm('确认签退吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
+    await checkOut(row.id)
+    ElMessage.success('签退成功')
+    loadReservations()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('签退失败')
     }
   }
 }

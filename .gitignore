@@ -57,3 +57,16 @@ pnpm-debug.log*
 *.tmp
 *.bak
 *.backup
+
+# Redis
+dump.rdb
+redis/
+
+# Tool configs
+.workbuddy/
+.trae/
+
+# Compile/test results
+*-result*.txt
+*-result*.md
+compile-output*.txt

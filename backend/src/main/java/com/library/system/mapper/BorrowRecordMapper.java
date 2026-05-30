@@ -1,6 +1,7 @@
 package com.library.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.library.system.entity.BorrowRecord;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -24,7 +25,7 @@ public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
     /**
      * 查询用户当前借阅中的记录
      */
-    @Select("SELECT * FROM borrow_record WHERE user_id = #{userId} AND status = 'BORROWED' AND deleted = 0")
+    @Select("SELECT * FROM borrow_record WHERE user_id = #{userId} AND status = 'BORROWING' AND deleted = 0")
     List<BorrowRecord> selectCurrentBorrows(@Param("userId") Long userId);
 
     /**
@@ -37,13 +38,13 @@ public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
     /**
      * 查询逾期未还的借阅记录
      */
-    @Select("SELECT * FROM borrow_record WHERE status = 'BORROWED' AND due_date < CURDATE() AND deleted = 0")
+    @Select("SELECT * FROM borrow_record WHERE status = 'BORROWING' AND due_date &lt; CURDATE() AND deleted = 0")
     List<BorrowRecord> selectOverdueRecords();
 
     /**
      * 统计用户借阅数量
      */
-    @Select("SELECT COUNT(*) FROM borrow_record WHERE user_id = #{userId} AND status = 'BORROWED' AND deleted = 0")
+    @Select("SELECT COUNT(*) FROM borrow_record WHERE user_id = #{userId} AND status = 'BORROWING' AND deleted = 0")
     int countCurrentBorrows(@Param("userId") Long userId);
 
     /**
@@ -58,11 +59,31 @@ public interface BorrowRecordMapper extends BaseMapper<BorrowRecord> {
             "FROM borrow_record " +
             "WHERE deleted = 0 " +
             "  AND create_time >= #{startDate} " +
-            "  AND create_time < #{endDate} " +
+            "  AND create_time &lt; #{endDate} " +
             "GROUP BY DATE(create_time) " +
             "ORDER BY borrow_date" +
             "</script>")
     java.util.List<java.util.Map<String, Object>> selectBorrowStatsByDateRange(
             @Param("startDate") java.time.LocalDateTime startDate,
             @Param("endDate") java.time.LocalDateTime endDate);
+
+    // ==================== 关联查询方法（LEFT JOIN 填充 @TableField(exist=false) 字段） ====================
+
+    /**
+     * 分页查询当前用户的借阅记录（带用户名、书名、ISBN）
+     */
+    Page<BorrowRecord> selectMyBorrowsWithJoin(Page<BorrowRecord> page,
+                                                @Param("userId") Long userId,
+                                                @Param("status") String status);
+
+    /**
+     * 分页查询所有借阅记录（带用户名、书名、ISBN）
+     */
+    Page<BorrowRecord> selectAllBorrowsWithJoin(Page<BorrowRecord> page,
+                                                 @Param("status") String status);
+
+    /**
+     * 根据ID查询借阅记录（带用户名、书名、ISBN）
+     */
+    BorrowRecord selectBorrowWithJoinById(@Param("id") Long id);
 }

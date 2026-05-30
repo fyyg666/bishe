@@ -5,15 +5,22 @@
     </div>
 
     <!-- 统计概览卡片 -->
-    <el-row :gutter="20" class="stats-row">
+    <el-row
+      :gutter="20"
+      class="stats-row"
+    >
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-icon book-icon">
             <el-icon><Collection /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.bookStatistics?.totalBooks || 0 }}</div>
-            <div class="stat-label">图书种类</div>
+            <div class="stat-value">
+              {{ overview.bookStatistics?.totalBooks || 0 }}
+            </div>
+            <div class="stat-label">
+              图书种类
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -23,8 +30,12 @@
             <el-icon><Document /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.bookStatistics?.availableCopies || 0 }}</div>
-            <div class="stat-label">可借图书</div>
+            <div class="stat-value">
+              {{ overview.bookStatistics?.availableCopies || 0 }}
+            </div>
+            <div class="stat-label">
+              可借图书
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -34,8 +45,12 @@
             <el-icon><UserFilled /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.readerStatistics?.totalReaders || 0 }}</div>
-            <div class="stat-label">注册读者</div>
+            <div class="stat-value">
+              {{ overview.readerStatistics?.totalReaders || 0 }}
+            </div>
+            <div class="stat-label">
+              注册读者
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -45,28 +60,51 @@
             <el-icon><Reading /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.borrowStatistics?.activeBorrows || 0 }}</div>
-            <div class="stat-label">当前借阅</div>
+            <div class="stat-value">
+              {{ overview.borrowStatistics?.activeBorrows || 0 }}
+            </div>
+            <div class="stat-label">
+              当前借阅
+            </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 图表区域 -->
-    <el-row :gutter="20" class="charts-row">
+    <el-row
+      :gutter="20"
+      class="charts-row"
+    >
       <el-col :span="16">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
               <span>借阅趋势</span>
-              <el-select v-model="trendDays" size="small" @change="loadBorrowTrend">
-                <el-option label="近7天" :value="7" />
-                <el-option label="近30天" :value="30" />
-                <el-option label="近90天" :value="90" />
+              <el-select
+                v-model="trendDays"
+                size="small"
+                @change="loadBorrowTrend"
+              >
+                <el-option
+                  label="近7天"
+                  :value="7"
+                />
+                <el-option
+                  label="近30天"
+                  :value="30"
+                />
+                <el-option
+                  label="近90天"
+                  :value="90"
+                />
               </el-select>
             </div>
           </template>
-          <div ref="trendChartRef" class="chart-container"></div>
+          <div
+            ref="trendChartRef"
+            class="chart-container"
+          />
         </el-card>
       </el-col>
       <el-col :span="8">
@@ -74,13 +112,32 @@
           <template #header>
             <span>图书分类分布</span>
           </template>
-          <div ref="categoryChartRef" class="chart-container"></div>
+          <div
+            ref="categoryChartRef"
+            class="chart-container"
+          />
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 第二行图表 -->
-    <el-row :gutter="20" class="charts-row">
+    <el-row
+      :gutter="20"
+      class="charts-row"
+    >
+      <el-col :span="12">
+        <el-card class="chart-card">
+          <template #header>
+            <div class="card-header">
+              <span>座位使用率热力图（论文§5.2(4)）</span>
+            </div>
+          </template>
+          <div
+            ref="heatmapChartRef"
+            class="chart-container"
+          />
+        </el-card>
+      </el-col>
       <el-col :span="12">
         <el-card class="chart-card">
           <template #header>
@@ -89,18 +146,42 @@
             </div>
           </template>
           <!-- 骨架屏 -->
-          <el-skeleton v-if="loading" :rows="3" animated />
+          <el-skeleton
+            v-if="loading"
+            :rows="3"
+            animated
+          />
           <!-- 空状态 -->
           <EmptyState 
             v-else-if="hotBooks.length === 0" 
             description="暂无热门图书数据"
           />
           <!-- 数据表格 -->
-          <div v-else class="hot-books-list">
-            <el-table :data="hotBooks" stripe>
-              <el-table-column prop="title" label="书名" show-overflow-tooltip />
-              <el-table-column prop="author" label="作者" width="120" show-overflow-tooltip />
-              <el-table-column prop="borrowCount" label="借阅次数" width="100" align="center" />
+          <div
+            v-else
+            class="hot-books-list"
+          >
+            <el-table
+              :data="hotBooks"
+              stripe
+            >
+              <el-table-column
+                prop="title"
+                label="书名"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="author"
+                label="作者"
+                width="120"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="borrowCount"
+                label="借阅次数"
+                width="100"
+                align="center"
+              />
             </el-table>
           </div>
         </el-card>
@@ -110,7 +191,10 @@
           <template #header>
             <span>月度统计</span>
           </template>
-          <div ref="monthlyChartRef" class="chart-container"></div>
+          <div
+            ref="monthlyChartRef"
+            class="chart-container"
+          />
         </el-card>
       </el-col>
     </el-row>
@@ -120,44 +204,107 @@
       <template #header>
         <div class="card-header">
           <span>详细统计数据</span>
-          <el-button type="primary" @click="loadAllData">
+          <el-button
+            type="primary"
+            @click="loadAllData"
+          >
             <el-icon><Refresh /></el-icon> 刷新数据
           </el-button>
         </div>
       </template>
       <el-tabs v-model="activeTab">
-        <el-tab-pane label="借阅统计" name="borrow">
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="总借阅次数">{{ overview.borrowStatistics?.totalBorrows || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="当前借阅">{{ overview.borrowStatistics?.activeBorrows || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="逾期未还">{{ overview.borrowStatistics?.overdueBorrows || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="今日归还">{{ overview.borrowStatistics?.returnedToday || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="平均借阅天数">{{ overview.borrowStatistics?.averageBorrowDays || 0 }} 天</el-descriptions-item>
+        <el-tab-pane
+          label="借阅统计"
+          name="borrow"
+        >
+          <el-descriptions
+            :column="3"
+            border
+          >
+            <el-descriptions-item label="总借阅次数">
+              {{ overview.borrowStatistics?.totalBorrows || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="当前借阅">
+              {{ overview.borrowStatistics?.activeBorrows || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="逾期未还">
+              {{ overview.borrowStatistics?.overdueBorrows || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="今日归还">
+              {{ overview.borrowStatistics?.returnedToday || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="平均借阅天数">
+              {{ overview.borrowStatistics?.averageBorrowDays || 0 }} 天
+            </el-descriptions-item>
           </el-descriptions>
         </el-tab-pane>
-        <el-tab-pane label="图书统计" name="book">
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="图书种类">{{ overview.bookStatistics?.totalBooks || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="馆藏总数">{{ overview.bookStatistics?.totalCopies || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="可借数量">{{ overview.bookStatistics?.availableCopies || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="已借数量">{{ overview.bookStatistics?.borrowedCopies || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="图书分类">{{ overview.bookStatistics?.categories || 0 }}</el-descriptions-item>
+        <el-tab-pane
+          label="图书统计"
+          name="book"
+        >
+          <el-descriptions
+            :column="3"
+            border
+          >
+            <el-descriptions-item label="图书种类">
+              {{ overview.bookStatistics?.totalBooks || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="馆藏总数">
+              {{ overview.bookStatistics?.totalCopies || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="可借数量">
+              {{ overview.bookStatistics?.availableCopies || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="已借数量">
+              {{ overview.bookStatistics?.borrowedCopies || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="图书分类">
+              {{ overview.bookStatistics?.categories || 0 }}
+            </el-descriptions-item>
           </el-descriptions>
         </el-tab-pane>
-        <el-tab-pane label="读者统计" name="reader">
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="注册读者">{{ overview.readerStatistics?.totalReaders || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="活跃读者">{{ overview.readerStatistics?.activeReaders || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="逾期读者">{{ overview.readerStatistics?.overdueReaders || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="平均积分">{{ overview.readerStatistics?.averageCreditScore || 0 }}</el-descriptions-item>
+        <el-tab-pane
+          label="读者统计"
+          name="reader"
+        >
+          <el-descriptions
+            :column="3"
+            border
+          >
+            <el-descriptions-item label="注册读者">
+              {{ overview.readerStatistics?.totalReaders || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="活跃读者">
+              {{ overview.readerStatistics?.activeReaders || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="逾期读者">
+              {{ overview.readerStatistics?.overdueReaders || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="平均积分">
+              {{ overview.readerStatistics?.averageCreditScore || 0 }}
+            </el-descriptions-item>
           </el-descriptions>
         </el-tab-pane>
-        <el-tab-pane label="座位统计" name="seat">
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="座位总数">{{ overview.seatStatistics?.totalSeats || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="可用座位">{{ overview.seatStatistics?.availableSeats || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="已占座位">{{ overview.seatStatistics?.occupiedSeats || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="今日预约">{{ overview.seatStatistics?.todayReservations || 0 }}</el-descriptions-item>
+        <el-tab-pane
+          label="座位统计"
+          name="seat"
+        >
+          <el-descriptions
+            :column="3"
+            border
+          >
+            <el-descriptions-item label="座位总数">
+              {{ overview.seatStatistics?.totalSeats || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="可用座位">
+              {{ overview.seatStatistics?.availableSeats || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="已占座位">
+              {{ overview.seatStatistics?.occupiedSeats || 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="今日预约">
+              {{ overview.seatStatistics?.todayReservations || 0 }}
+            </el-descriptions-item>
           </el-descriptions>
         </el-tab-pane>
       </el-tabs>
@@ -169,15 +316,16 @@
 import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 // FIXED: P2-FE-01 - ECharts按需引入，减少包体积
 import * as echarts from 'echarts/core'
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
+import { BarChart, LineChart, PieChart, HeatmapChart } from 'echarts/charts'
 import {
   TitleComponent, TooltipComponent, GridComponent,
-  LegendComponent, DatasetComponent
+  LegendComponent, DatasetComponent, VisualMapComponent,
+  CalendarComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-echarts.use([BarChart, LineChart, PieChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, DatasetComponent, CanvasRenderer])
+echarts.use([BarChart, LineChart, PieChart, HeatmapChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, DatasetComponent, VisualMapComponent, CalendarComponent, CanvasRenderer])
 import { ElMessage } from 'element-plus'
-import { getStatisticsOverview, getBorrowTrend, getHotBooks, getCategoryDistribution, getMonthlyStats } from '@/api/statistics'
+import { getStatisticsOverview, getBorrowTrend, getHotBooks, getCategoryDistribution, getMonthlyStats, getSeatHeatmap } from '@/api/statistics'
 import EmptyState from '@/components/EmptyState.vue'
 
 // 响应式数据
@@ -194,16 +342,19 @@ const hotBooks = ref([])
 const borrowTrend = ref([])
 const categoryDistribution = ref([])
 const monthlyStats = ref([])
+const seatHeatmap = ref([])
 
 // 图表引用
 const trendChartRef = ref(null)
 const categoryChartRef = ref(null)
 const monthlyChartRef = ref(null)
+const heatmapChartRef = ref(null)
 
 // 图表实例
 let trendChart = null
 let categoryChart = null
 let monthlyChart = null
+let heatmapChart = null
 
 // 加载综合概览
 async function loadOverview() {
@@ -268,6 +419,19 @@ async function loadMonthlyStats() {
   }
 }
 
+// 加载座位热力图
+async function loadSeatHeatmap() {
+  try {
+    const res = await getSeatHeatmap()
+    if (res.code === 0 && res.data) {
+      seatHeatmap.value = res.data
+      renderHeatmapChart()
+    }
+  } catch (error) {
+    console.error('加载座位热力图失败:', error)
+  }
+}
+
 // 加载所有数据
 async function loadAllData() {
   loading.value = true
@@ -277,7 +441,8 @@ async function loadAllData() {
       loadBorrowTrend(),
       loadHotBooks(),
       loadCategoryDistribution(),
-      loadMonthlyStats()
+      loadMonthlyStats(),
+      loadSeatHeatmap()
     ])
     ElMessage.success('数据已刷新')
   } finally {
@@ -386,6 +551,81 @@ function renderCategoryChart() {
   categoryChart.setOption(option)
 }
 
+// 渲染座位热力图
+function renderHeatmapChart() {
+  if (!heatmapChartRef.value) return
+
+  if (!heatmapChart) {
+    heatmapChart = echarts.init(heatmapChartRef.value)
+  }
+
+  if (!seatHeatmap.value || seatHeatmap.value.length === 0) return
+
+  // 解析数据
+  const areas = [...new Set(seatHeatmap.value.map(item => item.areaLabel))]
+  const hourSlots = [...new Set(seatHeatmap.value.map(item => item.hourSlot))]
+
+  const data = seatHeatmap.value.map(item => [
+    item.hourSlot,
+    item.areaLabel,
+    item.usageRate || 0
+  ])
+
+  const option = {
+    tooltip: {
+      position: 'top',
+      formatter: function (params) {
+        return params.value[0] + '<br/>' + params.value[1] + ': ' + params.value[2] + '%'
+      }
+    },
+    grid: {
+      left: '10%',
+      right: '5%',
+      bottom: '15%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: hourSlots,
+      splitArea: { show: true },
+      axisLabel: { rotate: 45 }
+    },
+    yAxis: {
+      type: 'category',
+      data: areas,
+      splitArea: { show: true }
+    },
+    visualMap: {
+      min: 0,
+      max: 100,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '0%',
+      inRange: {
+        color: ['#f0f9ff', '#bae0ff', '#69b1ff', '#1677ff', '#0050b3']
+      },
+      text: ['使用率(%)', '']
+    },
+    series: [{
+      type: 'heatmap',
+      data: data,
+      label: {
+        show: true,
+        formatter: function (params) {
+          return params.value[2] > 0 ? params.value[2] + '%' : ''
+        },
+        fontSize: 11
+      },
+      emphasis: {
+        itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+      }
+    }]
+  }
+
+  heatmapChart.setOption(option)
+}
+
 // 渲染月度统计图
 function renderMonthlyChart() {
   if (!monthlyChartRef.value) return
@@ -454,6 +694,7 @@ function handleResize() {
   trendChart?.resize()
   categoryChart?.resize()
   monthlyChart?.resize()
+  heatmapChart?.resize()
 }
 
 // 生命周期钩子
@@ -463,6 +704,7 @@ onMounted(async () => {
   renderTrendChart()
   renderCategoryChart()
   renderMonthlyChart()
+  renderHeatmapChart()
   window.addEventListener('resize', handleResize)
 })
 
@@ -471,6 +713,7 @@ onUnmounted(() => {
   trendChart?.dispose()
   categoryChart?.dispose()
   monthlyChart?.dispose()
+  heatmapChart?.dispose()
 })
 </script>
 

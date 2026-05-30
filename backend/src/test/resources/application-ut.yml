@@ -1,0 +1,74 @@
+# 单元测试环境配置 - 使用 H2 内存数据库，无需 Redis/Docker
+# no-redis profile 通过 @ActiveProfiles({"ut", "no-redis"}) 激活
+spring:
+  datasource:
+    url: jdbc:h2:mem:library_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    hikari:
+      minimum-idle: 1
+      maximum-pool-size: 5
+
+  sql:
+    init:
+      mode: never
+
+  h2:
+    console:
+      enabled: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      timeout: 1000ms
+      lettuce:
+        pool:
+          max-active: 1
+          max-idle: 1
+          min-idle: 1
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=5m
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+jwt:
+  secret: test-jwt-secret-key-for-unit-tests-at-least-32-characters
+  access-token-expiration: 3600000
+  refresh-token-expiration: 7200000
+
+redisson:
+  address: redis://localhost:6379
+  password:
+  database: 1
+
+rate-limiter:
+  enabled: false
+
+logging:
+  level:
+    com.library.system: DEBUG
+    org.springframework: WARN
+
+server:
+  port: 0

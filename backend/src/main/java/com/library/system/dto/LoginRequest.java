@@ -29,4 +29,14 @@ public class LoginRequest {
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, max = 50, message = "密码长度必须在6-50个字符之间")
     private String password;
+
+    /**
+     * 验证码Key（UUID）
+     */
+    private String captchaKey;
+
+    /**
+     * 验证码文本
+     */
+    private String captchaCode;
 }

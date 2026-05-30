@@ -32,19 +32,23 @@ public class CreditLog implements Serializable {
     private Long userId;
 
     /** 用户名 */
+    @TableField(exist = false)
     private String username;
 
-    /** 变动积分（正数表示增加，负数表示减少） */
+    /** 变动值（正数为增加，负数为减少） */
+    @TableField("credit_change")
     private Integer creditChange;
 
-    /** 变动后积分余额 */
+    /** 变动后积分 */
+    @TableField("credit_balance")
     private Integer creditBalance;
 
     /** 变动类型 */
     private String changeType;
 
-    /** 相关业务ID */
-    private String bizId;
+    /** 相关业务ID（借阅记录ID或预约记录ID） */
+    @TableField("biz_id")
+    private Long bizId;
 
     /** 备注 */
     private String remark;

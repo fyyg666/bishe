@@ -11,21 +11,42 @@
         :rules="rules"
         label-width="100px"
       >
-        <el-form-item label="图书ID" prop="bookId">
-          <el-input-number v-model="form.bookId" :min="1" :controls="false" />
+        <el-form-item
+          label="图书ID"
+          prop="bookId"
+        >
+          <el-input-number
+            v-model="form.bookId"
+            :min="1"
+            :controls="false"
+          />
           <span class="form-tip">输入要借阅的图书ID</span>
         </el-form-item>
         
-        <el-form-item label="借阅天数" prop="borrowDays">
-          <el-input-number v-model="form.borrowDays" :min="1" :max="90" :controls="false" />
+        <el-form-item
+          label="借阅天数"
+          prop="borrowDays"
+        >
+          <el-input-number
+            v-model="form.borrowDays"
+            :min="1"
+            :max="90"
+            :controls="false"
+          />
           <span class="form-tip">最长90天</span>
         </el-form-item>
         
         <el-form-item>
-          <el-button type="primary" :loading="loading" @click="handleSubmit">
+          <el-button
+            type="primary"
+            :loading="loading"
+            @click="handleSubmit"
+          >
             {{ loading ? '提交中...' : '确认借阅' }}
           </el-button>
-          <el-button @click="$router.push('/books')">取消</el-button>
+          <el-button @click="$router.push('/books')">
+            取消
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>

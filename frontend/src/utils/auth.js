@@ -1,33 +1,23 @@
-import Cookies from 'js-cookie'
+// FIXED: SEC-01 - 从Cookie存储改为内存变量存储，防止XSS窃取Token
+// 历史：此前使用Cookie存储（js-cookie），Token可被JS读取易受XSS攻击
+// 当前方案：内存变量存储，页面刷新后需重新登录
+// 后续迭代：后端通过Set-Cookie HttpOnly头自动管理Token
 
-// FIXED: FE-001 - Token存储从localStorage改用Cookie，增强安全性
 const TOKEN_KEY = 'library_token'
 const REFRESH_TOKEN_KEY = 'library_refresh_token'
 const CSRF_TOKEN_KEY = 'library_csrf_token'
 
-// FIXED: P2-FE-04 - Cookie过期时间与后端JWT一致
-// Access Token 后端2小时，Cookie设置2小时过期
-const COOKIE_OPTIONS = {
-  expires: 2 / 24, // 2小时（以天为单位）
-  secure: window.location.protocol === 'https:',
-  sameSite: 'Lax',
-  path: '/'
-}
-
-// FIXED: P2-FE-04 - Refresh Token 后端7天，Cookie设置7天过期
-const REFRESH_COOKIE_OPTIONS = {
-  expires: 7, // 7天
-  secure: window.location.protocol === 'https:',
-  sameSite: 'Lax',
-  path: '/'
-}
+// 内存变量 —— XSS无法从模块作用域外部读取
+let inMemoryToken = null
+let inMemoryRefreshToken = null
+let inMemoryCsrfToken = null
 
 /**
  * 获取访问Token
- * @returns {string|undefined}
+ * @returns {string|null}
  */
 export function getToken() {
-  return Cookies.get(TOKEN_KEY)
+  return inMemoryToken
 }
 
 /**
@@ -35,27 +25,22 @@ export function getToken() {
  * @param {string} token
  */
 export function setToken(token) {
-  Cookies.set(TOKEN_KEY, token, COOKIE_OPTIONS)
+  inMemoryToken = token
 }
 
 /**
  * 移除访问Token
  */
 export function removeToken() {
-  // FIXED: P3-FE-03 - 删除Cookie时传入secure选项确保HTTPS下正确删除
-  Cookies.remove(TOKEN_KEY, { 
-    secure: window.location.protocol === 'https:',
-    sameSite: 'Lax',
-    path: '/' 
-  })
+  inMemoryToken = null
 }
 
 /**
  * 获取刷新Token
- * @returns {string|undefined}
+ * @returns {string|null}
  */
 export function getRefreshToken() {
-  return Cookies.get(REFRESH_TOKEN_KEY)
+  return inMemoryRefreshToken
 }
 
 /**
@@ -63,28 +48,22 @@ export function getRefreshToken() {
  * @param {string} token
  */
 export function setRefreshToken(token) {
-  Cookies.set(REFRESH_TOKEN_KEY, token, REFRESH_COOKIE_OPTIONS)
+  inMemoryRefreshToken = token
 }
 
 /**
  * 移除刷新Token
  */
 export function removeRefreshToken() {
-  // FIXED: P3-FE-03 - 删除Cookie时传入secure选项
-  Cookies.remove(REFRESH_TOKEN_KEY, { 
-    secure: window.location.protocol === 'https:',
-    sameSite: 'Lax',
-    path: '/' 
-  })
+  inMemoryRefreshToken = null
 }
 
 /**
  * 获取CSRF Token
- * FIXED: FE-001 - 添加CSRF Token支持
- * @returns {string|undefined}
+ * @returns {string|null}
  */
 export function getCsrfToken() {
-  return Cookies.get(CSRF_TOKEN_KEY)
+  return inMemoryCsrfToken
 }
 
 /**
@@ -92,27 +71,18 @@ export function getCsrfToken() {
  * @param {string} token
  */
 export function setCsrfToken(token) {
-  Cookies.set(CSRF_TOKEN_KEY, token, { 
-    secure: window.location.protocol === 'https:',
-    sameSite: 'Lax',
-    path: '/'
-  })
+  inMemoryCsrfToken = token
 }
 
 /**
  * 移除CSRF Token
  */
 export function removeCsrfToken() {
-  // FIXED: P3-FE-03 - 删除Cookie时传入secure选项
-  Cookies.remove(CSRF_TOKEN_KEY, { 
-    secure: window.location.protocol === 'https:',
-    sameSite: 'Lax',
-    path: '/' 
-  })
+  inMemoryCsrfToken = null
 }
 
 /**
- * 清除所有认证相关的Cookie
+ * 清除所有认证Token
  */
 export function clearAuthCookies() {
   removeToken()

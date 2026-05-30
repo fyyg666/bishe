@@ -1,8 +1,11 @@
 package com.library.system.service.impl;
 
+import com.library.system.entity.User;
+import com.library.system.mapper.UserMapper;
 import com.library.system.service.AccountLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +25,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Profile("!no-redis")
 public class AccountLockServiceImpl implements AccountLockService {
 
     private final StringRedisTemplate redisTemplate;
+    private final UserMapper userMapper;
 
     private static final String FAIL_COUNT_PREFIX = "login:fail:count:";
     private static final String LOCK_KEY_PREFIX = "account:locked:";
@@ -37,9 +42,11 @@ public class AccountLockServiceImpl implements AccountLockService {
 
     @Override
     public boolean isLockedByUsername(String username) {
-        // 通过用户名查找用户ID的方式暂不支持，需要外部注入UserMapper
-        // 这里返回false，实际使用时由调用方先查询用户再调用isLocked(userId)
-        return false;
+        User user = userMapper.selectByUsername(username);
+        if (user == null) {
+            return false;
+        }
+        return isLocked(user.getId());
     }
 
     @Override

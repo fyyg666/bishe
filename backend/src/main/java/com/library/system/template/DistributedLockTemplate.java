@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +46,7 @@ import java.util.function.Supplier;
  * @since 2026-04-24
  */
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class DistributedLockTemplate {
 

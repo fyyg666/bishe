@@ -76,16 +76,19 @@ public class SeatReservation implements Serializable {
     @TableField(exist = false)
     private String cancelReason;
 
-    /** 状态：PENDING/CHECKED_IN/COMPLETED/CANCELLED/VIOLATED */
+    /** 状态：PENDING/CHECKED_IN/COMPLETED/CANCELLED/NO_SHOW */
     private String status;
 
     /** 签到时间 */
+    @TableField("check_in_time")
     private LocalDateTime checkInTime;
 
     /** 签退时间 */
+    @TableField("check_out_time")
     private LocalDateTime checkOutTime;
 
-    /** 违约次数 */
+    /** 违约次数（非数据库字段，通过User表维护） */
+    @TableField(exist = false)
     private Integer violationCount;
 
     /** 版本号（乐观锁） */

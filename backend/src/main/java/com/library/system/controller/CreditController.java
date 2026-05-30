@@ -1,16 +1,14 @@
 package com.library.system.controller;
 
-import com.library.system.annotation.AuditLog;
 import com.library.system.dto.*;
 import com.library.system.service.CreditService;
-import io.swagger.v3.oas.annotations.jakarta.Operation;
-import io.swagger.v3.oas.annotations.jakarta.Parameter;
-import io.swagger.v3.oas.annotations.jakarta.media.Content;
-import io.swagger.v3.oas.annotations.jakarta.media.Schema;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.jakarta.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.jakarta.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.jakarta.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,14 +41,13 @@ public class CreditController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "获取我的积分", description = "查询当前登录用户的信用积分")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = Integer.class))),
-        @ApiResponse(responseCode = "404", description = "用户不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "用户不存在")
     })
-    @AuditLog(module = "信用管理", operation = "查询我的积分")
     @GetMapping
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<Integer> getMyCredit(Authentication authentication) {
         Long userId = getUserIdFromAuthentication(authentication);
         log.debug("查询我的积分: userId={}", userId);
@@ -59,15 +56,30 @@ public class CreditController extends BaseController { // FIXED: ARCH-002 继承
     }
 
     /**
+     * 获取当前用户信用等级
+     */
+    @Operation(summary = "获取我的信用等级", description = "查询当前登录用户的信用等级信息（积分、等级名称、下一等级所需积分）")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
+    })
+    @GetMapping("/level")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
+    public ApiResponse<CreditLevelResponse> getMyLevel(Authentication authentication) {
+        Long userId = getUserIdFromAuthentication(authentication);
+        log.debug("查询我的信用等级: userId={}", userId);
+        CreditLevelResponse level = creditService.getUserLevel(userId);
+        return ApiResponse.success(level);
+    }
+
+    /**
      * 获取指定用户积分
      */
     @Operation(summary = "获取用户积分", description = "根据ID查询用户信用积分（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问"),
-        @ApiResponse(responseCode = "404", description = "用户不存在")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "用户不存在")
     })
-    @AuditLog(module = "信用管理", operation = "查询用户积分")
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<Integer> getUserCredit(
@@ -83,11 +95,10 @@ public class CreditController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "获取我的积分日志", description = "分页查询当前用户的积分变动日志")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
-    @AuditLog(module = "信用管理", operation = "查询我的积分日志")
     @GetMapping("/logs")
-    @PreAuthorize("hasRole('READER')")
+    @PreAuthorize("hasAnyRole('READER', 'ADMIN', 'LIBRARIAN')")
     public ApiResponse<PageResult<CreditLogResponse>> getMyCreditLogs(
             @Parameter(description = "当前页（默认1）")
             @RequestParam(defaultValue = "1") Long current,
@@ -105,10 +116,9 @@ public class CreditController extends BaseController { // FIXED: ARCH-002 继承
      */
     @Operation(summary = "获取用户积分日志", description = "分页查询指定用户的积分变动日志（需要管理员权限）")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "查询成功"),
-        @ApiResponse(responseCode = "403", description = "无权访问")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "无权访问")
     })
-    @AuditLog(module = "信用管理", operation = "查询用户积分日志")
     @GetMapping("/logs/user/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<PageResult<CreditLogResponse>> getUserCreditLogs(

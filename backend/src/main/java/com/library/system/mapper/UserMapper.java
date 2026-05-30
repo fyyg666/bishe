@@ -34,7 +34,7 @@ public interface UserMapper extends BaseMapper<User> {
     /**
      * 更新用户借阅数量
      */
-    @Update("UPDATE sys_user SET current_borrow_count = current_borrow_count + #{delta}, " +
+    @Update("UPDATE sys_user SET borrow_count = borrow_count + #{delta}, " +
             "version = version + 1 WHERE id = #{userId} AND version = #{version}")
     int updateBorrowCount(@Param("userId") Long userId, @Param("delta") int delta, @Param("version") Integer version);
 

@@ -1,18 +1,18 @@
 package com.library.system.filter;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
-import org.springframework.util.MultiValueMap;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,6 +24,7 @@ import java.util.Map;
  * @author Security Team
  * @version 2.0.0
  */
+@Slf4j
 public class XssRequestWrapper extends HttpServletRequestWrapper {
 
     private final byte[] cachedBody;
@@ -145,7 +146,7 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
      * FIXED: SEC-005 检查是否为JSON请求
      */
     private boolean isJsonRequest() {
-        String contentType = getHeader("Content-Type");
+        String contentType = super.getHeader("Content-Type");
         return contentType != null && contentType.contains("application/json");
     }
 
@@ -159,10 +160,9 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
 
         try {
             // 尝试解析为JSON并过滤所有字符串值
-            if (JSONUtil.isJson(body)) {
+            if (JSONUtil.isTypeJSON(body)) {
                 Object parsed = JSONUtil.parse(body);
-                if (parsed instanceof JSONObject) {
-                    JSONObject jsonObject = (JSONObject) parsed;
+                if (parsed instanceof JSONObject jsonObject) {
                     filterJsonObject(jsonObject);
                     return jsonObject.toString();
                 }
@@ -186,21 +186,20 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
                 continue;
             }
             
-            if (value instanceof String) {
+            if (value instanceof String s) {
                 // 过滤字符串值
-                jsonObject.set(key, filterXss((String) value));
-            } else if (value instanceof JSONObject) {
+                jsonObject.set(key, filterXss(s));
+            } else if (value instanceof JSONObject nested) {
                 // 递归处理嵌套JSON对象
-                filterJsonObject((JSONObject) value);
-            } else if (value instanceof cn.hutool.json.JSONArray) {
+                filterJsonObject(nested);
+            } else if (value instanceof JSONArray jsonArray) {
                 // 处理JSON数组
-                cn.hutool.json.JSONArray jsonArray = (cn.hutool.json.JSONArray) value;
                 for (int i = 0; i < jsonArray.size(); i++) {
                     Object arrItem = jsonArray.get(i);
-                    if (arrItem instanceof String) {
-                        jsonArray.set(i, filterXss((String) arrItem));
-                    } else if (arrItem instanceof JSONObject) {
-                        filterJsonObject((JSONObject) arrItem);
+                    if (arrItem instanceof String s) {
+                        jsonArray.set(i, filterXss(s));
+                    } else if (arrItem instanceof JSONObject nested) {
+                        filterJsonObject(nested);
                     }
                 }
             }

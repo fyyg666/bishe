@@ -9,12 +9,11 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
 
@@ -31,8 +30,9 @@ public class JwtUtils {
     /**
      * JWT密钥 - FIXED: SEC-001 从环境变量读取
      * 生产环境必须通过 JWT_SECRET 环境变量配置，无默认值回退
+     * FIXED: CRITICAL-FIX 移除硬编码默认密钥，启动时强制校验
      */
-    @Value("${jwt.secret:${JWT_SECRET:library-system-secret-key-2024-secure-jwt-token-generation}}")
+    @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.access-token-expiration:7200000}")
@@ -40,6 +40,23 @@ public class JwtUtils {
 
     @Value("${jwt.refresh-token-expiration:604800000}")
     private long refreshTokenExpiration;
+
+    /**
+     * 启动时校验JWT密钥配置
+     * FIXED: CRITICAL-FIX 启动时强制校验密钥已配置且达到安全长度
+     */
+    @PostConstruct
+    public void validateConfiguration() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT secret must be configured via 'jwt.secret' property or JWT_SECRET environment variable. " +
+                    "Please set a strong secret key (at least 32 characters) for production use.");
+        }
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            log.warn("JWT secret key is only {} bytes. Recommended: at least 32 bytes (256 bits) for HMAC-SHA256.", keyBytes.length);
+        }
+    }
 
     /**
      * 获取签名密钥
@@ -153,9 +170,13 @@ public class JwtUtils {
      *
      * @param token Token字符串
      * @return 用户ID
+     * @throws IllegalArgumentException 如果Token解析失败
      */
     public Long getUserIdFromToken(String token) {
         Claims claims = parseToken(token);
+        if (claims == null) {
+            throw new IllegalArgumentException("无法从Token中提取用户ID：Token解析失败");
+        }
         return Long.valueOf(claims.getSubject());
     }
 
@@ -164,9 +185,13 @@ public class JwtUtils {
      *
      * @param token Token字符串
      * @return 用户名
+     * @throws IllegalArgumentException 如果Token解析失败
      */
     public String getUsernameFromToken(String token) {
         Claims claims = parseToken(token);
+        if (claims == null) {
+            throw new IllegalArgumentException("无法从Token中提取用户名：Token解析失败");
+        }
         return claims.get("username", String.class);
     }
 
@@ -175,9 +200,13 @@ public class JwtUtils {
      *
      * @param token Token字符串
      * @return 用户角色
+     * @throws IllegalArgumentException 如果Token解析失败
      */
     public String getRoleFromToken(String token) {
         Claims claims = parseToken(token);
+        if (claims == null) {
+            throw new IllegalArgumentException("无法从Token中提取角色：Token解析失败");
+        }
         return claims.get("role", String.class);
     }
 
@@ -186,9 +215,13 @@ public class JwtUtils {
      *
      * @param token Token字符串
      * @return Token类型
+     * @throws IllegalArgumentException 如果Token解析失败
      */
     public String getTokenType(String token) {
         Claims claims = parseToken(token);
+        if (claims == null) {
+            throw new IllegalArgumentException("无法从Token中提取类型：Token解析失败");
+        }
         return claims.get("type", String.class);
     }
 
@@ -197,9 +230,13 @@ public class JwtUtils {
      *
      * @param token Token字符串
      * @return JTI
+     * @throws IllegalArgumentException 如果Token解析失败
      */
     public String getJtiFromToken(String token) {
         Claims claims = parseToken(token);
+        if (claims == null) {
+            throw new IllegalArgumentException("无法从Token中提取JTI：Token解析失败");
+        }
         return claims.getId();
     }
 
@@ -208,9 +245,13 @@ public class JwtUtils {
      *
      * @param token Token字符串
      * @return 过期时间
+     * @throws IllegalArgumentException 如果Token解析失败
      */
     public LocalDateTime getExpirationDateFromToken(String token) {
         Claims claims = parseToken(token);
+        if (claims == null) {
+            throw new IllegalArgumentException("无法从Token中获取过期时间：Token解析失败");
+        }
         Date expiration = claims.getExpiration();
         return expiration.toInstant()
                 .atZone(ZoneId.systemDefault())
@@ -258,7 +299,7 @@ public class JwtUtils {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (Exception e) {
-            log.warn("解析Token失败: {}", e.getMessage());
+            log.warn("解析Token失败", e);
             return null;
         }
     }

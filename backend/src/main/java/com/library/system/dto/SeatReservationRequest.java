@@ -21,7 +21,6 @@ public class SeatReservationRequest {
     /**
      * 座位ID
      */
-    @NotNull(message = "座位ID不能为空")
     private Long seatId;
 
     /**
@@ -32,7 +31,6 @@ public class SeatReservationRequest {
     /**
      * 阅览室ID
      */
-    @NotNull(message = "阅览室ID不能为空")
     private Long roomId;
 
     /**

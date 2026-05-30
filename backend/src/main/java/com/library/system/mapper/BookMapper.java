@@ -24,19 +24,25 @@ public interface BookMapper extends BaseMapper<Book> {
     /**
      * 更新图书可借数量（乐观锁）
      */
-    @Update("UPDATE book SET available_count = available_count + #{delta}, borrow_count = borrow_count + #{borrowDelta}, " +
+    @Update("UPDATE book SET stock = stock + #{delta}, borrow_count = borrow_count + #{borrowDelta}, " +
             "version = version + 1 WHERE id = #{bookId} AND version = #{version} " +
-            "AND available_count + #{delta} >= 0")
+            "AND stock + #{delta} >= 0")
     int updateAvailableCount(@Param("bookId") Long bookId, @Param("delta") int delta, 
                              @Param("version") Integer version, @Param("borrowDelta") int borrowDelta);
 
     /**
      * 查询热门图书
-     * FIXED: PERF-002 status=0 表示在架可借，status=1可能是其他状态
+     * status=0 (Constants.BookStatus.NORMAL) 表示上架可借
      */
     @Select("SELECT * FROM book WHERE deleted = 0 AND status = 0 " +
             "ORDER BY borrow_count DESC LIMIT #{limit}")
     List<Book> selectHotBooks(@Param("limit") int limit);
+
+    /**
+     * 查询新书推荐
+     * status=0 (Constants.BookStatus.NORMAL) 表示上架可借
+     */
+    List<Book> selectNewBooks(@Param("limit") int limit);
 
     /**
      * 悲观锁查询图书（用于并发控制）

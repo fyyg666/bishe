@@ -12,6 +12,7 @@ import com.library.system.enums.ErrorCode;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ForbiddenException;
 import com.library.system.exception.ResourceNotFoundException;
+import com.library.system.mapper.SeatMapper;
 import com.library.system.mapper.SeatReservationMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.CreditService;
@@ -29,6 +30,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 public class SeatServiceImpl implements SeatService {
 
     private final SeatReservationMapper seatReservationMapper;
+    private final SeatMapper seatMapper;
     private final UserMapper userMapper;
     private final CreditService creditService;
     private final DistributedLockTemplate lockTemplate;
@@ -62,7 +65,7 @@ public class SeatServiceImpl implements SeatService {
 
         for (String targetArea : targetAreas) {
             for (int i = 1; i <= SEATS_PER_AREA; i++) {
-                String seatNumber = targetArea.substring(0, 1) + String.format("%02d", i);
+                String seatNumber = targetArea.substring(0, 1) + "-" + String.format("%02d", i);
                 seatNumbers.add(seatNumber);
             }
         }
@@ -107,11 +110,18 @@ public class SeatServiceImpl implements SeatService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SeatReservationResponse reserveSeat(Long userId, SeatReservationRequest request) {
+        // 座位号归一化：转大写（兼容 a05 → A05 等变体，但不处理横线因为数据库存储带横线的格式如 A-01）
+        if (request.getSeatNumber() != null) {
+            request.setSeatNumber(request.getSeatNumber().toUpperCase());
+        }
         String lockKey = "seat:reserve:" + request.getSeatNumber() + ":" + request.getReservationDate();
         
         return lockTemplate.executeWithLock(lockKey, () -> {
             // 验证用户
             User user = validateUser(userId);
+
+            // 检查违约封禁
+            checkViolationBan(user);
 
             // 解析并验证时间
             ReservationTime time = parseAndValidateTime(request);
@@ -186,6 +196,8 @@ public class SeatServiceImpl implements SeatService {
             if (now.isAfter(reservationStart.plusMinutes(30))) {
                 reservation.setStatus(Constants.ReservationStatus.VIOLATED); 
                 seatReservationMapper.updateById(reservation);
+                // 增加用户违约次数并检查封禁
+                incrementUserViolation(userId);
                 throw new BusinessException(ErrorCode.SEAT_CHECK_IN_EXPIRED, "已超过签到时间，预约已失效");
             }
 
@@ -266,6 +278,48 @@ public class SeatServiceImpl implements SeatService {
     // =================== 私有辅助方法 ===================
 
     /**
+     * 检查用户违约封禁
+     * 累计违约3次暂停72小时预约权限
+     */
+    private void checkViolationBan(User user) {
+        Integer violationCount = user.getViolationCount();
+        LocalDateTime banUntil = user.getBanUntil();
+
+        if (violationCount != null && violationCount >= Constants.SeatLimit.VIOLATION_THRESHOLD
+                && banUntil != null && banUntil.isAfter(LocalDateTime.now())) {
+            long hours = java.time.temporal.ChronoUnit.HOURS.between(LocalDateTime.now(), banUntil);
+            throw new BusinessException(ErrorCode.SEAT_RESERVATION_CONFLICT,
+                    "因违约次数过多，预约权限已被暂停，剩余" + (hours > 0 ? hours + "小时" : "不到1小时"));
+        }
+
+        // 封禁已过期，清零违约次数
+        if (violationCount != null && violationCount >= Constants.SeatLimit.VIOLATION_THRESHOLD
+                && banUntil != null && banUntil.isBefore(LocalDateTime.now())) {
+            user.setViolationCount(0);
+            user.setBanUntil(null);
+            userMapper.updateById(user);
+        }
+    }
+
+    /**
+     * 增加用户违约次数，达到阈值自动封禁72小时
+     */
+    private void incrementUserViolation(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) return;
+
+        int newCount = (user.getViolationCount() != null ? user.getViolationCount() : 0) + 1;
+        user.setViolationCount(newCount);
+
+        if (newCount >= Constants.SeatLimit.VIOLATION_THRESHOLD) {
+            user.setBanUntil(LocalDateTime.now().plusHours(72));
+            log.warn("用户违约次数达{}次，已封禁72小时: userId={}", newCount, userId);
+        }
+
+        userMapper.updateById(user);
+    }
+
+    /**
      * 验证用户存在且未被禁用
      */
     private User validateUser(Long userId) {
@@ -333,7 +387,7 @@ public class SeatServiceImpl implements SeatService {
     private void checkDailyReservationLimit(Long userId) {
         long todayReservations = seatReservationMapper.selectByUserAndDate(userId, LocalDate.now())
                 .stream()
-                .filter(r -> !"CANCELLED".equals(r.getStatus()) && !"NO_SHOW".equals(r.getStatus()))
+                .filter(r -> !"CANCELLED".equals(r.getStatus()) && !Constants.ReservationStatus.VIOLATED.equals(r.getStatus()))
                 .count();
         if (todayReservations >= Constants.SeatLimit.DAILY_MAX_RESERVATIONS) { 
             throw new BusinessException(ErrorCode.RATE_LIMIT_EXCEEDED, 
@@ -345,11 +399,23 @@ public class SeatServiceImpl implements SeatService {
      * 创建预约记录
      */
     private SeatReservation createReservation(User user, SeatReservationRequest request, ReservationTime time) {
+        // 查询座位信息，获取 roomId 和 seatId
+        Seat seat = seatMapper.selectOne(
+                new LambdaQueryWrapper<Seat>()
+                        .eq(Seat::getSeatNumber, request.getSeatNumber())
+                        .eq(Seat::getDeleted, 0)
+        );
+        if (seat == null) {
+            throw new BusinessException(ErrorCode.PARAMETER_ERROR, "座位不存在: " + request.getSeatNumber());
+        }
+
         SeatReservation reservation = SeatReservation.builder()
                 .seatNumber(request.getSeatNumber())
                 .area(request.getArea())
                 .userId(user.getId())
                 .username(user.getUsername())
+                .roomId(seat.getRoomId())
+                .seatId(seat.getId())
                 .reservationDate(time.date())
                 .startTime(time.startTime())
                 .endTime(time.endTime())

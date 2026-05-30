@@ -6,15 +6,15 @@ import com.library.system.common.Constants;
 import com.library.system.dto.PageResult;
 import com.library.system.dto.VolunteerRequest;
 import com.library.system.dto.VolunteerResponse;
+import com.library.system.dto.VolunteerStatsDto;
 import com.library.system.entity.User;
-import com.library.system.entity.VolunteerService;
 import com.library.system.enums.ErrorCode;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ForbiddenException;
 import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.UserMapper;
 import com.library.system.mapper.VolunteerServiceMapper;
-import com.library.system.service.VolunteerService;
+import com.library.system.service.CreditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,33 +42,34 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class VolunteerServiceImpl implements VolunteerService {
+public class VolunteerServiceImpl implements com.library.system.service.VolunteerService {
 
     private final VolunteerServiceMapper volunteerServiceMapper;
     private final UserMapper userMapper;
+    private final CreditService creditService;
 
-    /** 审核通过每服务1小时增加的积分数 */ 
-    private static final BigDecimal CREDIT_PER_HOUR = BigDecimal.valueOf(5);
-    /** 审核通过最多增加的积分上限 */ 
+    /** 审核通过每服务1小时增加的积分数（论文§3.2(4): 志愿服务每小时可加10分） */ 
+    private static final BigDecimal CREDIT_PER_HOUR = BigDecimal.valueOf(Constants.Credit.VOLUNTEER_PER_HOUR);
+    /** 审核通过最多增加的积分上限（论文§7.2: 单次服务可获得的积分上限为50分） */ 
     private static final BigDecimal MAX_CREDIT_BONUS = BigDecimal.valueOf(50);
     /** 单次服务时长上限（小时） */ 
-    private static final BigDecimal MAX_SERVICE_HOURS = BigDecimal.valueOf(Constants.Credit.VOLUNTEER_HOURS_PER_CREDIT);
+    private static final BigDecimal MAX_SERVICE_HOURS = BigDecimal.valueOf(12);
 
     @Override
     public PageResult<VolunteerResponse> listVolunteers(Long current, Long size, String status) {
-        LambdaQueryWrapper<VolunteerService> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(VolunteerService::getDeleted, 0);
+        LambdaQueryWrapper<com.library.system.entity.VolunteerService> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(com.library.system.entity.VolunteerService::getDeleted, 0);
 
         if (status != null && !status.isEmpty()) {
-            wrapper.eq(VolunteerService::getStatus, status);
+            wrapper.eq(com.library.system.entity.VolunteerService::getStatus, status);
         }
 
-        wrapper.orderByDesc(VolunteerService::getCreateTime);
+        wrapper.orderByDesc(com.library.system.entity.VolunteerService::getCreateTime);
 
-        Page<VolunteerService> page = new Page<>(current, size);
-        Page<VolunteerService> resultPage = volunteerServiceMapper.selectPage(page, wrapper);
+        Page<com.library.system.entity.VolunteerService> page = new Page<>(current, size);
+        Page<com.library.system.entity.VolunteerService> resultPage = volunteerServiceMapper.selectPage(page, wrapper);
 
-        List<VolunteerService> records = resultPage.getRecords();
+        List<com.library.system.entity.VolunteerService> records = resultPage.getRecords();
         if (!records.isEmpty()) {
             // 收集所有需要查询的用户ID（包括userId和reviewerId）
             Set<Long> userIds = new java.util.HashSet<>();
@@ -96,10 +97,10 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public PageResult<VolunteerResponse> getMyVolunteers(Long current, Long size, Long userId) {
-        Page<VolunteerService> page = new Page<>(current, size);
-        Page<VolunteerService> resultPage = volunteerServiceMapper.selectByUserId(page, userId);
+        Page<com.library.system.entity.VolunteerService> page = new Page<>(current, size);
+        Page<com.library.system.entity.VolunteerService> resultPage = volunteerServiceMapper.selectByUserId(page, userId);
 
-        List<VolunteerService> records = resultPage.getRecords();
+        List<com.library.system.entity.VolunteerService> records = resultPage.getRecords();
         if (!records.isEmpty()) {
             Set<Long> userIds = new java.util.HashSet<>();
             records.forEach(r -> {
@@ -125,7 +126,7 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public VolunteerResponse getVolunteerById(Long id) {
-        VolunteerService volunteer = volunteerServiceMapper.selectById(id);
+        com.library.system.entity.VolunteerService volunteer = volunteerServiceMapper.selectById(id);
         if (volunteer == null || volunteer.getDeleted() == 1) {
             
             throw new ResourceNotFoundException(ErrorCode.VOLUNTEER_NOT_FOUND, "志愿服务记录不存在");
@@ -151,7 +152,7 @@ public class VolunteerServiceImpl implements VolunteerService {
                     "单次服务时长不能超过" + MAX_SERVICE_HOURS.intValue() + "小时");
         }
 
-        VolunteerService volunteer = new VolunteerService();
+        com.library.system.entity.VolunteerService volunteer = new com.library.system.entity.VolunteerService();
         volunteer.setUserId(userId);
         volunteer.setServiceDate(request.getServiceDate());
         volunteer.setStartTime(request.getStartTime());
@@ -170,7 +171,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public VolunteerResponse updateVolunteer(Long id, Long userId, VolunteerRequest request) {
-        VolunteerService volunteer = volunteerServiceMapper.selectById(id);
+        com.library.system.entity.VolunteerService volunteer = volunteerServiceMapper.selectById(id);
         if (volunteer == null || volunteer.getDeleted() == 1) {
             
             throw new ResourceNotFoundException(ErrorCode.VOLUNTEER_NOT_FOUND, "志愿服务记录不存在");
@@ -212,7 +213,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelVolunteer(Long id, Long userId) {
-        VolunteerService volunteer = volunteerServiceMapper.selectById(id);
+        com.library.system.entity.VolunteerService volunteer = volunteerServiceMapper.selectById(id);
         if (volunteer == null || volunteer.getDeleted() == 1) {
             
             throw new ResourceNotFoundException(ErrorCode.VOLUNTEER_NOT_FOUND, "志愿服务记录不存在");
@@ -239,7 +240,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public VolunteerResponse reviewVolunteer(Long id, Long reviewerId, Boolean approved, String remark) {
-        VolunteerService volunteer = volunteerServiceMapper.selectById(id);
+        com.library.system.entity.VolunteerService volunteer = volunteerServiceMapper.selectById(id);
         if (volunteer == null || volunteer.getDeleted() == 1) {
             
             throw new ResourceNotFoundException(ErrorCode.VOLUNTEER_NOT_FOUND, "志愿服务记录不存在");
@@ -258,20 +259,17 @@ public class VolunteerServiceImpl implements VolunteerService {
 
         volunteerServiceMapper.updateById(volunteer);
 
-        // 如果审核通过，增加用户积分（使用乐观锁防止并发问题）
+        // 如果审核通过，增加用户积分（通过CreditService确保credit_log写入）
         if (approved && volunteer.getServiceHours() != null) {
-            User user = userMapper.selectById(volunteer.getUserId());
-            if (user != null) {
-                int creditBonus = volunteer.getServiceHours()
-                        .multiply(CREDIT_PER_HOUR)
-                        .min(MAX_CREDIT_BONUS)
-                        .intValue();
-                // FIXED: BIZ-005 使用乐观锁更新积分，防止并发丢失更新
-                int updated = userMapper.updateCreditScore(user.getId(), creditBonus, user.getVersion());
-                if (updated == 0) {
-                    throw new BusinessException(ErrorCode.CONCURRENT_OPERATION, "积分更新失败，请重试");
-                }
-                log.info("审核通过，增加积分: userId={}, creditBonus={}", user.getId(), creditBonus);
+            int creditBonus = volunteer.getServiceHours()
+                    .multiply(CREDIT_PER_HOUR)
+                    .min(MAX_CREDIT_BONUS)
+                    .intValue();
+            if (creditBonus > 0) {
+                creditService.addCredit(volunteer.getUserId(), creditBonus, "VOLUNTEER",
+                        "志愿服务审核通过，" + volunteer.getServiceHours() + "小时",
+                        volunteer.getId(), "VOLUNTEER_SERVICE");
+                log.info("审核通过，增加积分: userId={}, creditBonus={}", volunteer.getUserId(), creditBonus);
             }
         }
 
@@ -281,10 +279,10 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public PageResult<VolunteerResponse> getPendingVolunteers(Long current, Long size) {
-        Page<VolunteerService> page = new Page<>(current, size);
-        Page<VolunteerService> resultPage = volunteerServiceMapper.selectPendingReview(page);
+        Page<com.library.system.entity.VolunteerService> page = new Page<>(current, size);
+        Page<com.library.system.entity.VolunteerService> resultPage = volunteerServiceMapper.selectPendingReview(page);
 
-        List<VolunteerService> records = resultPage.getRecords();
+        List<com.library.system.entity.VolunteerService> records = resultPage.getRecords();
         if (!records.isEmpty()) {
             Set<Long> userIds = new java.util.HashSet<>();
             records.forEach(r -> {
@@ -311,7 +309,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteVolunteer(Long id) {
-        VolunteerService volunteer = volunteerServiceMapper.selectById(id);
+        com.library.system.entity.VolunteerService volunteer = volunteerServiceMapper.selectById(id);
         if (volunteer == null || volunteer.getDeleted() == 1) {
             
             throw new ResourceNotFoundException(ErrorCode.VOLUNTEER_NOT_FOUND, "志愿服务记录不存在");
@@ -324,15 +322,15 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public VolunteerStatsDto getVolunteerStats(Long userId) {
-        LambdaQueryWrapper<VolunteerService> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(VolunteerService::getDeleted, 0)
-               .eq(VolunteerService::getUserId, userId)
-               .eq(VolunteerService::getStatus, "APPROVED");
+        LambdaQueryWrapper<com.library.system.entity.VolunteerService> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(com.library.system.entity.VolunteerService::getDeleted, 0)
+               .eq(com.library.system.entity.VolunteerService::getUserId, userId)
+               .eq(com.library.system.entity.VolunteerService::getStatus, "APPROVED");
 
-        List<VolunteerService> approvedList = volunteerServiceMapper.selectList(wrapper);
+        List<com.library.system.entity.VolunteerService> approvedList = volunteerServiceMapper.selectList(wrapper);
 
         BigDecimal totalHours = BigDecimal.ZERO;
-        for (VolunteerService v : approvedList) {
+        for (com.library.system.entity.VolunteerService v : approvedList) {
             if (v.getServiceHours() != null) {
                 totalHours = totalHours.add(v.getServiceHours());
             }
@@ -342,17 +340,17 @@ public class VolunteerServiceImpl implements VolunteerService {
                 .totalRecords((long) approvedList.size())
                 .totalHours(totalHours)
                 .pendingCount(volunteerServiceMapper.selectCount(
-                        new LambdaQueryWrapper<VolunteerService>()
-                                .eq(VolunteerService::getDeleted, 0)
-                                .eq(VolunteerService::getUserId, userId)
-                                .eq(VolunteerService::getStatus, "PENDING")))
+                        new LambdaQueryWrapper<com.library.system.entity.VolunteerService>()
+                                .eq(com.library.system.entity.VolunteerService::getDeleted, 0)
+                                .eq(com.library.system.entity.VolunteerService::getUserId, userId)
+                                .eq(com.library.system.entity.VolunteerService::getStatus, "PENDING")))
                 .build();
     }
 
     /**
      * 将VolunteerService实体转换为VolunteerResponse DTO（单条查询，保留用于单个详情场景）
      */
-    private VolunteerResponse convertToResponse(VolunteerService volunteer) {
+    private VolunteerResponse convertToResponse(com.library.system.entity.VolunteerService volunteer) {
         VolunteerResponse.VolunteerResponseBuilder builder = VolunteerResponse.builder()
                 .id(volunteer.getId())
                 .userId(volunteer.getUserId())
@@ -392,7 +390,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     /**
      * 使用预加载的用户Map转换为VolunteerResponse DTO（批量查询优化）
      */
-    private VolunteerResponse convertToResponseWithUsers(VolunteerService volunteer, Map<Long, User> userMap) {
+    private VolunteerResponse convertToResponseWithUsers(com.library.system.entity.VolunteerService volunteer, Map<Long, User> userMap) {
         VolunteerResponse.VolunteerResponseBuilder builder = VolunteerResponse.builder()
                 .id(volunteer.getId())
                 .userId(volunteer.getUserId())
