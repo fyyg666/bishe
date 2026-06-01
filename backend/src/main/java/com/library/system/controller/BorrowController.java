@@ -17,6 +17,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.time.LocalDate;
+import java.util.List;
+
 /**
  * 借阅控制器
  * <p>
@@ -177,6 +182,23 @@ public class BorrowController extends BaseController { // FIXED: ARCH-002 继承
 
         BorrowResponse response = borrowService.getBorrowByIdWithOwnershipCheck(borrowId, currentUserId, currentRole);
         return ApiResponse.success(response);
+    }
+
+    @Operation(summary = "导出借阅记录Excel", description = "导出借阅记录为Excel文件（需要管理员权限）")
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public void exportBorrows(
+            @Parameter(description = "借阅状态筛选") @RequestParam(required = false) String status,
+            jakarta.servlet.http.HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("utf-8");
+        String fileName = URLEncoder.encode("借阅记录_" + LocalDate.now(), "UTF-8");
+        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
+        List<BorrowExportDTO> data = borrowService.getExportData(status);
+        com.alibaba.excel.EasyExcel.write(response.getOutputStream(), BorrowExportDTO.class)
+                .autoCloseStream(false)
+                .sheet("借阅记录")
+                .doWrite(data);
     }
 
     /**

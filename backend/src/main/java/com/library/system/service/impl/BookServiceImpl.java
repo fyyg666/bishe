@@ -6,6 +6,8 @@ import com.library.system.common.Constants;
 import com.library.system.config.BloomFilterConfig;
 import com.library.system.dto.*;
 import com.library.system.entity.Book;
+import com.library.system.entity.BookCategory;
+import com.library.system.mapper.BookCategoryMapper;
 import com.library.system.mapper.BookMapper;
 import com.library.system.enums.ErrorCode;
 import com.library.system.exception.BusinessException;
@@ -15,13 +17,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -34,33 +40,31 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@CacheConfig(cacheNames = "books")
+@CacheConfig(cacheNames = "bookCache")
 public class BookServiceImpl implements BookService {
 
     private final BookMapper bookMapper;
+    private final BookCategoryMapper bookCategoryMapper;
     private final BloomFilterConfig bloomFilterConfig;
 
     @Override
-    public PageResult<BookResponse> listBooks(Long current, Long size, String keyword, Long categoryId) {
-        LambdaQueryWrapper<Book> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Book::getDeleted, 0);
+    public PageResult<BookResponse> listBooks(Long current, Long size, String keyword, Long categoryId, String author) {
+        Page<Book> page = new Page<>(current, size);
+        Page<Book> bookPage;
 
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w.like(Book::getTitle, keyword)
-                    .or()
-                    .like(Book::getAuthor, keyword)
-                    .or()
-                    .like(Book::getIsbn, keyword));
+            bookPage = bookMapper.selectBookPage(page, keyword, categoryId, null);
+        } else if (StringUtils.hasText(author)) {
+            bookPage = bookMapper.selectAdvancedBookPage(page, null, author, null, null, categoryId, null, null, null);
+        } else {
+            LambdaQueryWrapper<Book> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Book::getDeleted, 0);
+            if (categoryId != null) {
+                wrapper.eq(Book::getCategoryId, categoryId);
+            }
+            wrapper.orderByDesc(Book::getBorrowCount);
+            bookPage = bookMapper.selectPage(page, wrapper);
         }
-
-        if (categoryId != null) {
-            wrapper.eq(Book::getCategoryId, categoryId);
-        }
-
-        wrapper.orderByDesc(Book::getBorrowCount);
-
-        Page<Book> page = new Page<>(current, size);
-        Page<Book> bookPage = bookMapper.selectPage(page, wrapper);
 
         List<BookResponse> records = bookPage.getRecords().stream()
                 .map(this::convertToResponse)
@@ -90,7 +94,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CachePut(key = "#result.id")
+    @CacheEvict(key = "#request.isbn")
     public BookResponse createBook(BookRequest request) {
         if (bookMapper.selectByIsbn(request.getIsbn()) != null) {
             throw new BusinessException(ErrorCode.ISBN_DUPLICATE, "ISBN已存在"); 
@@ -129,7 +133,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @CachePut(key = "#id")
+    @CacheEvict(key = "#id")
     public BookResponse updateBook(Long id, BookRequest request) {
         Book book = bookMapper.selectById(id);
         if (book == null || book.getDeleted() == 1) {
@@ -211,6 +215,116 @@ public class BookServiceImpl implements BookService {
         return bookMapper.selectByIsbn(isbn) != null;
     }
 
+    @Override
+    public List<BookExportDTO> getExportData(String keyword, Long categoryId) {
+        List<Book> books = bookMapper.selectBookList(keyword, categoryId);
+        return books.stream().map(book -> BookExportDTO.builder()
+                .title(book.getTitle())
+                .author(book.getAuthor())
+                .isbn(book.getIsbn())
+                .categoryName(book.getCategoryName())
+                .publisher(book.getPublisher())
+                .totalCount(book.getTotalCount())
+                .availableCount(book.getAvailableCount())
+                .borrowCount(book.getBorrowCount())
+                .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ImportResultDTO importBooks(InputStream inputStream) {
+        List<BookImportDTO> dataList = com.alibaba.excel.EasyExcel.read(inputStream)
+                .head(BookImportDTO.class)
+                .sheet()
+                .doReadSync();
+
+        ImportResultDTO result = ImportResultDTO.builder()
+                .totalCount(dataList.size())
+                .successCount(0)
+                .failCount(0)
+                .errors(new ArrayList<>())
+                .build();
+
+        List<BookCategory> categories = bookCategoryMapper.selectList(
+                new LambdaQueryWrapper<BookCategory>()
+                        .eq(BookCategory::getDeleted, 0));
+        Map<String, Long> categoryNameMap = new HashMap<>();
+        for (BookCategory category : categories) {
+            categoryNameMap.put(category.getName(), category.getId());
+        }
+
+        // FIXED: PERF-MEDIUM 批量插入优化，每100条一批
+        List<Book> batchBooks = new ArrayList<>(100);
+        for (int i = 0; i < dataList.size(); i++) {
+            BookImportDTO dto = dataList.get(i);
+            int rowNum = i + 2;
+            try {
+                if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+                    result.getErrors().add("第" + rowNum + "行: 书名不能为空");
+                    result.setFailCount(result.getFailCount() + 1);
+                    continue;
+                }
+                if (dto.getIsbn() != null && !dto.getIsbn().trim().isEmpty() && isIsbnExists(dto.getIsbn())) {
+                    result.getErrors().add("第" + rowNum + "行: ISBN " + dto.getIsbn() + "已存在");
+                    result.setFailCount(result.getFailCount() + 1);
+                    continue;
+                }
+
+                Book book = Book.builder()
+                        .title(dto.getTitle())
+                        .author(dto.getAuthor())
+                        .isbn(dto.getIsbn())
+                        .publisher(dto.getPublisher())
+                        .publishDate(dto.getPublishDate() != null && dto.getPublishDate().length() >= 7 ?
+                                safeParsePublishDate(dto.getPublishDate()) : null)
+                        .price(dto.getPrice())
+                        .description(dto.getDescription())
+                        .status(Constants.BookStatus.NORMAL)
+                        .totalCount(Objects.requireNonNullElse(dto.getTotalCount(), 1))
+                        .availableCount(Objects.requireNonNullElse(dto.getTotalCount(), 1))
+                        .borrowCount(0)
+                        .build();
+
+                if (dto.getCategoryName() != null && !dto.getCategoryName().trim().isEmpty()) {
+                    Long categoryId = categoryNameMap.get(dto.getCategoryName().trim());
+                    if (categoryId != null) {
+                        book.setCategoryId(categoryId);
+                        book.setCategoryName(dto.getCategoryName().trim());
+                    }
+                }
+
+                batchBooks.add(book);
+                result.setSuccessCount(result.getSuccessCount() + 1);
+
+                // 每100条批量插入
+                if (batchBooks.size() >= 100) {
+                    flushBatchInsert(batchBooks);
+                }
+            } catch (Exception e) {
+                log.error("导入第{}行失败", rowNum, e);
+                result.getErrors().add("第" + rowNum + "行: 数据格式异常，请检查");  // FIXED: 异常消息脱敏
+                result.setFailCount(result.getFailCount() + 1);
+            }
+        }
+        // 插入剩余记录
+        if (!batchBooks.isEmpty()) {
+            flushBatchInsert(batchBooks);
+        }
+        return result;
+    }
+
+    /**
+     * 批量插入图书并更新布隆过滤器
+     */
+    private void flushBatchInsert(List<Book> books) {
+        for (Book book : books) {
+            bookMapper.insert(book);
+            bloomFilterConfig.addBook(String.valueOf(book.getId()));
+        }
+        books.clear();
+    }
+
     /**
      * 安全解析出版日期字符串为 LocalDate
      * 支持 "yyyy-MM" 或 "yyyy-MM-dd" 格式，防止 StringIndexOutOfBoundsException
@@ -226,6 +340,30 @@ public class BookServiceImpl implements BookService {
             log.warn("出版日期解析失败: dateStr={}, error={}", dateStr, e.getMessage());
         }
         return null;
+    }
+
+    @Override
+    public PageResult<BookResponse> advancedSearch(Long current, Long size, String title, String author,
+                                                    String isbn, String publisher, Long categoryId,
+                                                    String publishDateStart, String publishDateEnd, String orderBy) {
+        Page<Book> page = new Page<>(current, size);
+        Page<Book> resultPage = bookMapper.selectAdvancedBookPage(page, title, author, isbn,
+                publisher, categoryId, publishDateStart, publishDateEnd, orderBy);
+        List<BookResponse> records = resultPage.getRecords().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+        return PageResult.of(resultPage.getCurrent(), resultPage.getSize(),
+                resultPage.getTotal(), records);
+    }
+
+    @Override
+    public List<java.util.Map<String, Object>> getCategoryFacet() {
+        return bookMapper.selectCategoryFacet();
+    }
+
+    @Override
+    public List<java.util.Map<String, Object>> getAuthorFacet() {
+        return bookMapper.selectAuthorFacet();
     }
 
     private BookResponse convertToResponse(Book book) {

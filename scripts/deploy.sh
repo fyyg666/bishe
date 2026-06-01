@@ -55,13 +55,12 @@ deploy() {
         log_info "Pulling latest images..."
         docker-compose -f docker-compose.prod.yml pull
         
-        # 停止现有服务
-        log_info "Stopping existing services..."
-        docker-compose -f docker-compose.prod.yml down
+        # 重建并重启应用服务（短暂停机）
+        log_info "Rebuilding and restarting: backend..."
+        docker-compose -f docker-compose.prod.yml up -d --no-deps --build backend
         
-        # 启动新服务
-        log_info "Starting new services..."
-        docker-compose -f docker-compose.prod.yml up -d --build
+        log_info "Rebuilding and restarting: frontend..."
+        docker-compose -f docker-compose.prod.yml up -d --no-deps --build frontend
         
         log_info "Production deployment complete!"
         log_info "Services:"
@@ -69,13 +68,12 @@ deploy() {
     else
         log_info "Deploying to development..."
         
-        # 停止现有服务
-        log_info "Stopping existing services..."
-        docker-compose down
+        # 重建并重启应用服务（短暂停机）
+        log_info "Rebuilding and restarting: backend..."
+        docker-compose up -d --no-deps --build backend
         
-        # 启动新服务
-        log_info "Starting new services..."
-        docker-compose up -d --build
+        log_info "Rebuilding and restarting: frontend..."
+        docker-compose up -d --no-deps --build frontend
         
         log_info "Development deployment complete!"
         log_info "Services:"
@@ -92,18 +90,18 @@ rollback() {
     check_docker
     
     if [ "$environment" == "prod" ]; then
-        # 停止当前服务
-        docker-compose -f docker-compose.prod.yml down
+        # 重启应用服务（使用现有镜像，不重新构建）
+        log_info "Restarting previous version of backend..."
+        docker-compose -f docker-compose.prod.yml up -d --no-deps backend
         
-        # 启动前一版本（假设已标记）
-        log_info "Starting previous version..."
-        docker-compose -f docker-compose.prod.yml up -d
+        log_info "Restarting previous version of frontend..."
+        docker-compose -f docker-compose.prod.yml up -d --no-deps frontend
         
         log_info "Rollback complete!"
         docker-compose -f docker-compose.prod.yml ps
     else
-        docker-compose down
-        docker-compose up -d
+        docker-compose up -d --no-deps backend
+        docker-compose up -d --no-deps frontend
         
         log_info "Rollback complete!"
         docker-compose ps

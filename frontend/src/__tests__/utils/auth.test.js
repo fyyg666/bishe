@@ -1,50 +1,45 @@
 beforeEach(() => {
-  // Clear jsdom cookies between tests
-  document.cookie.split(';').forEach(c => {
-    document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/')
-  })
+  sessionStorage.clear()
 })
 
-it('getToken - should return undefined when no token set', async () => {
+it('getToken - should return null when no token set', async () => {
   const auth = await import('@/utils/auth')
-  expect(auth.getToken()).toBeUndefined()
+  expect(auth.getToken()).toBeNull()
 })
 
 it('setToken/getToken - should store and retrieve access token', async () => {
   const auth = await import('@/utils/auth')
   auth.setToken('test-access-token')
   expect(auth.getToken()).toBe('test-access-token')
+  expect(sessionStorage.getItem('access_token')).toBe('test-access-token')
 })
 
-it('removeToken - should clear access token', async () => {
+it('setToken - should persist access token to sessionStorage', async () => {
   const auth = await import('@/utils/auth')
-  auth.setToken('test-access-token')
-  auth.removeToken()
-  expect(auth.getToken()).toBeUndefined()
+  auth.setToken('persisted-token', 'refresh-value')
+  expect(sessionStorage.getItem('access_token')).toBe('persisted-token')
+  expect(auth.getRefreshToken()).toBe('refresh-value')
 })
 
-it('getRefreshToken/setRefreshToken - should manage refresh token', async () => {
+it('setToken - should only update refresh token when provided', async () => {
   const auth = await import('@/utils/auth')
-  expect(auth.getRefreshToken()).toBeUndefined()
-  auth.setRefreshToken('test-refresh-token')
-  expect(auth.getRefreshToken()).toBe('test-refresh-token')
+  auth.setToken('access1', 'refresh1')
+  auth.setToken('access2')
+  expect(auth.getToken()).toBe('access2')
+  expect(auth.getRefreshToken()).toBe('refresh1')
 })
 
-it('clearAuthCookies - should clear all auth cookies', async () => {
+it('clearToken - should clear all tokens', async () => {
   const auth = await import('@/utils/auth')
-  auth.setToken('t')
-  auth.setRefreshToken('r')
-  auth.setCsrfToken('c')
-  auth.clearAuthCookies()
-  expect(auth.getToken()).toBeUndefined()
-  expect(auth.getRefreshToken()).toBeUndefined()
-  expect(auth.getCsrfToken()).toBeUndefined()
+  auth.setToken('t', 'r')
+  auth.clearToken()
+  expect(auth.getToken()).toBeNull()
+  expect(auth.getRefreshToken()).toBeNull()
+  expect(sessionStorage.getItem('access_token')).toBeNull()
 })
 
-it('CSRF token functions should work', async () => {
+it('should restore token from sessionStorage on module load', async () => {
+  sessionStorage.setItem('access_token', 'restored-token')
   const auth = await import('@/utils/auth')
-  auth.setCsrfToken('csrf-value')
-  expect(auth.getCsrfToken()).toBe('csrf-value')
-  auth.removeCsrfToken()
-  expect(auth.getCsrfToken()).toBeUndefined()
+  expect(auth.getToken()).toBe('restored-token')
 })

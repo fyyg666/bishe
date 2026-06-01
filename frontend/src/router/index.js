@@ -74,6 +74,18 @@ const routes = [
         meta: { requiresAuth: true, title: '借阅图书', hidden: true }
       },
       {
+        path: 'borrows/:id',
+        name: 'BorrowDetail',
+        component: () => import('@/views/borrow/BorrowDetail.vue'),
+        meta: { requiresAuth: true, title: '借阅详情', hidden: true }
+      },
+      {
+        path: '/borrow-rules',
+        name: 'BorrowRules',
+        component: () => import('@/views/borrow/BorrowRuleList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '借阅规则', icon: 'List' }
+      },
+      {
         path: '/seats',
         name: 'Seats',
         component: () => import('@/views/SeatList.vue'),
@@ -126,17 +138,123 @@ const routes = [
       },
       {
         path: '/credit',
-        name: 'Credit',
-        component: () => import('@/views/profile/CreditView.vue'),
-        meta: { requiresAuth: true, title: '信用积分', icon: 'Coin' }
+        redirect: '/profile/credit'
       },
       {
         path: '/compensations',
         name: 'Compensations',
         component: () => import('@/views/compensation/CompensationList.vue'),
         meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '赔偿管理', icon: 'Warning' }
+      },
+      {
+        path: '/budget-funds',
+        name: 'BudgetFunds',
+        component: () => import('@/views/budget/BudgetList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '预算管理', icon: 'Wallet' }
+      },
+      {
+        path: '/suggestions',
+        name: 'Suggestions',
+        component: () => import('@/views/suggestion/SuggestionList.vue'),
+        meta: { requiresAuth: true, title: '荐购管理', icon: 'ShoppingCart' }
+      },
+      {
+        path: '/marc',
+        name: 'MarcRecordList',
+        component: () => import('@/views/marc/MarcRecordList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: 'MARC编目', icon: 'Document' }
+      },
+      {
+        path: '/marc/create',
+        name: 'MarcCreate',
+        component: () => import('@/views/marc/MarcEditor.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '新建MARC记录', hidden: true }
+      },
+      {
+        path: '/marc/:id/edit',
+        name: 'MarcEdit',
+        component: () => import('@/views/marc/MarcEditor.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '编辑MARC记录', hidden: true }
+      },
+      {
+        path: '/z3950',
+        name: 'Z3950Search',
+        component: () => import('@/views/marc/Z3950Search.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: 'Z39.50联机编目', icon: 'Connection' }
+      },
+      {
+        path: '/vendors',
+        name: 'Vendors',
+        component: () => import('@/views/acquisition/VendorList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '供应商管理', icon: 'Shop' }
+      },
+      {
+        path: '/purchase-orders',
+        name: 'PurchaseOrders',
+        component: () => import('@/views/acquisition/PurchaseOrderList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '采购管理', icon: 'ShoppingCart' }
+      },
+      {
+        path: '/purchase-orders/:id',
+        name: 'PurchaseOrderDetail',
+        component: () => import('@/views/acquisition/PurchaseOrderDetail.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '采购订单详情', hidden: true }
+      },
+      {
+        path: '/digital-resources',
+        name: 'DigitalResources',
+        component: () => import('@/views/digital/DigitalResourceList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '数字资源管理', icon: 'Monitor' }
+      },
+      {
+        path: '/unified-search',
+        name: 'UnifiedSearch',
+        component: () => import('@/views/search/UnifiedSearch.vue'),
+        meta: { requiresAuth: true, title: '统一检索', icon: 'Search' }
+      },
+      {
+        path: '/serial/subscriptions',
+        name: 'SerialSubscriptions',
+        component: () => import('@/views/serial/SerialSubscriptionList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '期刊管理', icon: 'Notebook' }
+      },
+      {
+        path: '/serial/issues',
+        name: 'SerialIssues',
+        component: () => import('@/views/serial/SerialIssueList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '期刊到刊', hidden: true }
+      },
+      {
+        path: '/serial/claims',
+        name: 'SerialClaims',
+        component: () => import('@/views/serial/SerialClaimList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '催缺管理', hidden: true }
+      },
+      {
+        path: '/serial/routings',
+        name: 'SerialRoutings',
+        component: () => import('@/views/serial/SerialRoutingList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '期刊路由分发', icon: 'Guide' }
+      },
+      {
+        path: '/branches',
+        name: 'Branches',
+        component: () => import('@/views/branch/BranchList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '分馆管理', icon: 'School' }
+      },
+      {
+        path: '/reports',
+        name: 'Reports',
+        component: () => import('@/views/report/ReportList.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN', 'LIBRARIAN'], title: '自定义报表', icon: 'DataLine' }
       }
     ]
+  },
+  {
+    path: '/digital/read/:id',
+    name: 'DigitalReader',
+    component: () => import('@/views/digital/DigitalReader.vue'),
+    meta: { requiresAuth: true, title: '在线阅读' }
   },
   {
     path: '/:pathMatch(.*)*',
@@ -173,9 +291,9 @@ router.beforeEach(async (to, from, next) => {
     
     // Fetch user info if not loaded
     // FIXED: PERF-02 增加fetching锁防止并发请求
-    if (!userStore.userInfo && !userStore._fetchingUserInfo) {
+    if (!userStore.userInfo && !userStore.fetchingUserInfo) {
       try {
-        userStore._fetchingUserInfo = true
+        userStore.fetchingUserInfo = true
         await userStore.fetchUserInfo()
       } catch {
         // fetchUserInfo内部已处理，如果已有userInfo不会登出
@@ -185,7 +303,7 @@ router.beforeEach(async (to, from, next) => {
           return
         }
       } finally {
-        userStore._fetchingUserInfo = false
+        userStore.fetchingUserInfo = false
       }
     }
     

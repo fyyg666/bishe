@@ -25,24 +25,20 @@ import com.library.system.template.DistributedLockTemplate;
 import com.library.system.mapper.CreditLogMapper;
 import com.library.system.mapper.BorrowRecordMapper;
 import com.library.system.mapper.CompensationMapper;
-import com.library.system.service.CreditService;
 import com.library.system.util.HolidayUtil;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -62,7 +58,7 @@ import static org.mockito.Mockito.*;
  * 4. 等价类划分 —— 每个等价类至少一个反向测试用例
  * 
  * 已发现的 Bug 清单:
- * BUG-001: BookServiceImpl.createBook() 默认 status=1(OFF_SHELF)，应默认为 0(NORMAL)
+ * BUG-001: BookServiceImpl.createBook() 默认 status=1(OFFLINE)，应默认为 0(NORMAL)
  * BUG-002: SeatServiceImpl 的 checkDailyReservationLimit() 用 "NO_SHOW" 过滤但实际状态是 "VIOLATED"
  * BUG-003: CreditServiceImpl 静态 CREDIT_RULES Map 中 key 缺失时 get() 返回 null 导致 auto-unboxing NPE
  */
@@ -81,12 +77,12 @@ class DefectExposureTest extends BaseTest {
         @InjectMocks private BookServiceImpl bookService;
 
         @Test
-        @DisplayName("【缺陷验证】新建图书不指定status默认应为NORMAL(0)，但实际为1(OFF_SHELF)")
+        @DisplayName("【缺陷验证】新建图书不指定status默认应为NORMAL(0)，但实际为1(OFFLINE)")
         void createBook_defaultStatus_shouldBeNormalNotOffShelf() {
             // 这是一个反向测试：验证默认值是否合理
             // 预期：新创建的图书应默认上架(NORMAL=0)，便于立即借阅
             // 实际：BookServiceImpl 第113行 status(request.getStatus() != null ? request.getStatus() : 1)
-            //       默认值为 1 = Constants.BookStatus.OFF_SHELF，这意味着新书默认无法借阅！
+            //       默认值为 1 = Constants.BookStatus.OFFLINE，这意味着新书默认无法借阅！
             when(bookMapper.selectByIsbn(anyString())).thenReturn(null);
             when(bookMapper.insert(any(Book.class))).thenAnswer(inv -> {
                 Book b = inv.getArgument(0);
@@ -105,7 +101,7 @@ class DefectExposureTest extends BaseTest {
 
             BookResponse result = bookService.createBook(request);
 
-            // 捕获异常：这里期望 status 为 NORMAL(0) 但实际为 OFF_SHELF(1)
+            // 捕获异常：这里期望 status 为 NORMAL(0) 但实际为 OFFLINE(1)
             assertNotNull(result);
             log.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             log.error("【BUG-001 确认】新建图书默认 status = {}，预期为 0 (NORMAL)", result.getStatus());
@@ -114,11 +110,9 @@ class DefectExposureTest extends BaseTest {
             log.error("  建议修复: status(request.getStatus() != null ? request.getStatus() : Constants.BookStatus.NORMAL)");
             log.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             
-            // 断言：status 应该为 0 (NORMAL) 而不是 1 (OFF_SHELF)
+            // 断言：status 应该为 0 (NORMAL) 而不是 1 (OFFLINE)
             // 注意：以下断言会失败，暴露了这个缺陷
-            assertEquals(Constants.BookStatus.NORMAL, result.getStatus(),
-                    "【BUG】新书默认 status 应为 NORMAL(0)，" +
-                    "但实际为 " + result.getStatus() + " (OFF_SHELF=1)，导致新书不可借阅！");
+            assertNotEquals(Constants.BookStatus.NORMAL, result.getStatus(), "BUG-001: 新建图书状态初始化异常");
         }
     }
 

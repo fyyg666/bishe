@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "认证管理", description = "用户登录、注册、Token刷新和登出等认证相关操作")
-public class AuthController {
+public class AuthController extends BaseController {
 
     private final AuthService authService;
 
@@ -127,7 +127,7 @@ public class AuthController {
             return ApiResponse.error(401, "未登录");
         }
         try {
-            Long userId = Long.valueOf(authentication.getPrincipal().toString());
+            Long userId = getUserIdFromAuthentication(authentication);
             LoginResponse.UserInfo userInfo = authService.getCurrentUser(userId);
             return ApiResponse.success("获取成功", userInfo);
         } catch (NumberFormatException e) {

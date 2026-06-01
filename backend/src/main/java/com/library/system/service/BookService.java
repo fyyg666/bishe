@@ -2,6 +2,7 @@ package com.library.system.service;
 
 import com.library.system.dto.*;
 
+import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -27,7 +28,7 @@ public interface BookService {
      * @param categoryId 分类ID
      * @return 分页结果
      */
-    PageResult<BookResponse> listBooks(Long current, Long size, String keyword, Long categoryId);
+    PageResult<BookResponse> listBooks(Long current, Long size, String keyword, Long categoryId, String author);
 
     /**
      * 获取图书详情
@@ -84,4 +85,16 @@ public interface BookService {
      * @return 是否存在
      */
     boolean isIsbnExists(String isbn);
+
+    List<BookExportDTO> getExportData(String keyword, Long categoryId);
+
+    ImportResultDTO importBooks(InputStream inputStream);
+
+    PageResult<BookResponse> advancedSearch(Long current, Long size, String title, String author,
+                                             String isbn, String publisher, Long categoryId,
+                                             String publishDateStart, String publishDateEnd, String orderBy);
+
+    List<java.util.Map<String, Object>> getCategoryFacet();
+
+    List<java.util.Map<String, Object>> getAuthorFacet();
 }

@@ -8,6 +8,12 @@
       >
         <el-icon><Plus /></el-icon>注册读者
       </el-button>
+      <el-button
+        type="warning"
+        @click="showImportDialog = true"
+      >
+        批量导入
+      </el-button>
     </div>
 
     <!-- 搜索筛选 -->
@@ -443,6 +449,45 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <!-- 批量导入对话框 -->
+    <el-dialog
+      v-model="showImportDialog"
+      title="批量导入读者"
+      width="500px"
+    >
+      <el-upload
+        ref="importUpload"
+        action="/api/v1/readers/import"
+        :headers="uploadHeaders"
+        accept=".xlsx,.xls"
+        :limit="1"
+        :on-success="handleImportSuccess"
+        :on-error="handleImportError"
+        :auto-upload="false"
+        name="file"
+      >
+        <el-button type="primary">
+          选择文件
+        </el-button>
+        <template #tip>
+          <div class="el-upload__tip">
+            仅支持xlsx/xls格式，列：用户名、姓名、手机号、邮箱、角色
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <el-button @click="showImportDialog = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          @click="submitImport"
+        >
+          确认导入
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -450,6 +495,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { getToken } from '@/utils/auth'
 import {
   getReaderList,
   getReaderDetail,
@@ -534,6 +580,28 @@ const userStore = useUserStore()
 const isAdmin = computed(() => {
   return userStore.userInfo?.role === 'ADMIN' || userStore.userInfo?.role === 'LIBRARIAN'
 })
+
+const showImportDialog = ref(false)
+const importUpload = ref()
+const uploadHeaders = computed(() => ({ Authorization: `Bearer ${getToken()}` }))
+
+const submitImport = () => {
+  importUpload.value.submit()
+}
+
+const handleImportSuccess = (response) => {
+  const data = response.data
+  ElMessage.success(`导入完成：成功${data.successCount}条，失败${data.failCount}条`)
+  if (data.errors && data.errors.length > 0) {
+    ElMessage.warning(`失败详情：${data.errors.slice(0, 5).join('；')}`)
+  }
+  showImportDialog.value = false
+  loadReaderList()
+}
+
+const handleImportError = () => {
+  ElMessage.error('导入失败')
+}
 
 // 获取积分标签类型
 function getCreditTagType(credit) {

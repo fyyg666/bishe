@@ -26,7 +26,7 @@
     <select id="countUserDailyReservations" resultType="java.lang.Integer">
         SELECT COUNT(*) FROM seat_reservation
         WHERE user_id = #{userId}
-        AND DATE(reservation_date) = DATE(#{date})
+        AND reservation_date >= #{date} AND reservation_date &lt; DATE_ADD(#{date}, INTERVAL 1 DAY)
         AND status IN ('PENDING', 'CHECKED_IN')
         AND deleted = 0
     </select>

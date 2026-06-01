@@ -12,6 +12,8 @@ import com.library.system.entity.User;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ForbiddenException;
 import com.library.system.exception.ResourceNotFoundException;
+import com.library.system.mapper.ReadingRoomMapper;
+import com.library.system.mapper.SeatMapper;
 import com.library.system.mapper.SeatReservationMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.impl.SeatServiceImpl;
@@ -41,6 +43,12 @@ class SeatServiceTest extends BaseTest {
     private SeatReservationMapper seatReservationMapper;
 
     @Mock
+    private SeatMapper seatMapper;
+
+    @Mock
+    private ReadingRoomMapper readingRoomMapper;
+
+    @Mock
     private UserMapper userMapper;
 
     @Mock
@@ -48,6 +56,12 @@ class SeatServiceTest extends BaseTest {
 
     @Mock
     private DistributedLockTemplate lockTemplate;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
+    private SysConfigService sysConfigService;
 
     @Mock
     private SeatReservationService seatReservationService;

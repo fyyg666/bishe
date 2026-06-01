@@ -1,4 +1,5 @@
 <template>
+  <a href="#main-content" class="skip-to-content">跳到主要内容</a>
   <router-view v-slot="{ Component }">
     <transition
       name="fade"

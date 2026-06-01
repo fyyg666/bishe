@@ -15,6 +15,19 @@
         :column="2"
         border
       >
+        <el-descriptions-item
+          label="封面"
+          :span="2"
+        >
+          <el-image
+            v-if="book.coverImage"
+            :src="book.coverImage"
+            :preview-src-list="[book.coverImage]"
+            fit="cover"
+            style="width: 120px; height: 160px; border-radius: 4px;"
+          />
+          <span v-else>暂无封面</span>
+        </el-descriptions-item>
         <el-descriptions-item label="书名">
           {{ book.title }}
         </el-descriptions-item>
@@ -62,6 +75,14 @@
         >
           借阅此书
         </el-button>
+        <el-button
+          v-if="book && book.availableCount <= 0"
+          type="warning"
+          :loading="reserving"
+          @click="handleReserve"
+        >
+          预约排队
+        </el-button>
         <el-button @click="$router.push('/books')">
           返回列表
         </el-button>
@@ -75,12 +96,14 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useBookStore } from '@/stores/book'
+import { createBookReservation } from '@/api/bookReservation'
 
 const route = useRoute()
 const router = useRouter()
 const bookStore = useBookStore()
 
 const loading = ref(false)
+const reserving = ref(false)
 const book = ref(null)
 
 onMounted(() => {
@@ -88,9 +111,13 @@ onMounted(() => {
 })
 
 async function loadBookDetail() {
+  const id = Number(route.params.id)
+  if (!id || isNaN(id)) {
+    router.push('/books')
+    return
+  }
   loading.value = true
   try {
-    const id = route.params.id
     await bookStore.fetchBookDetail(id)
     book.value = bookStore.currentBook
   } catch {
@@ -106,6 +133,19 @@ function handleBorrow() {
     return
   }
   router.push({ path: '/borrows/page', query: { bookId: book.value.id } })
+}
+
+async function handleReserve() {
+  reserving.value = true
+  try {
+    const res = await createBookReservation(book.value.id)
+    const data = res.data || res
+    ElMessage.success(`预约排队成功，当前排队位置：第${data.queuePosition}位`)
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '预约排队失败')
+  } finally {
+    reserving.value = false
+  }
 }
 </script>
 

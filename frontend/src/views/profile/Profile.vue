@@ -8,11 +8,27 @@
             <span>个人信息</span>
           </template>
           <div class="user-info">
-            <el-avatar
-              :size="80"
-              icon="UserFilled"
-              class="avatar"
-            />
+            <el-upload
+              class="avatar-uploader"
+              action="/api/v1/files/upload"
+              :headers="uploadHeaders"
+              :data="{ directory: 'avatars' }"
+              :show-file-list="false"
+              :before-upload="beforeAvatarUpload"
+              :on-success="handleAvatarSuccess"
+              accept="image/jpeg,image/png,image/gif"
+            >
+              <el-avatar
+                :size="80"
+                :src="avatarUrl"
+                icon="UserFilled"
+                class="avatar"
+              />
+              <div class="avatar-overlay">
+                <el-icon><Upload /></el-icon>
+                <span>更换头像</span>
+              </div>
+            </el-upload>
             <div class="info-item">
               <span class="label">用户名</span>
               <span class="value">{{ userInfo.username }}</span>
@@ -37,20 +53,31 @@
         </el-card>
         
         <!-- 信用等级卡片 -->
-        <el-card shadow="hover" class="credit-card">
+        <el-card
+          shadow="hover"
+          class="credit-card"
+        >
           <template #header>
             <span>信用等级</span>
           </template>
           <div class="credit-info">
-            <div class="credit-score">{{ creditScore }}</div>
-            <div class="credit-level">{{ getCreditLevel(creditScore).name }}</div>
+            <div class="credit-score">
+              {{ creditScore }}
+            </div>
+            <div class="credit-level">
+              {{ getCreditLevel(creditScore).name }}
+            </div>
             <el-progress
               :percentage="getCreditLevel(creditScore).progress"
               :color="getCreditLevel(creditScore).color"
               :stroke-width="8"
               style="margin: 12px 0;"
             />
-            <el-button type="primary" link @click="$router.push('/profile/credit')">
+            <el-button
+              type="primary"
+              link
+              @click="$router.push('/profile/credit')"
+            >
               查看信用详情 >
             </el-button>
           </div>
@@ -198,9 +225,10 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Upload } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { changePassword as apiChangePassword } from '@/api/reader'
-import { updateReader } from '@/api/reader'
+import { changePassword as apiChangePassword, updateReader } from '@/api/reader'
+import { getToken } from '@/utils/auth'
 
 const userStore = useUserStore()
 
@@ -287,6 +315,47 @@ function loadUserInfo() {
   })
 }
 
+const avatarUrl = computed(() => userInfo.value?.avatar || '')
+
+const uploadHeaders = computed(() => {
+  const token = getToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+})
+
+function beforeAvatarUpload(file) {
+  const isImage = ['image/jpeg', 'image/png', 'image/gif'].includes(file.type)
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('头像只能是 JPG/PNG/GIF 格式!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('头像大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+async function handleAvatarSuccess(response) {
+  const url = response?.data?.url
+  if (!url) {
+    ElMessage.error('头像上传失败')
+    return
+  }
+  try {
+    const userId = userStore.userInfo?.id
+    if (userId) {
+      await updateReader(userId, { avatar: url })
+      userInfo.value = { ...userInfo.value, avatar: url }
+      userStore.userInfo = { ...userStore.userInfo, avatar: url }
+    }
+    ElMessage.success('头像更新成功')
+  } catch {
+    ElMessage.error('头像保存失败')
+  }
+}
+
 function getRoleText(role) {
   const map = { ADMIN: '管理员', LIBRARIAN: '图书管理员', READER: '读者' }
   return map[role] || role
@@ -348,9 +417,48 @@ async function handleChangePassword() {
   .user-info {
     text-align: center;
     
-    .avatar {
+    .avatar-uploader {
+      position: relative;
+      display: inline-block;
       margin-bottom: 20px;
-      background: #409eff;
+      cursor: pointer;
+
+      :deep(.el-upload) {
+        position: relative;
+        border-radius: 50%;
+        overflow: hidden;
+      }
+
+      .avatar {
+        background: #409eff;
+      }
+
+      .avatar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+        color: #fff;
+        font-size: 12px;
+
+        .el-icon {
+          font-size: 18px;
+          margin-bottom: 2px;
+        }
+      }
+
+      &:hover .avatar-overlay {
+        opacity: 1;
+      }
     }
     
     .info-item {

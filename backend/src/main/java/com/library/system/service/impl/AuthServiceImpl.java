@@ -10,6 +10,7 @@ import com.library.system.exception.ForbiddenException;
 import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.exception.UnauthorizedException;
 import com.library.system.mapper.UserMapper;
+import com.library.system.util.DataMaskingUtil;
 import com.library.system.util.JwtUtils;
 import com.library.system.service.AccountLockService;
 import com.library.system.service.AuthService;
@@ -49,7 +50,6 @@ public class AuthServiceImpl implements AuthService {
     private static final String CAPTCHA_REDIS_PREFIX = "captcha:";
 
     @Override
-    @Transactional
     public LoginResponse login(LoginRequest request) {
         // 验证码校验
         validateCaptcha(request.getCaptchaKey(), request.getCaptchaCode());
@@ -102,6 +102,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse.UserInfo register(RegisterRequest request) {
+        // 验证码校验 — FIXED: SEC-HIGH 注册接口缺少验证码防护
+        validateCaptcha(request.getCaptchaKey(), request.getCaptchaCode());
+
         // 检查两次输入的密码是否一致
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.AUTH_FAILED, "两次输入的密码不一致");
@@ -210,11 +213,14 @@ public class AuthServiceImpl implements AuthService {
      * 生成读者卡号
      */
     private String generateCardNumber() {
-        String prefix = "R";
-        String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        
-        String random = String.format("%04d", SECURE_RANDOM.nextInt(10000));
-        return prefix + date + random;
+        String dateKey = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        try {
+            Long sequence = redisTemplate.opsForValue().increment("card_seq:" + dateKey);
+            return "RD" + dateKey + String.format("%06d", sequence);
+        } catch (Exception e) {
+            log.warn("Redis不可用，回退到随机卡号生成: {}", e.getMessage());
+            return "RD" + dateKey + String.format("%06d", SECURE_RANDOM.nextInt(1000000));
+        }
     }
 
     /**
@@ -231,39 +237,13 @@ public class AuthServiceImpl implements AuthService {
                 .currentBorrows(user.getBorrowCount())
                 .avatar(user.getAvatar())
                 .status(user.getStatus() != null ? 
-                    ("DISABLED".equals(user.getStatus()) ? 0 : 
-                     "LOCKED".equals(user.getStatus()) ? 2 : 1) : 1)
-                .phone(maskPhone(user.getPhone()))
-                .email(maskEmail(user.getEmail()))
+                    (Constants.UserStatus.DISABLED.equals(user.getStatus()) ? 0 : 
+                     Constants.UserStatus.LOCKED.equals(user.getStatus()) ? 2 : 1) : 1)
+                .phone(DataMaskingUtil.maskPhone(user.getPhone()))
+                .email(DataMaskingUtil.maskEmail(user.getEmail()))
                 .createTime(user.getCreateTime() != null ? 
                     user.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null)
                 .build();
-    }
-
-    /**
-     * 手机号脱敏
-     */
-    private String maskPhone(String phone) {
-        if (phone == null || phone.length() < 7) {
-            return phone;
-        }
-        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
-    }
-
-    /**
-     * 邮箱脱敏
-     */
-    private String maskEmail(String email) {
-        if (email == null || !email.contains("@")) {
-            return email;
-        }
-        int atIndex = email.indexOf("@");
-        String prefix = email.substring(0, atIndex);
-        String suffix = email.substring(atIndex);
-        if (prefix.length() <= 1) {
-            return "*" + suffix;
-        }
-        return prefix.charAt(0) + "***" + suffix;
     }
 
     // 现在统一使用 AccountLockService 进行分布式账户锁定
@@ -318,7 +298,8 @@ public class AuthServiceImpl implements AuthService {
      * 当captchaKey和captchaCode都不为空时进行校验
      */
     private void validateCaptcha(String captchaKey, String captchaCode) {
-        if (captchaKey == null || captchaCode == null) {
+        if (!org.springframework.util.StringUtils.hasText(captchaKey)
+                || !org.springframework.util.StringUtils.hasText(captchaCode)) {
             throw new BusinessException(ErrorCode.AUTH_FAILED, "验证码不能为空");
         }
         String redisKey = CAPTCHA_REDIS_PREFIX + captchaKey;
@@ -328,7 +309,7 @@ public class AuthServiceImpl implements AuthService {
         }
         // 验证后立即删除（一次性使用）
         redisTemplate.delete(redisKey);
-        if (!storedCode.equals(captchaCode.toLowerCase())) {
+        if (!storedCode.equals(captchaCode)) {
             throw new BusinessException(ErrorCode.AUTH_FAILED, "验证码错误");
         }
     }

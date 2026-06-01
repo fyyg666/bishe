@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
 import java.util.Set;
@@ -29,9 +28,6 @@ public class XssFilter extends OncePerRequestFilter {
      * FIXED: P2-013 移除/books、/seats等前缀匹配，改为精确路径避免白名单过宽
      */
     private static final Set<String> WHITELIST_PATHS = Set.of(
-            "/auth/login",
-            "/auth/register",
-            "/auth/refresh",
             "/actuator/health",
             "/actuator/info"
     );
@@ -56,16 +52,10 @@ public class XssFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 包装请求和响应以进行XSS处理
+        // 包装请求以进行XSS处理，直接使用原始response避免响应体截断
         XssRequestWrapper xssRequest = new XssRequestWrapper(request);
-        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
 
-        try {
-            filterChain.doFilter(xssRequest, responseWrapper);
-        } finally {
-            // 确保响应内容被正确处理
-            responseWrapper.copyBodyToResponse();
-        }
+        filterChain.doFilter(xssRequest, response);
     }
 
     /**

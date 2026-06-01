@@ -65,15 +65,21 @@ class AuthServiceTest extends BaseTest {
         testUser.setCreditScore(100);
         testUser.setDeleted(0);
 
+        lenient().when(redisTemplate.opsForValue()).thenReturn(mock(org.springframework.data.redis.core.ValueOperations.class));
+        lenient().when(redisTemplate.opsForValue().get(anyString())).thenReturn("1234");
+
         // 登录请求
         loginRequest = new LoginRequest();
         loginRequest.setUsername("testuser");
         loginRequest.setPassword("password123");
+        loginRequest.setCaptchaKey("test-captcha-key");
+        loginRequest.setCaptchaCode("1234");
 
         // 注册请求
         registerRequest = new RegisterRequest();
         registerRequest.setUsername("newuser");
         registerRequest.setPassword("Pass@1234");
+        registerRequest.setConfirmPassword("Pass@1234");
         registerRequest.setRealName("新用户");
         registerRequest.setPhone("13800138000");
         registerRequest.setEmail("new@test.com");

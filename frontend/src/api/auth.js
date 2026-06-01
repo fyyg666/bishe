@@ -24,20 +24,16 @@ export function getUserInfo() {
 }
 
 export function refreshToken() {
+  const refresh = getRefreshToken()
+  if (!refresh) {
+    return Promise.reject(new Error('Refresh token not available'))
+  }
   return request({
     url: '/auth/refresh',
     method: 'post',
     data: {
-      refreshToken: getRefreshToken()
+      refreshToken: refresh
     }
-  })
-}
-
-export function changePassword(id, data) {
-  return request({
-    url: '/readers/' + id + '/password',
-    method: 'post',
-    data
   })
 }
 

@@ -11,6 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -56,11 +60,20 @@ class VolunteerControllerTest extends ControllerTestBase {
         void getVolunteerById_shouldReturn200() throws Exception {
             VolunteerResponse response = new VolunteerResponse();
             response.setId(1L);
+            response.setUserId(1L);
             when(volunteerService.getVolunteerById(1L)).thenReturn(response);
+
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken("1", null,
+                            List.of(new SimpleGrantedAuthority("ROLE_READER")));
+            auth.setDetails(1L);
+            SecurityContextHolder.getContext().setAuthentication(auth);
 
             mockMvc.perform(get("/volunteers/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0));
+
+            SecurityContextHolder.clearContext();
         }
     }
 }

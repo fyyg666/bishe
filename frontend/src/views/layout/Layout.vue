@@ -1,9 +1,25 @@
 <template>
   <el-container class="layout-container">
-    <Sidebar />
+    <Sidebar v-if="!isMobile" />
+    <el-drawer
+      v-if="isMobile"
+      v-model="sidebarVisible"
+      direction="ltr"
+      :size="'260px'"
+      :show-close="false"
+      :with-header="false"
+      class="sidebar-drawer"
+      @open="activateFocusTrap"
+      @close="deactivateFocusTrap"
+    >
+      <Sidebar :force-expanded="true" @navigate="onNavigate" />
+    </el-drawer>
     <el-container class="right-container">
-      <Header />
-      <el-main class="main-content">
+      <Header
+        :is-mobile="isMobile"
+        @toggle-sidebar="sidebarVisible = !sidebarVisible"
+      />
+      <el-main id="main-content" role="main" class="main-content">
         <router-view v-slot="{ Component }">
           <keep-alive :include="['Books', 'Borrows', 'Announcements', 'SeatList']">
             <component :is="Component" />
@@ -15,8 +31,37 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
+import { useResponsive } from '@/composables/useResponsive'
+import { useFocusTrap } from '@/composables/useFocusTrap'
+
+const { isMobile } = useResponsive()
+const sidebarVisible = ref(false)
+const drawerRef = ref(null)
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap()
+
+function onNavigate() {
+  sidebarVisible.value = false
+  deactivateFocusTrap()
+}
+
+function onKeydown(e) {
+  if (e.key === 'Escape' && sidebarVisible.value) {
+    sidebarVisible.value = false
+    deactivateFocusTrap()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
+  deactivateFocusTrap()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -46,6 +91,16 @@ import Header from '@/components/layout/Header.vue'
 @include mobile {
   .main-content {
     padding: calc($header-height + $space-3) $space-3 $space-3;
+  }
+}
+</style>
+
+<style lang="scss">
+@use '@/styles/mixins.scss' as *;
+
+.sidebar-drawer {
+  .el-drawer__body {
+    padding: 0;
   }
 }
 </style>

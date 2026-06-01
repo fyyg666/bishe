@@ -133,7 +133,6 @@ public class SecurityConfig {
                 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                                .sessionFixation().none()  // JWT无状态模式不需要session fixation防护
                 )
 
                 // 配置认证提供者
@@ -143,23 +142,31 @@ public class SecurityConfig {
                         // 公开接口
                         .requestMatchers("/auth/login", "/auth/register", "/auth/refresh").permitAll()
 
-                        // Swagger/OpenAPI 文档接口 - 所有人可访问（文档仅展示，实际操作仍需认证）
-                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/swagger-ui/index.html").permitAll()
-                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/swagger-resources", "/swagger-resources/**").permitAll()
-                        .requestMatchers("/webjars/**", "/doc.html", "/favicon.ico").permitAll()
+                        // Swagger/OpenAPI 文档接口 - 仅管理员可访问
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/swagger-ui/index.html").hasRole("ADMIN")
+                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**").hasRole("ADMIN")
+                        .requestMatchers("/swagger-resources", "/swagger-resources/**").hasRole("ADMIN")
+                        .requestMatchers("/webjars/**", "/doc.html", "/favicon.ico").hasRole("ADMIN")
                         .requestMatchers("/captcha").permitAll()
 
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/actuator/**").hasAnyRole("ADMIN", "LIBRARIAN")
 
                         // 图书查询接口允许所有人访问
-                        .requestMatchers(HttpMethod.GET, "/books", "/books/hot", "/books/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/books", "/books/hot", "/books/new", "/books/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/books/check-isbn").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/books/advanced-search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/books/facets/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categories").permitAll()
 
                         // 座位查询接口允许所有人访问
                         .requestMatchers(HttpMethod.GET, "/seats", "/seats/check-availability").permitAll()
+
+                        // 数字资源查询接口允许所有人访问
+                        .requestMatchers(HttpMethod.GET, "/digital-resources", "/digital-resources/{id}", "/digital-resources/search").permitAll()
+
+                        // 统一检索接口允许所有人访问
+                        .requestMatchers(HttpMethod.GET, "/search").permitAll()
 
                         // 其他接口需要认证
                         .anyRequest().authenticated()

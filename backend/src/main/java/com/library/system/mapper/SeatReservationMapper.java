@@ -74,7 +74,7 @@ public interface SeatReservationMapper extends BaseMapper<SeatReservation> {
      * 统计用户每日预约次数
      */
     @Select("SELECT COUNT(*) FROM seat_reservation WHERE user_id = #{userId} " +
-            "AND reservation_date = #{date} AND deleted = 0")
+            "AND reservation_date = #{date} AND status NOT IN ('CANCELLED', 'VIOLATED') AND deleted = 0")
     Integer countUserDailyReservations(@Param("userId") Long userId, @Param("date") LocalDate date);
 
     /**

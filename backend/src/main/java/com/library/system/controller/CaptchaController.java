@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "验证码", description = "登录验证码生成")
-public class CaptchaController {
+public class CaptchaController extends BaseController {
 
     private final DefaultKaptcha captchaProducer;
     private final StringRedisTemplate redisTemplate;

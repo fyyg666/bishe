@@ -51,7 +51,7 @@ jobs:
         if: matrix.module == 'backend'
         run: |
           cd backend
-          mvn checkstyle:check -q || echo "Checkstyle warnings found (non-blocking)"
+          mvn checkstyle:check -q
 
       - name: Setup Node.js (Frontend)
         if: matrix.module == 'frontend'

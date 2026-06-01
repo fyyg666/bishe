@@ -25,6 +25,7 @@ import java.util.List;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
+@SuppressWarnings("null")  // Guava BloomFilter API 泛型擦除与 @Nonnull 声明不兼容
 public class BloomFilterConfig {
 
     private final BookMapper bookMapper;

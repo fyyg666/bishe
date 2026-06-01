@@ -3,7 +3,9 @@ package com.library.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.library.system.common.Constants;
+import com.library.system.dto.ImportResultDTO;
 import com.library.system.dto.PageResult;
+import com.library.system.dto.ReaderImportDTO;
 import com.library.system.dto.ReaderResponse;
 import com.library.system.entity.User;
 import com.library.system.enums.ErrorCode;
@@ -12,18 +14,23 @@ import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.exception.BusinessException;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.ReaderService;
+import com.library.system.util.DataMaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,6 +52,10 @@ public class ReaderServiceImpl implements ReaderService {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final StringRedisTemplate redisTemplate;
+
+    @Value("${library.default-password:123456}")
+    private String defaultPassword;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -269,11 +280,12 @@ public class ReaderServiceImpl implements ReaderService {
             throw new ResourceNotFoundException(ErrorCode.READER_NOT_FOUND, "读者不存在");
         }
 
-        // 重置为默认密码 
-        user.setPassword(passwordEncoder.encode(Constants.Security.DEFAULT_PASSWORD));
+        // 重置为随机安全密码 — FIXED: SEC-HIGH 硬编码"123456"替换为随机密码
+        String newPassword = Constants.Security.generateDefaultPassword(SECURE_RANDOM);
+        user.setPassword(passwordEncoder.encode(newPassword));
         userMapper.updateById(user);
 
-        log.info("密码已重置: id={}", id);
+        log.info("密码已重置: id={}, 新密码已生成", id);
     }
 
     @Override
@@ -312,15 +324,77 @@ public class ReaderServiceImpl implements ReaderService {
                Constants.Role.LIBRARIAN.equals(user.getRole());
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(allEntries = true)
+    public ImportResultDTO importReaders(InputStream inputStream) {
+        List<ReaderImportDTO> dataList = com.alibaba.excel.EasyExcel.read(inputStream)
+                .head(ReaderImportDTO.class)
+                .sheet()
+                .doReadSync();
+
+        ImportResultDTO result = ImportResultDTO.builder()
+                .totalCount(dataList.size())
+                .successCount(0)
+                .failCount(0)
+                .errors(new ArrayList<>())
+                .build();
+
+        for (int i = 0; i < dataList.size(); i++) {
+            ReaderImportDTO dto = dataList.get(i);
+            int rowNum = i + 2;
+            try {
+                if (dto.getUsername() == null || dto.getUsername().trim().isEmpty()) {
+                    result.getErrors().add("第" + rowNum + "行: 用户名不能为空");
+                    result.setFailCount(result.getFailCount() + 1);
+                    continue;
+                }
+                User existing = findByUsername(dto.getUsername());
+                if (existing != null) {
+                    result.getErrors().add("第" + rowNum + "行: 用户名" + dto.getUsername() + "已存在");
+                    result.setFailCount(result.getFailCount() + 1);
+                    continue;
+                }
+                String role = dto.getRole();
+                if (role == null || role.trim().isEmpty()) {
+                    role = Constants.Role.READER;
+                }
+                User user = new User();
+                user.setUsername(dto.getUsername());
+                user.setPassword(passwordEncoder.encode(defaultPassword));
+                user.setRealName(dto.getRealName());
+                user.setPhone(dto.getPhone());
+                user.setEmail(dto.getEmail());
+                user.setRole(role);
+                user.setStatus(Constants.UserStatus.NORMAL);
+                user.setCreditScore(Constants.Credit.INITIAL_SCORE);
+                user.setCardNumber(generateCardNumber());
+                user.setBorrowCount(0);
+                user.setMaxBorrowCount(Constants.BorrowLimit.MAX_BORROW_COUNT);
+                user.setViolationCount(0);
+                userMapper.insert(user);
+                result.setSuccessCount(result.getSuccessCount() + 1);
+            } catch (Exception e) {
+                result.getErrors().add("第" + rowNum + "行: " + e.getMessage());
+                result.setFailCount(result.getFailCount() + 1);
+            }
+        }
+        return result;
+    }
+
     /**
      * 生成读者卡号
      * FIXED: P2-007 使用SecureRandom替代Math.random()，防止卡号可预测
      */
     private String generateCardNumber() {
-        String datePart = LocalDate.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        int randomPart = SECURE_RANDOM.nextInt(10000);  
-        return "RD" + datePart + String.format("%04d", randomPart);
+        String dateKey = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        try {
+            Long sequence = redisTemplate.opsForValue().increment("card_seq:" + dateKey);
+            return "RD" + dateKey + String.format("%06d", sequence);
+        } catch (Exception e) {
+            log.warn("Redis不可用，回退到随机卡号生成: {}", e.getMessage());
+            return "RD" + dateKey + String.format("%06d", SECURE_RANDOM.nextInt(1000000));
+        }
     }
 
     /**
@@ -331,8 +405,8 @@ public class ReaderServiceImpl implements ReaderService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .realName(user.getRealName())
-                .phone(user.getPhone())
-                .email(user.getEmail())
+                .phone(DataMaskingUtil.maskPhone(user.getPhone()))
+                .email(DataMaskingUtil.maskEmail(user.getEmail()))
                 .avatar(user.getAvatar())
                 .role(user.getRole())
                 .status(user.getStatus())

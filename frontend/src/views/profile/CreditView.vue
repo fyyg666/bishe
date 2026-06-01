@@ -207,14 +207,19 @@ function getCreditLevel(score) {
 async function loadRules() {
   try {
     const res = await getCreditRules()
-    rules.value = res.data || []
+    const rawRules = res.data || []
+    rules.value = rawRules.map(r => ({
+      action: r.ruleName,
+      score: r.type === 'PENALTY' ? -Math.abs(r.score) : r.score,
+      description: r.description
+    }))
   } catch {
     rules.value = [
       { action: '借阅图书', score: 5, description: '每次借阅成功获得5积分' },
-      { action: '按时归还', score: 10, description: '按时归还额外获得10积分' },
-      { action: '逾期归还', score: -20, description: '每逾期一天扣20积分' },
-      { action: '预约取消', score: -5, description: '取消座位预约扣5积分' },
-      { action: '损坏图书', score: -50, description: '损坏图书视情况扣分' }
+      { action: '按时归还', score: 1, description: '按时归还获得1积分' },
+      { action: '逾期归还', score: -5, description: '每逾期一天扣5积分（单日扣分上限）' },
+      { action: '损坏图书', score: -50, description: '损坏图书视情况扣分' },
+      { action: '丢失图书', score: -100, description: '丢失图书扣100积分' }
     ]
   }
 }

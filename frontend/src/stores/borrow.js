@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { getMyBorrows, borrowBook, returnBook, renewBook } from '@/api/borrow'
 
 export const useBorrowStore = defineStore('borrow', () => {
@@ -23,18 +24,33 @@ export const useBorrowStore = defineStore('borrow', () => {
   }
 
   async function borrow(data) {
-    const res = await borrowBook(data)
-    return res
+    try {
+      const res = await borrowBook(data)
+      return res
+    } catch (error) {
+      ElMessage.error(error.message || '操作失败')
+      throw error
+    }
   }
 
   async function returnBookById(id) {
-    const res = await returnBook(id)
-    return res
+    try {
+      const res = await returnBook(id)
+      return res
+    } catch (error) {
+      ElMessage.error(error.message || '操作失败')
+      throw error
+    }
   }
 
   async function renew(id, data) {
-    const res = await renewBook(id, data)
-    return res
+    try {
+      const res = await renewBook(id, data)
+      return res
+    } catch (error) {
+      ElMessage.error(error.message || '操作失败')
+      throw error
+    }
   }
 
   return {

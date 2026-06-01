@@ -102,10 +102,11 @@ public class JwtFilter extends OncePerRequestFilter {
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority(Constants.Token.ROLE_PREFIX + role); 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            userId.toString(),  // principal使用用户ID
+                            username,  // principal使用用户名
                             null,
                             Collections.singletonList(authority)
                     );
+            authentication.setDetails(userId);  // userId通过details传递
 
             // 设置认证信息到Security上下文
             SecurityContextHolder.getContext().setAuthentication(authentication);

@@ -31,6 +31,8 @@
         <aspectj.version>1.9.22</aspectj.version>
         <springdoc.version>2.3.0</springdoc.version>
         <lombok.version>1.18.46</lombok.version>
+        <easyexcel.version>3.3.3</easyexcel.version>
+        <openpdf.version>2.0.3</openpdf.version>
     </properties>
 
     <dependencies>
@@ -137,10 +139,20 @@
             <version>${guava.version}</version>
         </dependency>
 
-        <!-- Hutool - 工具类库（含XSS防护） -->
+        <!-- Hutool - 按需引入具体模块（替代hutool-all减小体积） -->
         <dependency>
             <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
+            <artifactId>hutool-core</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-json</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-http</artifactId>
             <version>${hutool.version}</version>
         </dependency>
 
@@ -166,6 +178,39 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- EasyExcel - Excel导出导入 -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>${easyexcel.version}</version>
+        </dependency>
+
+        <!-- OpenPDF - PDF导出 -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>${openpdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf-fonts-extra</artifactId>
+            <version>${openpdf.version}</version>
+        </dependency>
+
+        <!-- MinIO - 对象存储 -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.7</version>
+        </dependency>
+
+        <!-- Netty - SIP2 TCP Server -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.100.Final</version>
         </dependency>
 
         <!-- ==================== 测试依赖 ==================== -->
@@ -289,12 +334,12 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.70</minimum>
+                                            <minimum>0.75</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.60</minimum>
+                                            <minimum>0.65</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

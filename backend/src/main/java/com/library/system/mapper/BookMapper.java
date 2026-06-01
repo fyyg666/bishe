@@ -1,6 +1,7 @@
 package com.library.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.library.system.entity.Book;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -9,11 +10,27 @@ import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
-/**
- * 图书数据访问层
- */
 @Mapper
 public interface BookMapper extends BaseMapper<Book> {
+
+    List<Book> selectBookList(@Param("keyword") String keyword, @Param("categoryId") Long categoryId);
+
+    Page<Book> selectBookPage(Page<Book> page, @Param("keyword") String keyword,
+                              @Param("categoryId") Long categoryId, @Param("status") Integer status);
+
+    Page<Book> selectAdvancedBookPage(Page<Book> page,
+                                       @Param("title") String title,
+                                       @Param("author") String author,
+                                       @Param("isbn") String isbn,
+                                       @Param("publisher") String publisher,
+                                       @Param("categoryId") Long categoryId,
+                                       @Param("publishDateStart") String publishDateStart,
+                                       @Param("publishDateEnd") String publishDateEnd,
+                                       @Param("orderBy") String orderBy);
+
+    List<java.util.Map<String, Object>> selectCategoryFacet();
+
+    List<java.util.Map<String, Object>> selectAuthorFacet();
 
     /**
      * 根据ISBN查询图书

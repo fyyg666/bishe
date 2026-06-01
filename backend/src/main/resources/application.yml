@@ -18,18 +18,18 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: ${MYSQL_PASSWORD:root}
+    url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
     hikari:
-      minimum-idle: 10
+      minimum-idle: 5
       maximum-pool-size: 20
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
       pool-name: LibraryHikariPool
       leak-detection-threshold: 60000
-      connection-init-sql: SELECT 1
+      connection-test-query: SELECT 1
       # 优化：添加PreparedStatement缓存
       data-source-properties:
         cachePrepStmts: true
@@ -71,7 +71,8 @@ mybatis-plus:
     use-column-label: true
     use-generated-keys: true
     default-executor-type: reuse
-    default-statement-timeout: 5000
+    default-statement-timeout: 30
+    default-fetch-size: 100
   global-config:
     db-config:
       id-type: auto
@@ -82,7 +83,7 @@ mybatis-plus:
 # JWT配置
 # 生产环境必须通过JWT_SECRET环境变量设置强密钥（至少32字符）
 jwt:
-  secret: ${JWT_SECRET:CHANGE-ME-TO-A-STRONG-SECRET-KEY-IN-PRODUCTION-AT-LEAST-32-CHARS}
+  secret: ${JWT_SECRET}
   access-token-expiration: 7200000
   refresh-token-expiration: 604800000
   key-rotation-days: 90
@@ -103,6 +104,17 @@ rate-limiter:
   login-limit: 5
   window-size: 60
   redis-key-prefix: "rate:"
+
+# MinIO对象存储配置
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket-name: ${MINIO_BUCKET:library}
+  max-file-size: 10
+
+library:
+  default-password: ${LIBRARY_DEFAULT_PASSWORD:123456}
 
 # 日志配置
 logging:
@@ -137,6 +149,11 @@ management:
         enabled: true
 
 # SpringDoc OpenAPI 配置
+openapi:
+  server:
+    dev-url: ${OPENAPI_DEV_URL:http://localhost:8080}
+    prod-url: ${OPENAPI_PROD_URL:}
+
 springdoc:
   api-docs:
     enabled: true
@@ -185,6 +202,11 @@ springdoc:
       paths-to-match: '/compensations/**'
       packages-to-scan: com.library.system.controller
 
+# SIP2自助借还协议配置
+sip2:
+  enabled: ${SIP2_ENABLED:false}
+  port: ${SIP2_PORT:6001}
+
 ---
 # 开发环境配置
 spring:
@@ -192,9 +214,9 @@ spring:
     activate:
       on-profile: dev
   datasource:
-    url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: ${MYSQL_PASSWORD:root}
+    url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
   data:
     redis:
       host: localhost
@@ -226,6 +248,9 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
 logging:
   level:

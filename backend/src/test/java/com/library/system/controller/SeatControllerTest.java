@@ -64,7 +64,7 @@ class SeatControllerTest extends ControllerTestBase {
         @Test
         @DisplayName("预约座位 - 读者认证成功")
         void reserveSeat_withAuth_shouldReturn200() throws Exception {
-            when(seatService.reserveSeat(anyLong(), any(SeatReservationRequest.class)))
+            when(seatService.reserveSeat(any(), any(SeatReservationRequest.class)))
                     .thenReturn(new SeatReservationResponse());
 
             String body = objectMapper.writeValueAsString(new SeatReservationRequest() {{
@@ -96,7 +96,7 @@ class SeatControllerTest extends ControllerTestBase {
         @Test
         @DisplayName("签退 - 需认证")
         void checkOut_withAuth_shouldReturn200() throws Exception {
-            when(seatService.checkOut(anyLong(), anyLong())).thenReturn(new SeatReservationResponse());
+            when(seatService.checkOut(any(), any())).thenReturn(new SeatReservationResponse());
 
             mockMvc.perform(post("/seats/checkout/1")
                     .with(readerAuth())

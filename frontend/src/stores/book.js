@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { getBookList, getBookDetail, addBook, updateBook, deleteBook } from '@/api/book'
 
 export const useBookStore = defineStore('book', () => {
@@ -34,18 +35,33 @@ export const useBookStore = defineStore('book', () => {
   }
 
   async function createBook(data) {
-    const res = await addBook(data)
-    return res
+    try {
+      const res = await addBook(data)
+      return res
+    } catch (error) {
+      ElMessage.error(error.message || '操作失败')
+      throw error
+    }
   }
 
   async function editBook(id, data) {
-    const res = await updateBook(id, data)
-    return res
+    try {
+      const res = await updateBook(id, data)
+      return res
+    } catch (error) {
+      ElMessage.error(error.message || '操作失败')
+      throw error
+    }
   }
 
   async function removeBook(id) {
-    const res = await deleteBook(id)
-    return res
+    try {
+      const res = await deleteBook(id)
+      return res
+    } catch (error) {
+      ElMessage.error(error.message || '操作失败')
+      throw error
+    }
   }
 
   return {

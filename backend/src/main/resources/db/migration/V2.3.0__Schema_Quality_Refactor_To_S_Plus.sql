@@ -17,9 +17,9 @@ ALTER TABLE sys_user DROP INDEX idx_username;
 ALTER TABLE sys_user ADD UNIQUE KEY uk_username (username);
 
 -- ============================================================
--- P0-2: compensation_record 添加外键约束
+-- P0-2: compensation_order 添加外键约束
 -- ============================================================
-ALTER TABLE compensation_record
+ALTER TABLE compensation_order
   ADD CONSTRAINT fk_comp_user FOREIGN KEY (user_id) REFERENCES sys_user(id),
   ADD CONSTRAINT fk_comp_book FOREIGN KEY (book_id) REFERENCES book(id),
   ADD CONSTRAINT fk_comp_borrow FOREIGN KEY (borrow_id) REFERENCES borrow_record(id),
@@ -38,20 +38,20 @@ ALTER TABLE notification
 ALTER TABLE notification CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- P1-2: compensation_record 时间字段统一为 created_at/updated_at
+-- P1-2: compensation_order 时间字段统一为 created_at/updated_at
 -- ============================================================
-ALTER TABLE compensation_record
+ALTER TABLE compensation_order
   CHANGE COLUMN create_time created_at datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   CHANGE COLUMN update_time updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
 -- 删除旧索引，更新新索引
-ALTER TABLE compensation_record DROP INDEX idx_create_time;
-ALTER TABLE compensation_record ADD INDEX idx_created_at (created_at);
+ALTER TABLE compensation_order DROP INDEX idx_create_time;
+ALTER TABLE compensation_order ADD INDEX idx_created_at (created_at);
 
 -- ============================================================
 -- P1-3: 统一 deleted 字段类型为 tinyint NOT NULL DEFAULT 0
 -- ============================================================
--- compensation_record: tinyint DEFAULT 0 → tinyint NOT NULL DEFAULT 0
-ALTER TABLE compensation_record
+-- compensation_order: tinyint DEFAULT 0 → tinyint NOT NULL DEFAULT 0
+ALTER TABLE compensation_order
   MODIFY COLUMN deleted tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除标志：0-未删除，1-已删除';
 
 -- volunteer_service: int NOT NULL DEFAULT 0 → tinyint NOT NULL DEFAULT 0
@@ -110,21 +110,21 @@ CREATE INDEX idx_reservation_user_date_status ON seat_reservation(user_id, reser
 -- seat_reservation: 按日期+座位+状态查询（某座位某天预约情况）
 CREATE INDEX idx_reservation_seat_date ON seat_reservation(seat_id, reservation_date, status);
 
--- operation_log: 按用户+时间查询
-CREATE INDEX idx_oplog_user_created ON operation_log(user_id, created_at);
+-- sys_operation_log: 按用户+时间查询
+CREATE INDEX idx_oplog_user_created ON sys_operation_log(user_id, created_at);
 
--- compensation_record: 按用户+状态查询
-CREATE INDEX idx_comp_user_status ON compensation_record(user_id, status);
+-- compensation_order: 按用户+状态查询
+CREATE INDEX idx_comp_user_status ON compensation_order(user_id, status);
 
 -- ============================================================
--- P2-3: operation_log 去除冗余字段（有重复语义的字段）
+-- P2-3: sys_operation_log 去除冗余字段（有重复语义的字段）
 -- ============================================================
 -- request_params 和 params 重复 → 保留 params
-ALTER TABLE operation_log DROP COLUMN request_params;
+ALTER TABLE sys_operation_log DROP COLUMN request_params;
 -- ip 和 ip_address 重复 → 保留 ip
-ALTER TABLE operation_log DROP COLUMN ip_address;
+ALTER TABLE sys_operation_log DROP COLUMN ip_address;
 -- error_msg 和 error_message 重复 → 保留 error_message
-ALTER TABLE operation_log DROP COLUMN error_msg;
+ALTER TABLE sys_operation_log DROP COLUMN error_msg;
 
 -- ============================================================
 -- P2-4: 补充缺失字段 COMMENT
@@ -148,7 +148,7 @@ ALTER TABLE volunteer_service
 -- P2-5: 补充缺失的表级别 COMMENT
 -- ============================================================
 ALTER TABLE notification COMMENT = '用户通知表';
-ALTER TABLE operation_log COMMENT = '系统操作日志表';
+ALTER TABLE sys_operation_log COMMENT = '系统操作日志表';
 
 -- ============================================================
 -- P2-6: 补充 seat_reservation 缺失的 updated_at 字段
@@ -163,9 +163,9 @@ SET FOREIGN_KEY_CHECKS = 1;
 SELECT '=== 验证 username 唯一约束 ===' AS info;
 SHOW INDEX FROM sys_user WHERE Column_name = 'username';
 
-SELECT '=== 验证 compensation_record 外键 ===' AS info;
+SELECT '=== 验证 compensation_order 外键 ===' AS info;
 SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
-WHERE TABLE_SCHEMA = 'library_system' AND TABLE_NAME = 'compensation_record' AND CONSTRAINT_TYPE = 'FOREIGN KEY';
+WHERE TABLE_SCHEMA = 'library_system' AND TABLE_NAME = 'compensation_order' AND CONSTRAINT_TYPE = 'FOREIGN KEY';
 
 SELECT '=== 验证 notification 外键 ===' AS info;
 SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS

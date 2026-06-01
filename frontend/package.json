@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext .vue,.js,.jsx,.ts,.tsx --fix",
+    "lint": "eslint \"src/**/*.{vue,js,ts}\" --fix",
     "lint:ci": "eslint src/ --format stylish --quiet",
     "format": "prettier --write \"src/**/*.{js,vue,ts,json,css,scss,md}\"",
     "test": "vitest run",
@@ -20,11 +20,13 @@
     "dayjs": "^1.11.10",
     "echarts": "^5.5.0",
     "element-plus": "^2.6.3",
+    "epubjs": "^0.3.93",
     "js-cookie": "^3.0.5",
     "nprogress": "^0.2.0",
     "pinia": "^2.1.7",
     "vue": "^3.4.21",
     "vue-echarts": "^6.6.9",
+    "vue-pdf-embed": "^2.1.4",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {

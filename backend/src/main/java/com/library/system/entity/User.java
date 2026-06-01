@@ -90,6 +90,7 @@ public class User implements Serializable {
     }
 
     /** 版本号（乐观锁，用于并发控制） */
+    @Version
     private Integer version;
 
     /** 创建时间 */

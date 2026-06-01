@@ -2,6 +2,7 @@ package com.library.system.service;
 
 import com.library.system.dto.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 信用积分服务接口
@@ -96,4 +97,6 @@ public interface CreditService {
      * @param reservationId 预约记录ID
      */
     void processCheckInCredit(Long userId, Long reservationId);
+
+    List<CreditRuleResponse> getCreditRules();
 }

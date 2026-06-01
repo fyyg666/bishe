@@ -43,8 +43,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${rate-limiter.enabled:true}")
     private boolean enabled;
 
+    @Value("${rate-limit.trust-proxy-headers:false}")
+    private boolean trustProxyHeaders;
+
     /** 标记Redis是否在启动时可用，避免每次限流检查都重复输出警告 */
     private volatile boolean redisAvailable = true;
+
+    /** Redis不可用时的本地限流降级，基于Semaphore限制最大并发请求数 */
+    private final java.util.concurrent.Semaphore localRateLimiter = new java.util.concurrent.Semaphore(100);
 
     /**
      * 启动时检查Redis连接可用性
@@ -57,7 +63,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             log.info("RateLimitFilter: Redis连接正常，限流功能已启用");
         } catch (Exception e) {
             redisAvailable = false;
-            log.error("RateLimitFilter: Redis连接失败！限流功能将降级为透传模式。请检查Redis服务。错误: {}", e.getMessage());
+            log.error("RateLimitFilter: Redis连接失败！限流功能将降级为本地限流模式。请检查Redis服务。错误: {}", e.getMessage());
         }
     }
 
@@ -76,21 +82,28 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${rate-limiter.login-limit:5}")
     private int loginLimit;
 
+    /** 注册接口独立限流配置（3次/分钟，比登录更严格） */
+    @Value("${rate-limiter.register-limit:3}")
+    private int registerLimit;
+
     /** 敏感接口路径（需要独立严格限流） */
     private static final Set<String> SENSITIVE_PATHS = Set.of(
-            "/auth/login",
-            "/auth/register"
+            "/auth/login"
     );
 
     /** 高消耗接口路径（10分钟10次） */
     private static final Set<String> HEAVY_PATHS = Set.of(
             "/statistics/export",
             "/statistics/monthly",
-            "/books/export"
+            "/books/export",
+            "/borrows/export"
     );
 
     /** 登录限流key前缀 */
     private static final String LOGIN_RATE_PREFIX = "login_rate:";
+
+    /** 注册限流key前缀 */
+    private static final String REGISTER_RATE_PREFIX = "register_rate:";
 
     /** 高消耗接口限流key前缀 */
     private static final String HEAVY_RATE_PREFIX = "heavy_rate:";
@@ -154,6 +167,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         String relativePath = getRelativePath(request);
+
+        // 注册接口独立限流（3次/分钟，比登录更严格）
+        if ("/auth/register".equals(relativePath)) {
+            if (!checkRegisterRateLimit(request, response)) {
+                return;
+            }
+        }
+
         if (SENSITIVE_PATHS.contains(relativePath)) {
             if (!checkLoginRateLimit(request, response)) {
                 return; // 登录限流触发，直接返回
@@ -172,6 +193,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // 通用API限流检查
         String clientId = getClientIdentifier(request);
         String key = rateLimitPrefix + clientId + ":" + request.getRequestURI();
+        boolean localFallbackAcquired = false;
 
         try {
             long now = System.currentTimeMillis();
@@ -216,15 +238,28 @@ public class RateLimitFilter extends OncePerRequestFilter {
                         String.valueOf(Math.max(0, limit - currentCount)));
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException | IOException e) {
             if (redisAvailable) {
                 redisAvailable = false;
-                log.error("滑动窗口限流检查异常(Redis不可用)，限流已降级: {}", e.getMessage());
+                log.error("滑动窗口限流检查异常(Redis不可用)，降级为本地限流: {}", e.getMessage());
             }
-            // 限流异常时降级放行
+            if (!localRateLimiter.tryAcquire()) {
+                response.setStatus(429);
+                response.setContentType("application/json;charset=UTF-8");
+                ApiResponse<Void> apiResponse = ApiResponse.error(429, "系统繁忙，请稍后再试");
+                response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+                return;
+            }
+            localFallbackAcquired = true;
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            if (localFallbackAcquired) {
+                localRateLimiter.release();
+            }
+        }
     }
 
     /**
@@ -277,9 +312,85 @@ public class RateLimitFilter extends OncePerRequestFilter {
                         String.valueOf(Math.max(0, limit - currentCount)));
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException | IOException e) {
             log.error("登录限流检查异常: {}", e.getMessage());
-            // 限流异常时降级放行
+            if (!localRateLimiter.tryAcquire()) {
+                log.warn("登录限流降级触发(系统繁忙): ip={}", clientId);
+                response.setStatus(429);
+                response.setContentType("application/json;charset=UTF-8");
+                response.setHeader("Retry-After", String.valueOf(windowSize));
+                ApiResponse<Void> apiResponse = ApiResponse.error(429, "系统繁忙，请稍后再试");
+                response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+                return false;
+            }
+            // semaphore会在调用方filterChain执行后统一释放，此处不提前释放
+        }
+
+        return true;
+    }
+
+    /**
+     * 注册接口独立限流检查（3次/分钟）
+     * 注册接口使用独立的Redis key和更严格的限流阈值，防止恶意批量注册
+     *
+     * @return true=通过限流，false=被限流
+     */
+    private boolean checkRegisterRateLimit(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String clientId = getClientIp(request);
+        String key = REGISTER_RATE_PREFIX + clientId;
+
+        try {
+            long now = System.currentTimeMillis();
+            long windowMillis = windowSize * 1000L;
+
+            @SuppressWarnings("unchecked")
+            List<Object> result = redisTemplate.execute(
+                    slidingWindowScript,
+                    Collections.singletonList(key),
+                    String.valueOf(now),
+                    String.valueOf(windowMillis),
+                    String.valueOf(registerLimit)
+            );
+
+            if (result != null && result.size() >= 2) {
+                long currentCount = ((Number) result.get(0)).longValue();
+                int limit = ((Number) result.get(1)).intValue();
+
+                if (currentCount > limit) {
+                    log.warn("注册接口限流触发: ip={}, count={}/{}", clientId, currentCount, limit);
+
+                    securityAuditLogger.logRateLimitExceeded("ip:" + clientId,
+                            "/auth/register", currentCount, limit);
+
+                    response.setStatus(429);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setHeader("X-RateLimit-Limit", String.valueOf(limit));
+                    response.setHeader("X-RateLimit-Remaining", "0");
+                    response.setHeader("Retry-After", String.valueOf(windowSize));
+
+                    ApiResponse<Void> apiResponse = ApiResponse.error(
+                            429, "注册请求过于频繁，请稍后再试");
+                    response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+                    return false;
+                }
+
+                response.setHeader("X-RateLimit-Limit-Register", String.valueOf(limit));
+                response.setHeader("X-RateLimit-Remaining-Register",
+                        String.valueOf(Math.max(0, limit - currentCount)));
+            }
+
+        } catch (RuntimeException | IOException e) {
+            log.error("注册限流检查异常: {}", e.getMessage());
+            if (!localRateLimiter.tryAcquire()) {
+                log.warn("注册限流降级触发(系统繁忙): ip={}", clientId);
+                response.setStatus(429);
+                response.setContentType("application/json;charset=UTF-8");
+                response.setHeader("Retry-After", String.valueOf(windowSize));
+                ApiResponse<Void> apiResponse = ApiResponse.error(429, "系统繁忙，请稍后再试");
+                response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+                return false;
+            }
+            // semaphore会在调用方filterChain执行后统一释放，此处不提前释放
         }
 
         return true;
@@ -319,8 +430,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     return false;
                 }
             }
-        } catch (Exception e) {
+        } catch (RuntimeException | IOException e) {
             log.warn("高消耗接口限流检查异常，降级放行: {}", e.getMessage());
+            if (!localRateLimiter.tryAcquire()) {
+                log.warn("高消耗接口限流降级触发(系统繁忙): uri={}", request.getRequestURI());
+                response.setStatus(429);
+                response.setContentType("application/json;charset=UTF-8");
+                response.setHeader("Retry-After", String.valueOf(heavyWindowSeconds));
+                ApiResponse<Void> apiResponse = ApiResponse.error(429, "系统繁忙，请稍后再试");
+                response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+                return false;
+            }
+            localRateLimiter.release();
         }
         return true;
     }
@@ -354,28 +475,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * 获取客户端真实IP地址
      */
     private String getClientIp(HttpServletRequest request) {
+        if (!trustProxyHeaders) {
+            return request.getRemoteAddr();
+        }
+
         String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            if (ip.contains(",")) {
+                String[] ips = ip.split(",");
+                ip = ips[0].trim();  // FIXED: 取第一个IP（真实客户端），而非最后一个（代理IP）
+            }
+            return ip;
         }
 
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-
-        return ip != null ? ip : "unknown";
+        return request.getRemoteAddr();
     }
 
     @Override

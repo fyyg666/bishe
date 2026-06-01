@@ -2,6 +2,23 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.library.system.mapper.BookMapper">
 
+    <!-- 导出查询图书（不分页，带分类名） -->
+    <select id="selectBookList" resultType="com.library.system.entity.Book">
+        SELECT b.*, bc.name as category_name
+        FROM book b
+        LEFT JOIN book_category bc ON b.category_id = bc.id
+        WHERE b.deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (b.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR b.author LIKE CONCAT('%', #{keyword}, '%')
+                 OR b.isbn LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        ORDER BY b.create_time DESC
+    </select>
+
     <!-- 分页查询图书 -->
     <select id="selectBookPage" resultType="com.library.system.entity.Book">
         SELECT b.*, bc.name as category_name
@@ -9,11 +26,7 @@
         LEFT JOIN book_category bc ON b.category_id = bc.id
         WHERE b.deleted = 0
         <if test="keyword != null and keyword != ''">
-            AND (
-                b.title LIKE CONCAT('%', #{keyword}, '%')
-                OR b.author LIKE CONCAT('%', #{keyword}, '%')
-                OR b.isbn LIKE CONCAT('%', #{keyword}, '%')
-            )
+            AND MATCH(b.title, b.author) AGAINST(#{keyword} IN BOOLEAN MODE)
         </if>
         <if test="categoryId != null">
             AND b.category_id = #{categoryId}
@@ -22,6 +35,60 @@
             AND b.status = #{status}
         </if>
         ORDER BY b.create_time DESC
+    </select>
+
+    <!-- 高级组合检索 -->
+    <select id="selectAdvancedBookPage" resultType="com.library.system.entity.Book">
+        SELECT b.*, bc.name as category_name
+        FROM book b
+        LEFT JOIN book_category bc ON b.category_id = bc.id
+        WHERE b.deleted = 0
+        <if test="title != null and title != ''">
+            AND b.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="author != null and author != ''">
+            AND b.author LIKE CONCAT('%', #{author}, '%')
+        </if>
+        <if test="isbn != null and isbn != ''">
+            AND b.isbn LIKE CONCAT('%', #{isbn}, '%')
+        </if>
+        <if test="publisher != null and publisher != ''">
+            AND b.publisher LIKE CONCAT('%', #{publisher}, '%')
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="publishDateStart != null and publishDateStart != ''">
+            AND b.publish_date &gt;= #{publishDateStart}
+        </if>
+        <if test="publishDateEnd != null and publishDateEnd != ''">
+            AND b.publish_date &lt;= #{publishDateEnd}
+        </if>
+        <choose>
+            <when test="orderBy == 'borrowCount'">ORDER BY b.borrow_count DESC</when>
+            <when test="orderBy == 'date'">ORDER BY b.publish_date DESC</when>
+            <otherwise>ORDER BY b.create_time DESC</otherwise>
+        </choose>
+    </select>
+
+    <!-- 分类聚合 -->
+    <select id="selectCategoryFacet" resultType="java.util.HashMap">
+        SELECT bc.name as name, COUNT(*) as count
+        FROM book b
+        JOIN book_category bc ON b.category_id = bc.id
+        WHERE b.deleted = 0
+        GROUP BY b.category_id, bc.name
+        ORDER BY count DESC
+    </select>
+
+    <!-- 作者聚合 TOP10 -->
+    <select id="selectAuthorFacet" resultType="java.util.HashMap">
+        SELECT b.author as name, COUNT(*) as count
+        FROM book b
+        WHERE b.deleted = 0 AND b.author IS NOT NULL AND b.author != ''
+        GROUP BY b.author
+        ORDER BY count DESC
+        LIMIT 10
     </select>
 
     <!-- 获取热门图书 -->

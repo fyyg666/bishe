@@ -132,4 +132,11 @@ public class CreditController extends BaseController { // FIXED: ARCH-002 继承
         PageResult<CreditLogResponse> result = creditService.getCreditLogs(userId, current, size);
         return ApiResponse.success(result);
     }
+
+    @Operation(summary = "获取积分规则", description = "获取所有积分规则列表")
+    @GetMapping("/rules")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<java.util.List<CreditRuleResponse>> getCreditRules() {
+        return ApiResponse.success(creditService.getCreditRules());
+    }
 }

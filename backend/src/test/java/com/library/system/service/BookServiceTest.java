@@ -19,7 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -86,7 +85,7 @@ class BookServiceTest extends BaseTest {
                 return page;
             });
 
-            PageResult<BookResponse> result = bookService.listBooks(1L, 10L, null, null);
+            PageResult<BookResponse> result = bookService.listBooks(1L, 10L, null, null, null);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());

@@ -1,11 +1,10 @@
 <template>
   <div class="dashboard">
-    <!-- 统计卡片 -->
     <el-row
       :gutter="20"
       class="stats-row"
     >
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6">
         <el-card
           shadow="hover"
           class="stat-card"
@@ -23,7 +22,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6">
         <el-card
           shadow="hover"
           class="stat-card"
@@ -41,7 +40,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6">
         <el-card
           shadow="hover"
           class="stat-card"
@@ -59,7 +58,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6">
         <el-card
           shadow="hover"
           class="stat-card"
@@ -79,12 +78,11 @@
       </el-col>
     </el-row>
 
-    <!-- FIXED: FE-004 - 实现借阅趋势ECharts图表（仅管理员可见） -->
     <el-row
       :gutter="20"
       class="content-row"
     >
-      <el-col :span="userStore.isAdmin ? 16 : 24">
+      <el-col :xs="24" :sm="24" :md="userStore.isAdmin ? 16 : 24">
         <el-card v-if="userStore.isAdmin">
           <template #header>
             <div class="card-header">
@@ -110,7 +108,7 @@
         </el-card>
       </el-col>
       
-      <el-col :span="8">
+      <el-col :xs="24" :sm="24" :md="8">
         <el-card>
           <template #header>
             <span>快捷入口</span>
@@ -224,7 +222,6 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-// FIXED: P2-FE-01 - ECharts按需引入，减少包体积
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import {
@@ -237,7 +234,6 @@ import { getCreditInfo } from '@/api/credit'
 import { getLatestAnnouncements } from '@/api/announcement'
 import { useUserStore } from '@/stores/user'
 
-// FIXED: FE-004 - Dashboard集成ECharts图表和真实API调用
 const userStore = useUserStore()
 const trendPeriod = ref('week')
 
@@ -254,13 +250,10 @@ const seatStats = ref({
   available: 0
 })
 
-// FIXED: P1-FE-07 - 公告列表数据
 const recentNotices = ref([])
 
-// P2: 热门图书
 const hotBooks = ref([])
 
-// 图表引用
 const trendChartRef = ref(null)
 let trendChart = null
 
@@ -281,7 +274,6 @@ onUnmounted(() => {
 async function loadDashboardData() {
   try {
     const promises = [loadCreditScore(), loadNotices(), loadHotBooks()]
-    // 仅管理员加载统计概览、座位统计和借阅趋势
     if (userStore.isAdmin) {
       promises.push(loadSeatStats())
       promises.push(loadStats())
@@ -335,7 +327,6 @@ async function loadSeatStats() {
   }
 }
 
-// FIXED: P1-FE-07 - 加载最新公告
 async function loadNotices() {
   try {
     const res = await getLatestAnnouncements(5)
@@ -347,7 +338,6 @@ async function loadNotices() {
   }
 }
 
-// P2: 加载热门图书
 async function loadHotBooks() {
   try {
     const res = await getHotBooks(5)
@@ -381,7 +371,6 @@ async function loadBorrowTrend() {
 function renderTrendChart(data) {
   if (!trendChartRef.value) return
   
-  // 确保 DOM 已挂载后再初始化 ECharts
   try {
     if (trendChart) {
       trendChart.dispose()
@@ -450,7 +439,6 @@ function renderTrendChart(data) {
     }
   
     trendChart.setOption(option)
-    // 等 DOM 布局完成后再调整图表尺寸
     setTimeout(() => trendChart?.resize(), 50)
   } catch (e) {
     console.error('渲染图表失败:', e)
@@ -480,6 +468,8 @@ function renderEmptyChart() {
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins.scss' as *;
+
 .dashboard {
   padding: 0;
 }
@@ -554,6 +544,37 @@ function renderEmptyChart() {
   }
 }
 
+@include mobile {
+  .stat-card {
+    margin-bottom: 12px;
+
+    :deep(.el-card__body) {
+      padding: 16px;
+    }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      font-size: 20px;
+      margin-right: 14px;
+    }
+
+    .stat-info {
+      .stat-value {
+        font-size: 22px;
+      }
+
+      .stat-label {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .stats-row {
+    margin-bottom: 16px;
+  }
+}
+
 .content-row {
   .mt-20 {
     margin-top: 20px;
@@ -571,6 +592,12 @@ function renderEmptyChart() {
 .chart-container {
   height: 300px;
   width: 100%;
+}
+
+@include mobile {
+  .chart-container {
+    height: 220px;
+  }
 }
 
 .quick-actions {
@@ -775,7 +802,6 @@ function renderEmptyChart() {
   }
 }
 
-// 右侧卡片统一风格
 :deep(.el-card) {
   border: none;
   border-radius: 12px;

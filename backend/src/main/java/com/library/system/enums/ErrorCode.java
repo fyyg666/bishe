@@ -85,7 +85,30 @@ public enum ErrorCode {
     // ========== 信用积分模块 9000-9999 ==========
     CREDIT_SCORE_LOW(9001, "信用积分不足", HttpStatus.BAD_REQUEST),
     CREDIT_LOG_NOT_FOUND(9002, "信用记录不存在", HttpStatus.NOT_FOUND),
-    CREDIT_ADJUST_FAILED(9003, "积分调整失败", HttpStatus.INTERNAL_SERVER_ERROR);
+    CREDIT_ADJUST_FAILED(9003, "积分调整失败", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // ========== 赔偿模块 10001-10999 ==========
+    COMPENSATION_NOT_FOUND(10001, "赔偿记录不存在", HttpStatus.NOT_FOUND),
+    COMPENSATION_STATUS_ERROR(10002, "赔偿订单状态异常", HttpStatus.BAD_REQUEST),
+    COMPENSATION_ALREADY_PROCESSED(10003, "赔偿订单已处理", HttpStatus.CONFLICT),
+
+    // ========== 预算管理模块 11001-11999 ==========
+    BUDGET_FUND_NOT_FOUND(11001, "预算资金不存在", HttpStatus.NOT_FOUND),
+    BUDGET_INSUFFICIENT_BALANCE(11002, "预算余额不足", HttpStatus.BAD_REQUEST),
+
+    // ========== 荐购模块 12001-12999 ==========
+    SUGGESTION_NOT_FOUND(12001, "荐购记录不存在", HttpStatus.NOT_FOUND),
+    SUGGESTION_STATUS_ERROR(12002, "荐购状态异常", HttpStatus.BAD_REQUEST),
+
+    // ========== 采购模块 13001-13999 ==========
+    PURCHASE_ORDER_NOT_FOUND(13001, "采购订单不存在", HttpStatus.NOT_FOUND),
+    PURCHASE_ORDER_STATUS_ERROR(13002, "采购订单状态异常", HttpStatus.BAD_REQUEST),
+    PURCHASE_ORDER_ITEM_NOT_FOUND(13003, "采购明细不存在", HttpStatus.NOT_FOUND),
+
+    // ========== 报表模块 14001-14999 ==========
+    REPORT_TEMPLATE_NOT_FOUND(14001, "报表模板不存在", HttpStatus.NOT_FOUND),
+    REPORT_SQL_INVALID(14002, "报表SQL不合法，仅允许SELECT查询", HttpStatus.BAD_REQUEST),
+    REPORT_EXECUTE_FAILED(14003, "报表执行失败", HttpStatus.INTERNAL_SERVER_ERROR);
 
     /**
      * 错误码

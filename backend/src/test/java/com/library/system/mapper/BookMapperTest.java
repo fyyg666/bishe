@@ -3,7 +3,6 @@ package com.library.system.mapper;
 import com.library.system.base.IntegrationTestBase;
 import com.library.system.entity.Book;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Transactional
 @Sql(scripts = "/test-data/init-test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @DisplayName("BookMapper 集成测试")
-@Disabled("需要 Docker 环境 (Testcontainers)，当前环境不可用")
 class BookMapperTest extends IntegrationTestBase {
 
     @Autowired
@@ -110,7 +108,6 @@ class BookMapperTest extends IntegrationTestBase {
             int affected = bookMapper.updateAvailableCount(100L, -1, null, 0);
             assertEquals(1, affected);
 
-            Book book = bookMapper.selectById(100L);
             // 期望: availableStock = 8 - 1 = 7
         }
 

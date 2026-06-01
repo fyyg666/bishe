@@ -8,6 +8,7 @@ import com.library.system.entity.SeatReservation;
 import com.library.system.entity.User;
 import com.library.system.mapper.*;
 import com.library.system.service.CreditService;
+import com.library.system.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -18,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -40,29 +40,39 @@ public class ScheduledTaskServiceImpl {
     private final StatisticsDailyMapper statisticsDailyMapper;
     private final CreditService creditService;
     private final RedissonClient redissonClient;
+    private final NotificationService notificationService;
 
     /**
      * 任务1：每日凌晨1点 - 逾期检查
      * 将所有已超期的BORROWING记录标记为OVERDUE
      */
     @Scheduled(cron = "0 0 1 * * ?")
+    @Transactional(rollbackFor = Exception.class)
     public void checkOverdueBooks() {
         String lockKey = "scheduled:overdue-check";
         RLock lock = redissonClient.getLock(lockKey);
         try {
             if (lock.tryLock(0, 30, TimeUnit.SECONDS)) {
                 log.info("定时任务 - 逾期检查开始");
-                LambdaQueryWrapper<BorrowRecord> wrapper = new LambdaQueryWrapper<>();
-                wrapper.eq(BorrowRecord::getDeleted, 0)
+                LambdaQueryWrapper<BorrowRecord> queryWrapper = new LambdaQueryWrapper<>();
+                queryWrapper.eq(BorrowRecord::getDeleted, 0)
                         .eq(BorrowRecord::getStatus, Constants.BorrowStatus.BORROWING)
                         .lt(BorrowRecord::getDueDate, LocalDateTime.now());
+                List<BorrowRecord> overdueRecords = borrowRecordMapper.selectList(queryWrapper);
 
-                List<BorrowRecord> overdueList = borrowRecordMapper.selectList(wrapper);
                 int count = 0;
-                for (BorrowRecord record : overdueList) {
+                for (BorrowRecord record : overdueRecords) {
                     record.setStatus(Constants.BorrowStatus.OVERDUE);
                     borrowRecordMapper.updateById(record);
                     count++;
+
+                    try {
+                        notificationService.createNotification(record.getUserId(), "图书逾期提醒",
+                                "您借阅的《" + record.getBookTitle() + "》已逾期，到期日为" + record.getDueDate().toLocalDate() + "，请尽快归还",
+                                Constants.BorrowStatus.OVERDUE, record.getId());
+                    } catch (Exception e) {
+                        log.warn("逾期通知发送失败: userId={}, borrowId={}", record.getUserId(), record.getId(), e);
+                    }
                 }
                 log.info("定时任务 - 逾期检查完成，共标记{}条逾期记录", count);
             }
@@ -85,7 +95,6 @@ public class ScheduledTaskServiceImpl {
         try {
             if (lock.tryLock(0, 30, TimeUnit.SECONDS)) {
                 log.debug("定时任务 - 预约过期检查开始");
-                LocalDateTime now = LocalDateTime.now();
                 LambdaQueryWrapper<SeatReservation> wrapper = new LambdaQueryWrapper<>();
                 wrapper.eq(SeatReservation::getDeleted, 0)
                         .eq(SeatReservation::getStatus, Constants.ReservationStatus.PENDING)
@@ -93,25 +102,21 @@ public class ScheduledTaskServiceImpl {
 
                 List<SeatReservation> expiredList = seatReservationMapper.selectList(wrapper);
                 for (SeatReservation reservation : expiredList) {
+                    creditService.deductCredit(reservation.getUserId(),
+                            2, "NO_SHOW", "预约未签到扣除积分",
+                            reservation.getId(), "SEAT_RESERVATION");
+                    userMapper.incrementViolationCount(reservation.getUserId(),
+                            Constants.SeatLimit.VIOLATION_THRESHOLD,
+                            LocalDateTime.now().plusHours(72));
                     reservation.setStatus(Constants.ReservationStatus.VIOLATED);
                     seatReservationMapper.updateById(reservation);
-                    // 扣信用积分
+
                     try {
-                        creditService.deductCredit(reservation.getUserId(),
-                                2, "NO_SHOW", "预约未签到扣除积分",
-                                reservation.getId(), "SEAT_RESERVATION");
-                        // 增加用户违约计数
-                        User user = userMapper.selectById(reservation.getUserId());
-                        if (user != null) {
-                            int newCount = (user.getViolationCount() != null ? user.getViolationCount() : 0) + 1;
-                            user.setViolationCount(newCount);
-                            if (newCount >= Constants.SeatLimit.VIOLATION_THRESHOLD) {
-                                user.setBanUntil(LocalDateTime.now().plusHours(72));
-                            }
-                            userMapper.updateById(user);
-                        }
+                        notificationService.createNotification(reservation.getUserId(), "预约未签到提醒",
+                                "您预约的座位" + reservation.getSeatNumber() + "（" + reservation.getReservationDate() + "）因未签到已失效，已扣除2积分",
+                                "SEAT_EXPIRED", reservation.getId());
                     } catch (Exception e) {
-                        log.warn("预约过期扣分失败(不影响主流程): {}", e.getMessage());
+                        log.warn("预约过期通知发送失败: userId={}, reservationId={}", reservation.getUserId(), reservation.getId(), e);
                     }
                 }
                 log.debug("定时任务 - 预约过期检查完成，处理{}条", expiredList.size());

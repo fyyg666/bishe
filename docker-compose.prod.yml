@@ -43,7 +43,7 @@ services:
     networks:
       - library-network
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "-a", "${REDIS_PASSWORD}", "incr", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

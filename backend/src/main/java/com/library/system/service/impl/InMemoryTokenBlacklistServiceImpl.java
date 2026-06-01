@@ -1,40 +1,49 @@
 package com.library.system.service.impl;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import com.library.system.service.TokenBlacklistService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Token黑名单服务实现（内存模式，仅用于测试）
- */
 @Slf4j
 @Service
 @Profile("no-redis")
 public class InMemoryTokenBlacklistServiceImpl implements TokenBlacklistService {
 
-    private final Map<String, Long> blacklist = new ConcurrentHashMap<>();
+    private final Cache<String, Long> blacklist = Caffeine.newBuilder()
+            .expireAfter(new Expiry<String, Long>() {
+                @Override
+                public long expireAfterCreate(String key, Long expireTimeNanos, long currentTime) {
+                    return Math.max(expireTimeNanos - currentTime, 0);
+                }
+
+                @Override
+                public long expireAfterUpdate(String key, Long expireTimeNanos, long currentTime, long currentDuration) {
+                    return currentDuration;
+                }
+
+                @Override
+                public long expireAfterRead(String key, Long expireTimeNanos, long currentTime, long currentDuration) {
+                    return currentDuration;
+                }
+            })
+            .maximumSize(10_000)
+            .build();
 
     @Override
     public void addToBlacklist(String token, long ttlSeconds) {
-        long expireTime = System.currentTimeMillis() + (ttlSeconds * 1000);
-        blacklist.put(token, expireTime);
-        log.debug("Token已加入内存黑名单(no-redis模式): {}", token.substring(0, Math.min(20, token.length())) + "...");
+        long expireTimeNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(ttlSeconds);
+        blacklist.put(token, expireTimeNanos);
+        log.debug("Token已加入内存黑名单(no-redis模式): {}, TTL={}s", token.substring(0, Math.min(20, token.length())) + "...", ttlSeconds);
     }
 
     @Override
     public boolean isBlacklisted(String token) {
-        Long expireTime = blacklist.get(token);
-        if (expireTime == null) {
-            return false;
-        }
-        if (System.currentTimeMillis() > expireTime) {
-            blacklist.remove(token);
-            return false;
-        }
-        return true;
+        return blacklist.getIfPresent(token) != null;
     }
 }

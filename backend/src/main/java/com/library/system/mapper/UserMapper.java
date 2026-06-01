@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.LocalDateTime;
+
 /**
  * 用户数据访问层
  */
@@ -44,4 +46,9 @@ public interface UserMapper extends BaseMapper<User> {
     @Update("UPDATE sys_user SET credit_score = credit_score + #{delta}, " +
             "version = version + 1 WHERE id = #{userId} AND version = #{version}")
     int updateCreditScore(@Param("userId") Long userId, @Param("delta") int delta, @Param("version") Integer version);
+
+    @Update("UPDATE sys_user SET violation_count = violation_count + 1, " +
+            "ban_until = CASE WHEN violation_count + 1 >= #{threshold} THEN #{banUntil} ELSE ban_until END " +
+            "WHERE id = #{userId}")
+    int incrementViolationCount(@Param("userId") Long userId, @Param("threshold") int threshold, @Param("banUntil") LocalDateTime banUntil);
 }

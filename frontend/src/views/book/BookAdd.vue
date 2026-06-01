@@ -40,10 +40,20 @@
           label="ISBN"
           prop="isbn"
         >
-          <el-input
-            v-model="form.isbn"
-            placeholder="请输入ISBN"
-          />
+          <div style="display: flex; gap: 8px; width: 100%">
+            <el-input
+              v-model="form.isbn"
+              placeholder="请输入ISBN"
+              @blur="checkIsbnDuplicate"
+            />
+            <el-button
+              type="primary"
+              :loading="isbnLookupLoading"
+              @click="handleIsbnLookup"
+            >
+              ISBN查询
+            </el-button>
+          </div>
         </el-form-item>
         
         <el-form-item
@@ -109,6 +119,34 @@
         </el-form-item>
         
         <el-form-item
+          label="封面图片"
+          prop="coverImage"
+        >
+          <el-upload
+            class="cover-uploader"
+            action="/api/v1/files/upload"
+            :headers="uploadHeaders"
+            :data="{ directory: 'covers' }"
+            :show-file-list="false"
+            :on-success="handleUploadSuccess"
+            :before-upload="beforeUpload"
+            accept="image/jpeg,image/png,image/gif"
+          >
+            <img
+              v-if="form.coverImage"
+              :src="form.coverImage"
+              class="cover-preview"
+            >
+            <el-icon
+              v-else
+              class="cover-uploader-icon"
+            >
+              <Plus />
+            </el-icon>
+          </el-upload>
+        </el-form-item>
+
+        <el-form-item
           label="简介"
           prop="description"
         >
@@ -141,8 +179,11 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import { useBookStore } from '@/stores/book'
-import { getCategories } from '@/api/category'
+import { useCategories } from '@/composables/useCategories'
+import { getToken } from '@/utils/auth'
+import { lookupIsbn } from '@/api/book'
 
 const route = useRoute()
 const router = useRouter()
@@ -150,33 +191,9 @@ const bookStore = useBookStore()
 
 const formRef = ref(null)
 const loading = ref(false)
+const isbnLookupLoading = ref(false)
 
-// 分类选项：优先从API加载，API不可用时使用硬编码兜底
-const categoryOptions = ref([
-  { label: '文学', value: '文学' },
-  { label: '科技', value: '科技' },
-  { label: '历史', value: '历史' },
-  { label: '艺术', value: '艺术' },
-  { label: '哲学', value: '哲学' },
-  { label: '经济', value: '经济' }
-])
-const HARDCODED_CATEGORIES = ['文学', '科技', '历史', '艺术', '哲学', '经济']
-
-async function loadCategories() {
-  try {
-    const res = await getCategories()
-    const list = res.data || []
-    if (Array.isArray(list) && list.length > 0) {
-      categoryOptions.value = list.map(c => ({
-        label: c.name || c,
-        value: c.name || c
-      }))
-    }
-  } catch {
-    // API不可用，使用硬编码兜底
-    categoryOptions.value = HARDCODED_CATEGORIES.map(c => ({ label: c, value: c }))
-  }
-}
+const { categoryOptions, loadCategories } = useCategories()
 
 const isEdit = computed(() => !!route.query.id)
 
@@ -190,13 +207,18 @@ const form = reactive({
   title: '',
   author: '',
   isbn: '',
-  category: '',       // UI显示用（中文名）
+  category: '',
   publisher: '',
   publishDate: '',
   price: 0,
   totalCount: 1,
+  coverImage: '',
   description: ''
 })
+
+const uploadHeaders = computed(() => ({
+  Authorization: `Bearer ${getToken()}`
+}))
 
 const rules = {
   title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
@@ -209,6 +231,10 @@ onMounted(async () => {
   await loadCategories()
   if (isEdit.value) {
     const id = parseInt(route.query.id)
+    if (isNaN(id)) {
+      router.push('/books')
+      return
+    }
     await bookStore.fetchBookDetail(id)
     const book = bookStore.currentBook
     if (book) {
@@ -219,10 +245,74 @@ onMounted(async () => {
       form.publishDate = book.publishDate || ''
       form.price = book.price || 0
       form.totalCount = book.totalCount || 1
+      form.coverImage = book.coverImage || ''
       form.description = book.description || ''
     }
   }
 })
+
+function handleUploadSuccess(response) {
+  if (response.data && response.data.url) {
+    form.coverImage = response.data.url
+    ElMessage.success('封面上传成功')
+  } else {
+    ElMessage.error('上传失败，未获取到图片地址')
+  }
+}
+
+function beforeUpload(file) {
+  const isImage = ['image/jpeg', 'image/png', 'image/gif'].includes(file.type)
+  const isLt10M = file.size / 1024 / 1024 < 10
+
+  if (!isImage) {
+    ElMessage.error('封面图片仅支持 JPG/PNG/GIF 格式')
+    return false
+  }
+  if (!isLt10M) {
+    ElMessage.error('封面图片大小不能超过 10MB')
+    return false
+  }
+  return true
+}
+
+async function handleIsbnLookup() {
+  if (!form.isbn || form.isbn.trim() === '') {
+    ElMessage.warning('请先输入ISBN号')
+    return
+  }
+  isbnLookupLoading.value = true
+  try {
+    const res = await lookupIsbn(form.isbn)
+    const data = res.data
+    if (!data) {
+      ElMessage.info('未查询到该ISBN的图书信息')
+      return
+    }
+    if (data.title) form.title = data.title
+    if (data.author) form.author = data.author
+    if (data.publisher) form.publisher = data.publisher
+    if (data.publishDate) form.publishDate = data.publishDate
+    if (data.description) form.description = data.description
+    if (data.coverUrl) form.coverImage = data.coverUrl
+    ElMessage.success(`查询成功（来源：${data.source || '未知'}）`)
+  } catch (error) {
+    ElMessage.error(error.message || 'ISBN查询失败')
+  } finally {
+    isbnLookupLoading.value = false
+  }
+}
+
+async function checkIsbnDuplicate() {
+  if (!form.isbn || form.isbn.trim() === '') return
+  try {
+    const res = await checkIsbn(form.isbn)
+    if (res.data && res.data.exists) {
+      ElMessage.warning('该ISBN已存在，请确认是否重复录入')
+    }
+  } catch {
+    // API might not exist yet, ignore
+  }
+}
 
 async function handleSubmit() {
   if (!formRef.value) return
@@ -242,6 +332,7 @@ async function handleSubmit() {
         publishDate: form.publishDate ? form.publishDate.substring(0, 7) : null,
         price: form.price,
         totalCount: form.totalCount,
+        coverImage: form.coverImage || null,
         description: form.description
       }
 
@@ -287,6 +378,36 @@ async function handleSubmit() {
   
   .el-input-number {
     width: 200px;
+  }
+
+  .cover-uploader :deep(.el-upload) {
+    border: 1px dashed var(--el-border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: var(--el-transition-duration-fast);
+    width: 178px;
+    height: 178px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cover-uploader :deep(.el-upload:hover) {
+    border-color: var(--el-color-primary);
+  }
+
+  .cover-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+  }
+
+  .cover-preview {
+    width: 178px;
+    height: 178px;
+    object-fit: cover;
+    display: block;
   }
 }
 </style>

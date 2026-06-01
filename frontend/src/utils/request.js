@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { getToken, getCsrfToken, setCsrfToken, setToken, clearAuthCookies } from './auth'
+import { getToken, setToken, clearToken } from './auth'
 import { refreshToken as apiRefreshToken } from '@/api/auth'
+import { useUserStore } from '@/stores/user'
 import router from '@/router'
 
 // FIXED: FE-001 - 使用Cookie Token + CSRF Token替代localStorage
@@ -11,8 +12,7 @@ const request = axios.create({
   timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
   headers: {
     'Content-Type': 'application/json'
-  },
-  withCredentials: true // 携带Cookie凭证，支持CSRF防护
+  }
 })
 
 // 请求拦截器 - 注入Authorization和CSRF Token
@@ -23,15 +23,8 @@ request.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // FIXED: FE-001 - 为非GET请求添加CSRF Token头
-    const csrfToken = getCsrfToken()
-    if (csrfToken && ['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase())) {
-      config.headers['X-CSRF-Token'] = csrfToken
-    }
-
     return config
   }
-  // FIXED: QUAL-05 移除无意义的空错误处理器
 )
 
 // 响应拦截器 - 处理错误和Token过期
@@ -44,13 +37,6 @@ request.interceptors.response.use(
   (response) => {
     const { data } = response
 
-    // 从响应头提取并保存CSRF Token（如果后端返回）
-    const csrfFromHeader = response.headers['x-csrf-token']
-    if (csrfFromHeader) {
-      setCsrfToken(csrfFromHeader)
-    }
-
-    // 标准响应格式: code: 0 = 成功, 200 = 兼容旧版
     if (data.code !== undefined && data.code !== null) {
       if (data.code === 0 || data.code === 200) {
         return data
@@ -70,7 +56,7 @@ request.interceptors.response.use(
         case 401: {
           // FIXED: SEC-05 检查重试次数，防止无限循环
           if (config._retryCount >= MAX_RETRY_COUNT) {
-            clearAuthCookies()
+            clearToken()
             ElMessage.error('登录已过期，请重新登录')
             router.push('/login')
             return Promise.reject(error)
@@ -87,13 +73,15 @@ request.interceptors.response.use(
               // FIXED: BUG-02 检查newToken有效性，防止传入undefined
               if (!newToken) {
                 pendingRequests = []
-                clearAuthCookies()
+                clearToken()
                 ElMessage.error('登录已过期，请重新登录')
                 router.push('/login')
                 return Promise.reject(new Error('Token刷新失败'))
               }
 
               setToken(newToken)
+              const userStore = useUserStore()
+              userStore.token = newToken
 
               // 重试所有挂起的请求
               pendingRequests.forEach(cb => cb(newToken))
@@ -105,7 +93,7 @@ request.interceptors.response.use(
             } catch (refreshError) {
               // 刷新失败，清除认证信息并跳转登录
               pendingRequests = []
-              clearAuthCookies()
+              clearToken()
               ElMessage.error('登录已过期，请重新登录')
               router.push('/login')
               return Promise.reject(refreshError)
@@ -115,7 +103,7 @@ request.interceptors.response.use(
           } else {
             // FIXED: PERF-01 限制待处理请求队列长度
             if (pendingRequests.length >= MAX_PENDING_REQUESTS) {
-              clearAuthCookies()
+              clearToken()
               ElMessage.error('系统繁忙，请重新登录')
               router.push('/login')
               return Promise.reject(new Error('待处理请求队列已满'))

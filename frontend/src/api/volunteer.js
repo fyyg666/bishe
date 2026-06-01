@@ -81,7 +81,7 @@ export function reviewVolunteer(id, approved, remark) {
   return request({
     url: `/volunteers/${id}/review`,
     method: 'post',
-    params: { approved, remark }
+    data: { approved, remark }
   })
 }
 

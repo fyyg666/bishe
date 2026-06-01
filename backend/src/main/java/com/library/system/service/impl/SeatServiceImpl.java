@@ -1,6 +1,7 @@
 package com.library.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.library.system.common.Constants;
 import com.library.system.dto.*;
@@ -15,12 +16,15 @@ import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.SeatMapper;
 import com.library.system.mapper.SeatReservationMapper;
 import com.library.system.mapper.UserMapper;
+import com.library.system.mapper.ReadingRoomMapper;
 import com.library.system.service.CreditService;
-import com.library.system.service.SeatReservationService;
+import com.library.system.service.NotificationService;
 import com.library.system.service.SeatService;
+import com.library.system.service.SysConfigService;
 import com.library.system.template.DistributedLockTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +39,7 @@ import java.util.stream.Collectors;
 
 /**
  * 座位服务实现类
- * FIXED: BIZ-001 委托 SeatReservationService 的独有方法，消除架构重复
+ * FIXED: BIZ-001 消除 SeatReservationService 委托，直接实现阅览室和座位查询
  * FIXED: CODE-003 使用 DistributedLockTemplate 消除分布式锁重复代码
  */
 @Slf4j
@@ -48,23 +52,28 @@ public class SeatServiceImpl implements SeatService {
     private final UserMapper userMapper;
     private final CreditService creditService;
     private final DistributedLockTemplate lockTemplate;
-    private final SeatReservationService seatReservationService; 
+    private final NotificationService notificationService;
+    private final ReadingRoomMapper readingRoomMapper;
+    private final SysConfigService sysConfigService;
 
     // 时间格式化器
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     // 座位区域配置
-    private static final String[] AREAS = {"A区-安静区", "B区-讨论区", "C区-电脑区"};
-    private static final int SEATS_PER_AREA = 50;
+    @Value("${seat.areas:A区-安静区,B区-讨论区,C区-电脑区}")
+    private String[] areas;
+
+    @Value("${seat.seats-per-area:50}")
+    private int seatsPerArea;
 
     @Override
     public List<SeatReservationResponse> listSeats(String area, LocalDate date) {
         // FIXED: PERF-002 预先生成座位列表，再批量查询预约数据，避免N+1查询
         List<String> seatNumbers = new ArrayList<>();
-        String[] targetAreas = (area != null && !area.isEmpty()) ? new String[]{area} : AREAS;
+        String[] targetAreas = (area != null && !area.isEmpty()) ? new String[]{area} : areas;
 
         for (String targetArea : targetAreas) {
-            for (int i = 1; i <= SEATS_PER_AREA; i++) {
+            for (int i = 1; i <= seatsPerArea; i++) {
                 String seatNumber = targetArea.substring(0, 1) + "-" + String.format("%02d", i);
                 seatNumbers.add(seatNumber);
             }
@@ -85,7 +94,7 @@ public class SeatServiceImpl implements SeatService {
                             .seatNumber(seatNumber)
                             .area(targetArea)
                             .reservationDate(date)
-                            .status(reservations.isEmpty() ? "AVAILABLE" : "PARTIAL")
+                            .status(reservations.isEmpty() ? Constants.SeatStatus.AVAILABLE : "PARTIAL")
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -96,15 +105,15 @@ public class SeatServiceImpl implements SeatService {
      */
     private String getAreaFromSeatNumber(String seatNumber) {
         if (seatNumber == null || seatNumber.isEmpty()) {
-            return AREAS[0];
+            return areas[0];
         }
         char prefix = seatNumber.charAt(0);
-        return switch (prefix) {
-            case 'A' -> "A区-安静区";
-            case 'B' -> "B区-讨论区";
-            case 'C' -> "C区-电脑区";
-            default -> AREAS[0];
-        };
+        for (String area : areas) {
+            if (area.charAt(0) == prefix) {
+                return area;
+            }
+        }
+        return areas[0];
     }
 
     @Override
@@ -136,6 +145,10 @@ public class SeatServiceImpl implements SeatService {
                     user.getUsername(), request.getSeatNumber(), 
                     time.date(), time.startTime(), time.endTime());
 
+            notificationService.createNotification(user.getId(), "座位预约成功",
+                    "您已预约座位" + request.getSeatNumber() + "（" + time.date() + " " + time.startTime() + "-" + time.endTime() + "），请按时签到",
+                    "SEAT_RESERVATION", reservation.getId());
+
             return convertToResponse(reservation);
         });
     }
@@ -157,8 +170,10 @@ public class SeatServiceImpl implements SeatService {
         // 检查是否在预约时间前2小时
         LocalDateTime reservationStart = LocalDateTime.of(
                 reservation.getReservationDate(), reservation.getStartTime());
-        if (LocalDateTime.now().plusHours(2).isAfter(reservationStart)) {
-            throw new BusinessException(ErrorCode.SEAT_CANCEL_TOO_LATE, "预约开始前2小时内无法取消");
+        int cancelBeforeHours = sysConfigService.getIntValue("seat.cancel_before_hours", 2);
+        if (LocalDateTime.now().plusHours(cancelBeforeHours).isAfter(reservationStart)) {
+            throw new BusinessException(ErrorCode.SEAT_CANCEL_TOO_LATE,
+                    "预约开始前" + cancelBeforeHours + "小时内无法取消");
         }
 
         reservation.setStatus(Constants.ReservationStatus.CANCELLED); 
@@ -209,6 +224,10 @@ public class SeatServiceImpl implements SeatService {
             creditService.processCheckInCredit(userId, reservationId);
 
             log.info("座位签到成功: userId={}, reservationId={}", userId, reservationId);
+
+            notificationService.createNotification(userId, "座位签到成功",
+                    "您已成功签到座位" + reservation.getSeatNumber() + "，使用结束后请记得签退",
+                    "SEAT_CHECKIN", reservationId);
 
             return convertToResponse(reservation);
         });
@@ -267,12 +286,53 @@ public class SeatServiceImpl implements SeatService {
 
     @Override
     public List<ReadingRoom> getReadingRooms() {
-        return seatReservationService.getReadingRooms();
+        return readingRoomMapper.selectList(null);
     }
 
     @Override
     public List<Seat> getSeatsByRoom(Long roomId) {
-        return seatReservationService.getSeatsByRoom(roomId);
+        return seatMapper.selectByRoomId(roomId);
+    }
+
+    @Override
+    public SeatDetailResponse getSeatDetail(Long id) {
+        Seat seat = seatMapper.selectById(id);
+        if (seat == null || seat.getDeleted() == 1) {
+            throw new ResourceNotFoundException(ErrorCode.SEAT_NOT_FOUND, "座位不存在");
+        }
+
+        ReadingRoom room = readingRoomMapper.selectById(seat.getRoomId());
+
+        SeatDetailResponse.SeatDetailResponseBuilder builder = SeatDetailResponse.builder()
+                .id(seat.getId())
+                .seatNumber(seat.getSeatNumber())
+                .status(seat.getStatus())
+                .location(room != null ? room.getName() + " - " + seat.getSeatNumber() : seat.getSeatNumber())
+                .roomId(seat.getRoomId());
+
+        if (room != null) {
+            builder.roomName(room.getName()).roomLocation(room.getLocation());
+        }
+
+        LocalDate today = LocalDate.now();
+        LambdaQueryWrapper<SeatReservation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SeatReservation::getSeatId, id)
+                .eq(SeatReservation::getReservationDate, today)
+                .eq(SeatReservation::getDeleted, 0)
+                .orderByAsc(SeatReservation::getStartTime);
+        List<SeatReservation> reservations = seatReservationMapper.selectList(wrapper);
+
+        List<SeatDetailResponse.TimeSlot> timeSlots = reservations.stream()
+                .map(r -> SeatDetailResponse.TimeSlot.builder()
+                        .startTime(r.getStartTime())
+                        .endTime(r.getEndTime())
+                        .status(r.getStatus())
+                        .username(r.getUsername())
+                        .build())
+                .collect(Collectors.toList());
+
+        builder.todayReservations(timeSlots);
+        return builder.build();
     }
 
     // =================== 私有辅助方法 ===================
@@ -292,13 +352,18 @@ public class SeatServiceImpl implements SeatService {
                     "因违约次数过多，预约权限已被暂停，剩余" + (hours > 0 ? hours + "小时" : "不到1小时"));
         }
 
-        // 封禁已过期，清零违约次数
         if (violationCount != null && violationCount >= Constants.SeatLimit.VIOLATION_THRESHOLD
                 && banUntil != null && banUntil.isBefore(LocalDateTime.now())) {
-            user.setViolationCount(0);
-            user.setBanUntil(null);
-            userMapper.updateById(user);
+            resetExpiredBan(user);
         }
+    }
+
+    private void resetExpiredBan(User user) {
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(User::getId, user.getId())
+               .set(User::getViolationCount, 0)
+               .set(User::getBanUntil, (LocalDateTime) null);
+        userMapper.update(null, wrapper);
     }
 
     /**
@@ -324,7 +389,7 @@ public class SeatServiceImpl implements SeatService {
      */
     private User validateUser(Long userId) {
         User user = userMapper.selectById(userId);
-        if (user == null || "DISABLED".equals(user.getStatus())) {
+        if (user == null || Constants.UserStatus.DISABLED.equals(user.getStatus())) {
             throw new ResourceNotFoundException(ErrorCode.READER_NOT_FOUND, "用户不存在或已被禁用");
         }
         return user;
@@ -385,10 +450,8 @@ public class SeatServiceImpl implements SeatService {
      * 检查用户当天预约数量限制
      */
     private void checkDailyReservationLimit(Long userId) {
-        long todayReservations = seatReservationMapper.selectByUserAndDate(userId, LocalDate.now())
-                .stream()
-                .filter(r -> !"CANCELLED".equals(r.getStatus()) && !Constants.ReservationStatus.VIOLATED.equals(r.getStatus()))
-                .count();
+        Integer count = seatReservationMapper.countUserDailyReservations(userId, LocalDate.now());
+        long todayReservations = count != null ? count : 0;
         if (todayReservations >= Constants.SeatLimit.DAILY_MAX_RESERVATIONS) { 
             throw new BusinessException(ErrorCode.RATE_LIMIT_EXCEEDED, 
                     "每天最多预约" + Constants.SeatLimit.DAILY_MAX_RESERVATIONS + "个时段");

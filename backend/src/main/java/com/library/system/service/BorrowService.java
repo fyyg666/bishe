@@ -2,6 +2,8 @@ package com.library.system.service;
 
 import com.library.system.dto.*;
 
+import java.util.List;
+
 /**
  * 借阅服务接口
  * <p>
@@ -92,4 +94,6 @@ public interface BorrowService {
      * @return 是否有逾期
      */
     boolean hasOverdueBooks(Long userId);
+
+    List<BorrowExportDTO> getExportData(String status);
 }

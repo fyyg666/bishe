@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS serial_claim (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    subscription_id BIGINT NOT NULL COMMENT '订阅ID',
+    issue_id BIGINT COMMENT '到刊记录ID',
+    claim_number VARCHAR(50) NOT NULL UNIQUE COMMENT '催缺单号',
+    vendor_id BIGINT COMMENT '供应商ID',
+    claim_type VARCHAR(20) NOT NULL DEFAULT 'MISSING' COMMENT '催缺类型: MISSING/DAMAGED/WRONG',
+    claim_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '催缺状态: PENDING/SENT/ACKNOWLEDGED/RESOLVED/CLOSED',
+    claim_date DATE NOT NULL COMMENT '催缺日期',
+    response_date DATE COMMENT '供应商回复日期',
+    description TEXT COMMENT '问题描述',
+    resolution TEXT COMMENT '处理结果',
+    operator_id BIGINT NOT NULL COMMENT '操作人ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0,
+    INDEX idx_subscription_id (subscription_id),
+    INDEX idx_claim_status (claim_status),
+    INDEX idx_claim_number (claim_number),
+    INDEX idx_vendor_id (vendor_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='期刊催缺表';

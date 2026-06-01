@@ -6,6 +6,7 @@ import com.library.system.common.Constants;
 import com.library.system.dto.*;
 import com.library.system.entity.Book;
 import com.library.system.entity.BorrowRecord;
+import com.library.system.entity.BorrowRule;
 import com.library.system.entity.User;
 import com.library.system.enums.ErrorCode;
 import com.library.system.exception.BusinessException;
@@ -15,14 +16,17 @@ import com.library.system.mapper.BookMapper;
 import com.library.system.mapper.BorrowRecordMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.BorrowService;
+import com.library.system.service.BookReservationService;
+import com.library.system.service.BorrowRuleService;
 import com.library.system.service.CreditService;
+import com.library.system.service.NotificationService;
 import com.library.system.util.HolidayUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -46,14 +50,15 @@ public class BorrowServiceImpl implements BorrowService {
     private final CreditService creditService;
     private final RedissonClient redissonClient;
     private final HolidayUtil holidayUtil;
+    private final TransactionTemplate transactionTemplate;
+    private final NotificationService notificationService;
+    private final BookReservationService bookReservationService;
+    private final BorrowRuleService borrowRuleService;
 
-    // 默认借阅天数
-    private static final int DEFAULT_BORROW_DAYS = Constants.BorrowLimit.BORROW_DAYS;
     // 逾期罚款每天金额
     private static final BigDecimal DAILY_FINE = new BigDecimal("0.10");
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public BorrowResponse borrowBook(Long userId, BorrowRequest request) {
         String lockKey = "borrow:book:" + request.getBookId();
         RLock lock = redissonClient.getLock(lockKey);
@@ -61,25 +66,29 @@ public class BorrowServiceImpl implements BorrowService {
         try {
             acquireLockOrThrow(lock);
 
-            User user = validateAndGetUser(userId);
-            validateCreditScore(user);
-            validateNoOverdueBooks(userId);
+            return transactionTemplate.execute(status -> {
+                User user = validateAndGetUser(userId);
+                validateCreditScore(user);
+                validateNoOverdueBooks(userId);
 
-            int currentBorrowCount = countCurrentBorrows(userId);
-            validateBorrowLimit(user, currentBorrowCount);
+                validateBorrowLimit(user);
 
-            Book book = validateAndGetBook(request.getBookId());
-            validateBookAvailable(book);
+                Book book = validateAndGetBook(request.getBookId());
+                validateBookAvailable(book);
 
-            int borrowDays = validateAndGetBorrowDays(request.getBorrowDays());
+                int borrowDays = validateAndGetBorrowDays(request.getBorrowDays());
 
-            performBorrowOperation(book, user, borrowDays);
+                performBorrowOperation(book, user, borrowDays);
 
-            BorrowRecord record = createBorrowRecord(userId, user, book, borrowDays);
-            creditService.processBorrowCredit(userId, record.getId());
+                BorrowRecord record = createBorrowRecord(userId, user, book, borrowDays);
+                creditService.processBorrowCredit(userId, record.getId());
 
-            log.info("图书借阅成功: user={}, book={}", user.getUsername(), book.getTitle());
-            return convertToResponse(record);
+                log.info("图书借阅成功: user={}, book={}", user.getUsername(), book.getTitle());
+                notificationService.createNotification(userId, "借阅成功",
+                        "您已成功借阅《" + book.getTitle() + "》，到期日为" + record.getDueDate().toLocalDate(),
+                        "BORROW", record.getId());
+                return convertToResponse(record);
+            });
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -90,7 +99,6 @@ public class BorrowServiceImpl implements BorrowService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public BorrowResponse returnBook(Long userId, Long borrowId) {
         String lockKey = "borrow:return:" + borrowId;
         RLock lock = redissonClient.getLock(lockKey);
@@ -98,24 +106,38 @@ public class BorrowServiceImpl implements BorrowService {
         try {
             acquireLockOrThrow(lock);
 
-            BorrowRecord record = validateAndGetRecord(borrowId, userId);
-            Book book = validateAndGetBook(record.getBookId());
-            User user = validateAndGetUser(userId);
+            return transactionTemplate.execute(status -> {
+                BorrowRecord record = validateAndGetRecord(borrowId, userId);
+                Book book = validateAndGetBook(record.getBookId());
+                User user = validateAndGetUser(userId);
 
-            LocalDateTime returnDateTime = LocalDateTime.now();
-            int overdueDays = calculateOverdueDays(record.getDueDate(), returnDateTime);
-            BigDecimal fineAmount = calculateFine(overdueDays);
+                LocalDateTime returnDateTime = LocalDateTime.now();
+                int overdueDays = calculateOverdueDays(record.getDueDate(), returnDateTime);
+                BigDecimal fineAmount = calculateFine(overdueDays);
 
-            updateBorrowRecordForReturn(record, returnDateTime, overdueDays, fineAmount);
-            updateBookStock(book);
-            updateUserBorrowCount(user);
+                updateBorrowRecordForReturn(record, returnDateTime, overdueDays, fineAmount);
+                updateBookStock(book);
+                updateUserBorrowCount(user);
 
-            creditService.processReturnCredit(userId, borrowId, overdueDays, record.getDueDate(), returnDateTime);
+                creditService.processReturnCredit(userId, borrowId, overdueDays, record.getDueDate(), returnDateTime);
 
-            log.info("图书归还成功: user={}, book={}, overdueDays={}",
-                    user.getUsername(), book.getTitle(), overdueDays);
+                log.info("图书归还成功: user={}, book={}, overdueDays={}",
+                        user.getUsername(), book.getTitle(), overdueDays);
 
-            return convertToResponse(record);
+                String returnContent = overdueDays > 0
+                        ? "您已归还《" + book.getTitle() + "》，逾期" + overdueDays + "天，罚款" + fineAmount + "元"
+                        : "您已归还《" + book.getTitle() + "》，感谢按时归还";
+                notificationService.createNotification(userId, "归还成功", returnContent,
+                        "RETURN", record.getId());
+
+                try {
+                    bookReservationService.notifyNextInQueue(record.getBookId());
+                } catch (Exception e) {
+                    log.warn("归还后通知预约排队用户失败: bookId={}", record.getBookId(), e);
+                }
+
+                return convertToResponse(record);
+            });
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -126,7 +148,6 @@ public class BorrowServiceImpl implements BorrowService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public BorrowResponse renewBook(Long userId, Long borrowId, Integer days) {
         String lockKey = "borrow:renew:" + borrowId;
         RLock lock = redissonClient.getLock(lockKey);
@@ -134,17 +155,23 @@ public class BorrowServiceImpl implements BorrowService {
         try {
             acquireLockOrThrow(lock);
 
-            BorrowRecord record = validateAndGetRecord(borrowId, userId);
-            validateRecordNotOverdue(record);
-            validateRenewCount(record);
+            return transactionTemplate.execute(status -> {
+                BorrowRecord record = validateAndGetRecord(borrowId, userId);
+                validateRecordNotOverdue(record);
+                validateRenewCount(record);
 
-            int renewDays = days != null ? days : Constants.BorrowLimit.RENEW_DAYS;
-            performRenewOperation(record, renewDays);
+                int renewDays = days != null ? days : Constants.BorrowLimit.RENEW_DAYS;
+                performRenewOperation(record, renewDays);
 
-            log.info("图书续借成功: userId={}, borrowId={}, newDueDate={}",
-                    userId, borrowId, record.getDueDate());
+                log.info("图书续借成功: userId={}, borrowId={}, newDueDate={}",
+                        userId, borrowId, record.getDueDate());
 
-            return convertToResponse(record);
+                notificationService.createNotification(userId, "续借成功",
+                        "您已续借《" + record.getBookTitle() + "》，新到期日为" + record.getDueDate().toLocalDate(),
+                        "RENEW", record.getId());
+
+                return convertToResponse(record);
+            });
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -198,7 +225,7 @@ public class BorrowServiceImpl implements BorrowService {
             throw new ResourceNotFoundException(ErrorCode.BORROW_RECORD_NOT_FOUND, "借阅记录不存在");
         }
 
-        boolean isAdmin = "ADMIN".equals(currentRole) || "LIBRARIAN".equals(currentRole);
+        boolean isAdmin = Constants.Role.ADMIN.equals(currentRole) || Constants.Role.LIBRARIAN.equals(currentRole);
         boolean isOwner = record.getUserId().equals(currentUserId);
 
         if (!isAdmin && !isOwner) {
@@ -208,6 +235,31 @@ public class BorrowServiceImpl implements BorrowService {
         }
 
         return convertToResponse(record);
+    }
+
+    @Override
+    public List<BorrowExportDTO> getExportData(String status) {
+        LambdaQueryWrapper<BorrowRecord> wrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(BorrowRecord::getStatus, status);
+        }
+        wrapper.eq(BorrowRecord::getDeleted, 0);
+        wrapper.orderByDesc(BorrowRecord::getCreateTime);
+        List<BorrowRecord> records = borrowRecordMapper.selectList(wrapper);
+        return records.stream().map(record -> BorrowExportDTO.builder()
+                .id(record.getId())
+                .username(record.getUsername())
+                .bookTitle(record.getBookTitle())
+                .bookIsbn(record.getBookIsbn())
+                .borrowDate(record.getBorrowDate() != null ? record.getBorrowDate().toLocalDate().toString() : "")
+                .dueDate(record.getDueDate() != null ? record.getDueDate().toLocalDate().toString() : "")
+                .returnDate(record.getReturnDate() != null ? record.getReturnDate().toLocalDate().toString() : "")
+                .status(record.getStatus())
+                .renewCount(record.getRenewCount())
+                .overdueDays(record.getOverdueDays())
+                .fineAmount(record.getFineAmount())
+                .build())
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -273,24 +325,17 @@ public class BorrowServiceImpl implements BorrowService {
     }
 
     /**
-     * 统计用户当前借阅数量
-     */
-    private int countCurrentBorrows(Long userId) {
-        Long count = borrowRecordMapper.selectCount(
-                new LambdaQueryWrapper<BorrowRecord>()
-                        .eq(BorrowRecord::getUserId, userId)
-                        .eq(BorrowRecord::getStatus, Constants.BorrowStatus.BORROWING)
-                        .eq(BorrowRecord::getDeleted, 0));
-        return count != null ? count.intValue() : 0;
-    }
-
-    /**
      * 验证借阅数量限制
      */
-    private void validateBorrowLimit(User user, int currentBorrowCount) {
-        int maxBorrow = user.getMaxBorrowCount() != null ? user.getMaxBorrowCount() : Constants.BorrowLimit.MAX_BORROW_COUNT;
+    private void validateBorrowLimit(User user) {
+        int currentBorrowCount = user.getBorrowCount() != null ? user.getBorrowCount() : 0;
+        BorrowRule rule = borrowRuleService.getRuleEntity(user.getRole(), "NORMAL");
+        int maxBorrow = rule.getMaxBorrow();
+        if (user.getMaxBorrowCount() != null && user.getMaxBorrowCount() < maxBorrow) {
+            maxBorrow = user.getMaxBorrowCount();
+        }
         if (currentBorrowCount >= maxBorrow) {
-            throw new BusinessException(ErrorCode.BORROW_LIMIT_EXCEEDED, "已达到最大借阅数量限制");
+            throw new BusinessException(ErrorCode.BORROW_LIMIT_EXCEEDED, "已达到最大借阅数量限制(" + maxBorrow + "本)");
         }
     }
 
@@ -321,9 +366,10 @@ public class BorrowServiceImpl implements BorrowService {
      * 验证并获取借阅天数
      */
     private int validateAndGetBorrowDays(Integer requestDays) {
-        int borrowDays = requestDays != null ? requestDays : DEFAULT_BORROW_DAYS;
-        if (borrowDays < 1 || borrowDays > 60) {
-            throw new BusinessException(ErrorCode.PARAMETER_ERROR, "借阅天数必须在1-60天之间");
+        BorrowRule defaultRule = borrowRuleService.getRuleEntity(Constants.Role.READER, "NORMAL");
+        int borrowDays = requestDays != null ? requestDays : defaultRule.getMaxDays();
+        if (borrowDays < 1 || borrowDays > defaultRule.getMaxDays()) {
+            throw new BusinessException(ErrorCode.PARAMETER_ERROR, "借阅天数必须在1-" + defaultRule.getMaxDays() + "天之间");
         }
         return borrowDays;
     }
@@ -339,7 +385,7 @@ public class BorrowServiceImpl implements BorrowService {
 
         int borrowCountResult = userMapper.updateBorrowCount(user.getId(), 1, user.getVersion());
         if (borrowCountResult == 0) {
-            throw new BusinessException(ErrorCode.CONCURRENT_OPERATION, "借阅数量更新失败，请重试");
+            throw new BusinessException(ErrorCode.BORROW_LIMIT_EXCEEDED, "借阅数量已变更，请刷新后重试");
         }
     }
 
@@ -454,8 +500,9 @@ public class BorrowServiceImpl implements BorrowService {
      * 验证续借次数
      */
     private void validateRenewCount(BorrowRecord record) {
-        if (record.getRenewCount() >= Constants.BorrowLimit.MAX_RENEW_TIMES) {
-            throw new BusinessException(ErrorCode.RENEW_LIMIT_EXCEEDED, "已达到最大续借次数限制");
+        BorrowRule rule = borrowRuleService.getRuleEntity(Constants.Role.READER, "NORMAL");
+        if (record.getRenewCount() >= rule.getMaxRenew()) {
+            throw new BusinessException(ErrorCode.RENEW_LIMIT_EXCEEDED, "已达到最大续借次数限制(" + rule.getMaxRenew() + "次)");
         }
     }
 
@@ -463,7 +510,9 @@ public class BorrowServiceImpl implements BorrowService {
      * 执行续借操作
      */
     private void performRenewOperation(BorrowRecord record, int renewDays) {
-        record.setDueDate(record.getDueDate().plusDays(renewDays));
+        BorrowRule rule = borrowRuleService.getRuleEntity(Constants.Role.READER, "NORMAL");
+        int actualRenewDays = renewDays > 0 ? renewDays : rule.getRenewDays();
+        record.setDueDate(record.getDueDate().plusDays(actualRenewDays));
         record.setRenewCount(record.getRenewCount() + 1);
         borrowRecordMapper.updateById(record);
     }

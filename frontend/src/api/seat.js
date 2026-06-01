@@ -105,3 +105,7 @@ export function checkAvailability(seatNumber, date, startTime, endTime) {
     params: { seatNumber, date, startTime, endTime }
   })
 }
+
+export function getReadingRooms() {
+  return request({ url: '/seats/reading-rooms', method: 'get' })
+}

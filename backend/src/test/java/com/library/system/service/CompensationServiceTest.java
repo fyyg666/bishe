@@ -4,10 +4,13 @@ import com.library.system.base.BaseTest;
 import com.library.system.dto.CompensationRequest;
 import com.library.system.dto.CompensationResponse;
 import com.library.system.dto.PageResult;
+import com.library.system.entity.BorrowRecord;
 import com.library.system.entity.Compensation;
 import com.library.system.entity.User;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ResourceNotFoundException;
+import com.library.system.mapper.BookMapper;
+import com.library.system.mapper.BorrowRecordMapper;
 import com.library.system.mapper.CompensationMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.impl.CompensationServiceImpl;
@@ -36,6 +39,12 @@ class CompensationServiceTest extends BaseTest {
 
     @Mock
     private CreditService creditService;
+
+    @Mock
+    private BorrowRecordMapper borrowRecordMapper;
+
+    @Mock
+    private BookMapper bookMapper;
 
     @InjectMocks
     private CompensationServiceImpl compensationService;
@@ -73,6 +82,11 @@ class CompensationServiceTest extends BaseTest {
             request.setBorrowId(100L);
             request.setAmount(new BigDecimal("50.00"));
             request.setRemark("图书损坏");
+
+            BorrowRecord borrowRecord = new BorrowRecord();
+            borrowRecord.setId(request.getBorrowId());
+            borrowRecord.setDeleted(0);
+            when(borrowRecordMapper.selectById(request.getBorrowId())).thenReturn(borrowRecord);
 
             CompensationResponse result = compensationService.createCompensation(request, 1L);
 
@@ -117,7 +131,7 @@ class CompensationServiceTest extends BaseTest {
         @Test
         void processCreditPayment_success() {
             when(compensationMapper.selectById(1L)).thenReturn(testCompensation);
-            doNothing().when(creditService).deductCredit(anyLong(), anyInt(), anyString(), anyString(), anyLong(), anyString());
+            doNothing().when(creditService).deductCredit(anyLong(), anyInt(), any(), any(), anyLong(), any());
             when(compensationMapper.updateById(any(Compensation.class))).thenReturn(1);
 
             CompensationResponse result = compensationService.processCreditPayment(1L, 2L, 50, "积分抵扣");

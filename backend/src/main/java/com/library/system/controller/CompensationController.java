@@ -6,7 +6,6 @@ import com.library.system.dto.ApiResponse;
 import com.library.system.dto.PageResult;
 import com.library.system.service.CompensationService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,7 +29,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 @Tag(name = "赔偿管理", description = "图书丢失/损坏赔偿管理")
 @SecurityRequirement(name = "bearerAuth")
-public class CompensationController {
+public class CompensationController extends BaseController {
 
     private final CompensationService compensationService;
 
@@ -40,7 +39,7 @@ public class CompensationController {
     public ApiResponse<CompensationResponse> createCompensation(
             @Valid @RequestBody CompensationRequest request,
             Authentication authentication) {
-        Long operatorId = Long.valueOf(authentication.getPrincipal().toString());
+        Long operatorId = getUserIdFromAuthentication(authentication);
         log.info("创建赔偿订单: userId={}, bookId={}", request.getUserId(), request.getBookId());
         return ApiResponse.success("赔偿订单创建成功",
                 compensationService.createCompensation(request, operatorId));
@@ -70,7 +69,7 @@ public class CompensationController {
             @PathVariable Long id,
             @RequestParam(required = false) String remark,
             Authentication authentication) {
-        Long operatorId = Long.valueOf(authentication.getPrincipal().toString());
+        Long operatorId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success("现金赔偿处理成功",
                 compensationService.processCashPayment(id, operatorId, remark));
     }
@@ -83,7 +82,7 @@ public class CompensationController {
             @RequestParam Integer creditAmount,
             @RequestParam(required = false) String remark,
             Authentication authentication) {
-        Long operatorId = Long.valueOf(authentication.getPrincipal().toString());
+        Long operatorId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success("积分抵扣处理成功",
                 compensationService.processCreditPayment(id, operatorId, creditAmount, remark));
     }
@@ -96,7 +95,7 @@ public class CompensationController {
             @RequestParam BigDecimal hours,
             @RequestParam(required = false) String remark,
             Authentication authentication) {
-        Long operatorId = Long.valueOf(authentication.getPrincipal().toString());
+        Long operatorId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success("志愿服务抵扣处理成功",
                 compensationService.processVolunteerPayment(id, operatorId, hours, remark));
     }
@@ -108,7 +107,7 @@ public class CompensationController {
             @PathVariable Long id,
             @RequestParam String reason,
             Authentication authentication) {
-        Long operatorId = Long.valueOf(authentication.getPrincipal().toString());
+        Long operatorId = getUserIdFromAuthentication(authentication);
         compensationService.cancelCompensation(id, operatorId, reason);
         return ApiResponse.success("success", "赔偿订单已取消");
     }

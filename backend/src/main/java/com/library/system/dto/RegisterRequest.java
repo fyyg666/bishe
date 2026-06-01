@@ -59,4 +59,14 @@ public class RegisterRequest {
      */
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
+
+    /**
+     * 验证码key
+     */
+    private String captchaKey;
+
+    /**
+     * 验证码
+     */
+    private String captchaCode;
 }

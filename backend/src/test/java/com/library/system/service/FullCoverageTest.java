@@ -6,24 +6,18 @@ import com.library.system.config.BloomFilterConfig;
 import com.library.system.dto.*;
 import com.library.system.entity.*;
 import com.library.system.enums.CompensationStatus;
-import com.library.system.enums.ErrorCode;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ForbiddenException;
 import com.library.system.exception.ResourceNotFoundException;
-import com.library.system.exception.UnauthorizedException;
 import com.library.system.mapper.*;
 import com.library.system.service.impl.*;
 import com.library.system.template.DistributedLockTemplate;
 import com.library.system.util.HolidayUtil;
-import com.library.system.util.JwtUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.junit.jupiter.api.*;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
@@ -206,7 +200,7 @@ class FullCoverageTest extends BaseTest {
             when(bookMapper.selectPage(any(), any())).thenAnswer(inv -> {
                 com.baomidou.mybatisplus.core.metadata.IPage<Book> p = inv.getArgument(0);
                 p.setRecords(List.of()); p.setTotal(0); return p; });
-            PageResult<BookResponse> r = bookService.listBooks(1L, 10L, "", null);
+            PageResult<BookResponse> r = bookService.listBooks(1L, 10L, "", null, null);
             assertNotNull(r);
         }
 
@@ -216,7 +210,7 @@ class FullCoverageTest extends BaseTest {
             when(bookMapper.selectPage(any(), any())).thenAnswer(inv -> {
                 com.baomidou.mybatisplus.core.metadata.IPage<Book> p = inv.getArgument(0);
                 p.setRecords(List.of()); p.setTotal(0); return p; });
-            PageResult<BookResponse> r = bookService.listBooks(1L, 10L, longKw, 1L);
+            PageResult<BookResponse> r = bookService.listBooks(1L, 10L, longKw, 1L, null);
             assertNotNull(r);
         }
 
@@ -315,7 +309,7 @@ class FullCoverageTest extends BaseTest {
 
         @Test @DisplayName("D6: borrowBook 图书已下架")
         void borrowBook_bookOffShelf() {
-            book.setStatus(Constants.BookStatus.OFF_SHELF);
+            book.setStatus(Constants.BookStatus.OFFLINE);
             when(userMapper.selectById(1L)).thenReturn(user);
             when(bookMapper.selectById(1L)).thenReturn(book);
             when(borrowRecordMapper.selectCount(any())).thenReturn(0L);

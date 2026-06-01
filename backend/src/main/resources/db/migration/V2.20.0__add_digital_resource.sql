@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS digital_resource (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL COMMENT '题名',
+    author VARCHAR(100) COMMENT '作者',
+    isbn VARCHAR(20) COMMENT 'ISBN',
+    resource_type VARCHAR(20) NOT NULL DEFAULT 'EBOOK' COMMENT '类型: EBOOK/AUDIO/VIDEO/DATABASE',
+    format VARCHAR(20) NOT NULL DEFAULT 'PDF' COMMENT '格式: PDF/EPUB/MP3/MP4',
+    file_size BIGINT COMMENT '文件大小(字节)',
+    access_url VARCHAR(500) COMMENT '访问地址',
+    provider VARCHAR(100) COMMENT '提供商',
+    access_mode VARCHAR(20) NOT NULL DEFAULT 'ONLINE' COMMENT '访问方式: ONLINE/DOWNLOAD/BOTH',
+    category_id BIGINT COMMENT '分类ID',
+    description TEXT COMMENT '简介',
+    cover_url VARCHAR(500) COMMENT '封面URL',
+    status INT NOT NULL DEFAULT 0 COMMENT '状态: 0-可用/1-下架',
+    borrow_count INT DEFAULT 0 COMMENT '访问次数',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted TINYINT DEFAULT 0,
+    INDEX idx_resource_type (resource_type),
+    INDEX idx_category_id (category_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数字资源表';

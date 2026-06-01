@@ -40,6 +40,15 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
 
     private final SeatService seatService;
 
+    @Operation(summary = "获取座位详情", description = "根据ID查询座位详细信息及当日预约状态")
+    @GetMapping("/{id}")
+    public ApiResponse<SeatDetailResponse> getSeatDetail(
+            @Parameter(description = "座位ID", required = true) @PathVariable Long id) {
+        log.debug("查询座位详情: id={}", id);
+        SeatDetailResponse detail = seatService.getSeatDetail(id);
+        return ApiResponse.success(detail);
+    }
+
     /**
      * 获取座位列表
      */

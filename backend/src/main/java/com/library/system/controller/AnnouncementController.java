@@ -35,7 +35,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "公告管理", description = "系统公告的增删改查和发布操作")
 @SecurityRequirement(name = "bearerAuth")
-public class AnnouncementController {
+public class AnnouncementController extends BaseController {
 
     private final AnnouncementService announcementService;
 

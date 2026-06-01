@@ -2,7 +2,6 @@ package com.library.system.controller;
 
 import com.library.system.base.ControllerTestBase;
 import com.library.system.dto.BookResponse;
-import com.library.system.dto.StatisticsResponse;
 import com.library.system.service.StatisticsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

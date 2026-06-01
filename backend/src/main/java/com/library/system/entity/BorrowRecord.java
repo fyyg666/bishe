@@ -29,6 +29,8 @@ public class BorrowRecord implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    private Long branchId;
+
     /** 用户ID */
     private Long userId;
 

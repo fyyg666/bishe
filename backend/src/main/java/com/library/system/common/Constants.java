@@ -72,13 +72,6 @@ public class Constants {
         
         /** 下架（不可借阅） */
         public static final Integer OFFLINE = 1;
-        
-        // 语义别名，方便理解
-        /** 上架（可借阅）— NORMAL 的语义别名 */
-        public static final Integer ON_SHELF = 0;
-        
-        /** 下架（不可借阅） */
-        public static final Integer OFF_SHELF = 1;
     }
 
     /** 借阅状态常量 */
@@ -230,8 +223,8 @@ public class Constants {
 
     /** 安全相关常量 */ 
     public static class Security {
-        /** 默认重置密码 */
-        public static final String DEFAULT_PASSWORD = "123456";
+        /** 默认重置密码长度 */
+        public static final int DEFAULT_PASSWORD_LENGTH = 12;
 
         /** 会话超时时间（分钟） - FIXED: SEC-P3-04 */
         public static final int SESSION_TIMEOUT_MINUTES = 30;
@@ -241,6 +234,24 @@ public class Constants {
 
         /** 账户锁定时长（分钟） - FIXED: SEC-P3-04 */
         public static final int ACCOUNT_LOCK_DURATION_MINUTES = 15;
+
+        /** 生成随机安全密码的字符集（排除易混淆字符） */
+        private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%";
+
+        /**
+         * 生成随机安全默认密码
+         * FIXED: SEC-HIGH — 硬编码"123456"替换为随机强密码
+         *
+         * @param random SecureRandom实例
+         * @return 12位随机密码
+         */
+        public static String generateDefaultPassword(java.security.SecureRandom random) {
+            StringBuilder sb = new StringBuilder(DEFAULT_PASSWORD_LENGTH);
+            for (int i = 0; i < DEFAULT_PASSWORD_LENGTH; i++) {
+                sb.append(PASSWORD_CHARS.charAt(random.nextInt(PASSWORD_CHARS.length())));
+            }
+            return sb.toString();
+        }
     }
 
     /** 座位预约限制常量 */

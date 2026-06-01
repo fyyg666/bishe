@@ -33,7 +33,7 @@ class CreditControllerTest extends ControllerTestBase {
     class QueryEndpoints {
         @Test
         void getCredit_shouldReturn200() throws Exception {
-            when(creditService.getUserCredit(anyLong())).thenReturn(100);
+            when(creditService.getUserCredit(any())).thenReturn(100);
             mockMvc.perform(get("/credits")
                     .with(readerAuth())
                     .header("Authorization", READER_TOKEN))

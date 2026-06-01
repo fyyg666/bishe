@@ -19,7 +19,8 @@ export function piniaPersistedstatePlugin({ store }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
-        store.$patch(parsed)
+        const { token, ...stateToRestore } = parsed
+        store.$patch(stateToRestore)
       } catch (e) {
         console.warn(`恢复 store ${store.$id} 状态失败:`, e)
       }
@@ -28,7 +29,8 @@ export function piniaPersistedstatePlugin({ store }) {
     // 订阅状态变化并保存
     store.$subscribe((mutation, state) => {
       try {
-        sessionStorage.setItem(`pinia-${store.$id}`, JSON.stringify(state))
+        const { token, ...stateToPersist } = state
+        sessionStorage.setItem(`pinia-${store.$id}`, JSON.stringify(stateToPersist))
       } catch (e) {
         console.warn(`保存 store ${store.$id} 状态失败:`, e)
       }

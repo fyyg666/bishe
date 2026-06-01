@@ -45,7 +45,7 @@ class BookControllerTest extends ControllerTestBase {
             PageResult<BookResponse> pageResult = new PageResult<>();
             pageResult.setTotal(0L);
             pageResult.setRecords(List.of());
-            when(bookService.listBooks(anyLong(), anyLong(), any(), any())).thenReturn(pageResult);
+            when(bookService.listBooks(anyLong(), anyLong(), any(), any(), any())).thenReturn(pageResult);
 
             mockMvc.perform(get("/books")
                     .param("current", "1")

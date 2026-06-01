@@ -19,6 +19,6 @@ public abstract class BaseController {
      * @return 用户ID
      */
     protected Long getUserIdFromAuthentication(Authentication authentication) {
-        return Long.valueOf(authentication.getName());
+        return (Long) authentication.getDetails();
     }
 }

@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 二级缓存管理器
@@ -76,6 +77,7 @@ public class TwoLevelCacheManager implements CacheManager {
         private final String name;
         private final Cache<Object, Object> l1Cache;
         private final String redisKeyPrefix;
+        private final ConcurrentHashMap<Object, ReentrantLock> keyLocks = new ConcurrentHashMap<>();
 
         protected TwoLevelCache(String name) {
             super(true); // allowNullValues = true — 允许缓存null值以缓存空结果防止重复查询
@@ -127,9 +129,13 @@ public class TwoLevelCacheManager implements CacheManager {
             if (value != null) {
                 return (T) value;
             }
-
-            // L1和L2都未命中，从数据源加载
+            ReentrantLock lock = keyLocks.computeIfAbsent(key, k -> new ReentrantLock());
+            lock.lock();
             try {
+                value = lookup(key);
+                if (value != null) {
+                    return (T) value;
+                }
                 T loadedValue = valueLoader.call();
                 if (loadedValue != null) {
                     put(key, loadedValue);
@@ -137,6 +143,9 @@ public class TwoLevelCacheManager implements CacheManager {
                 return loadedValue;
             } catch (Exception e) {
                 throw new ValueRetrievalException(key, valueLoader, e);
+            } finally {
+                lock.unlock();
+                keyLocks.remove(key);
             }
         }
 

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as apiLogin, logout as apiLogout, getUserInfo } from '@/api/auth'
-import { getToken, setToken as setCookieToken, setRefreshToken, clearAuthCookies } from '@/utils/auth'
+import { getToken, setToken as setAuthToken, clearToken } from '@/utils/auth'
 
 // FIXED: FE-001 - 所有Token操作从localStorage迁移到Cookie
 export const useUserStore = defineStore('user', () => {
@@ -16,6 +16,9 @@ export const useUserStore = defineStore('user', () => {
   const userRole = computed(() => userInfo.value?.role)
 
   // 方法
+  // 防止并发fetch的锁
+  const fetchingUserInfo = ref(false)
+
   function initUser() {
     if (token.value) {
       fetchUserInfo()
@@ -23,55 +26,48 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function fetchUserInfo() {
+    if (fetchingUserInfo.value) return
+    fetchingUserInfo.value = true
     try {
       const res = await getUserInfo()
       userInfo.value = res.data || res
     } catch (error) {
       console.error('获取用户信息失败:', error)
-      // 如果userInfo已经在登录时设置，不强制登出
       if (!userInfo.value) {
         logout()
       }
+    } finally {
+      fetchingUserInfo.value = false
     }
   }
 
   async function login(loginForm) {
-    try {
-      const res = await apiLogin(loginForm)
-      const newToken = res.accessToken || res.token || res.data?.accessToken || res.data?.token
-      const refreshTokenValue = res.refreshToken || res.data?.refreshToken
+    const res = await apiLogin(loginForm)
+    const newToken = res.accessToken || res.token || res.data?.accessToken || res.data?.token
+    const refreshTokenValue = res.refreshToken || res.data?.refreshToken
 
-      token.value = newToken
-      setCookieToken(newToken)
+    token.value = newToken
+    setAuthToken(newToken, refreshTokenValue || undefined)
 
-      // 保存刷新Token到Cookie
-      if (refreshTokenValue) {
-        setRefreshToken(refreshTokenValue)
-      }
-
-      // 获取用户信息
-      userInfo.value = res.userInfo || res.data?.userInfo || res.data
-      return res
-    } catch (error) {
-      throw error
-    }
+    // 获取用户信息
+    userInfo.value = res.userInfo || res.data?.userInfo || res.data
+    return res
   }
 
-  function logout() {
+  async function logout() {
     try {
-      apiLogout()
+      await apiLogout()
     } catch {
-      // 忽略错误
+      // 忽略登出API错误（本地状态仍需清除）
     }
     token.value = ''
     userInfo.value = null
-    // FIXED: FE-001 - 使用clearAuthCookies替代localStorage.removeItem
-    clearAuthCookies()
+    clearToken()
   }
 
   function setNewToken(newToken) {
     token.value = newToken
-    setCookieToken(newToken)
+    setAuthToken(newToken)
   }
 
   return {
@@ -85,6 +81,7 @@ export const useUserStore = defineStore('user', () => {
     fetchUserInfo,
     login,
     logout,
-    setToken: setNewToken
+    setToken: setNewToken,
+    fetchingUserInfo
   }
 })

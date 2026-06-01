@@ -217,13 +217,16 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
         if (value == null || value.isEmpty()) {
             return value;
         }
-
-        // 第一步：使用Hutool的HtmlUtil进行基础HTML标签剥离
-        String filtered = cn.hutool.http.HtmlUtil.filter(value);
-
-        // 第二步：增强过滤 - 处理HTML实体编码的XSS
-        filtered = removeXssPatterns(filtered);
-
+        String filtered = value;
+        String previous;
+        int maxIterations = 3;
+        int iterations = 0;
+        do {
+            previous = filtered;
+            filtered = cn.hutool.http.HtmlUtil.filter(filtered);
+            filtered = removeXssPatterns(filtered);
+            iterations++;
+        } while (!filtered.equals(previous) && iterations < maxIterations);
         return filtered;
     }
 

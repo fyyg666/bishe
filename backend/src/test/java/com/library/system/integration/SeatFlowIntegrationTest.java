@@ -11,7 +11,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
 
 /**
  * 座位预约流程集成测试

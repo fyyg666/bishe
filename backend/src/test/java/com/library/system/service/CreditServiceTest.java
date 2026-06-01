@@ -2,6 +2,8 @@ package com.library.system.service;
 
 import com.library.system.base.BaseTest;
 import com.library.system.common.Constants;
+import com.library.system.dto.CreditLevelResponse;
+import com.library.system.dto.CreditRuleResponse;
 import com.library.system.entity.User;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ResourceNotFoundException;
@@ -15,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +32,9 @@ class CreditServiceTest extends BaseTest {
     @Mock
     private CreditLogMapper creditLogMapper;
 
+    @Mock
+    private SysConfigService sysConfigService;
+
     @InjectMocks
     private CreditServiceImpl creditService;
 
@@ -43,6 +47,8 @@ class CreditServiceTest extends BaseTest {
         testUser.setUsername("reader1");
         testUser.setCreditScore(100);
         testUser.setVersion(0);
+
+        lenient().when(sysConfigService.getIntValue(anyString(), anyInt())).thenAnswer(invocation -> invocation.getArgument(1));
     }
 
     @Nested
@@ -69,7 +75,6 @@ class CreditServiceTest extends BaseTest {
 
             creditService.addCredit(1L, 20, "BORROW", "借书奖励", null, null);
 
-            // 290+20=310 > MAX_SCORE=300, 上限截断到300, 实际增加10, 版本号0
             verify(userMapper).updateCreditScore(eq(1L), eq(10), eq(0));
         }
 
@@ -78,7 +83,7 @@ class CreditServiceTest extends BaseTest {
         void addCredit_userNotFound_shouldThrow() {
             when(userMapper.selectById(999L)).thenReturn(null);
 
-            assertThrows(BusinessException.class,
+            assertThrows(ResourceNotFoundException.class,
                     () -> creditService.addCredit(999L, 20, "BORROW", "借书奖励", null, null));
         }
 
@@ -90,6 +95,18 @@ class CreditServiceTest extends BaseTest {
 
             assertThrows(BusinessException.class,
                     () -> creditService.addCredit(1L, 20, "BORROW", "借书奖励", null, null));
+        }
+
+        @Test
+        @DisplayName("增加积分 - 已达上限无变动")
+        void addCredit_alreadyAtMax_shouldNotUpdate() {
+            testUser.setCreditScore(Constants.Credit.MAX_SCORE);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+
+            creditService.addCredit(1L, 20, "BORROW", "借书奖励", null, null);
+
+            verify(userMapper, never()).updateCreditScore(anyLong(), anyInt(), anyInt());
+            verify(creditLogMapper, never()).insert(any());
         }
 
         @Test
@@ -113,7 +130,6 @@ class CreditServiceTest extends BaseTest {
 
             creditService.deductCredit(1L, 50, "OVERDUE", "罚款", null, null);
 
-            // 积分扣到 MIN_SCORE (0)，实际变动为 -10
             verify(userMapper).updateCreditScore(eq(1L), eq(-10), eq(0));
             verify(creditLogMapper).insert(any());
         }
@@ -123,7 +139,7 @@ class CreditServiceTest extends BaseTest {
         void deductCredit_userNotFound_shouldThrow() {
             when(userMapper.selectById(999L)).thenReturn(null);
 
-            assertThrows(BusinessException.class,
+            assertThrows(ResourceNotFoundException.class,
                     () -> creditService.deductCredit(999L, 10, "OVERDUE", "罚款", null, null));
         }
 
@@ -155,8 +171,8 @@ class CreditServiceTest extends BaseTest {
         }
 
         @Test
-        @DisplayName("processReturnCredit - 按时归还应奖励1分")
-        void processReturnCredit_onTime_shouldReward1() {
+        @DisplayName("processReturnCredit - 按时归还应奖励")
+        void processReturnCredit_onTime_shouldReward() {
             when(userMapper.selectById(1L)).thenReturn(testUser);
             when(userMapper.updateCreditScore(anyLong(), anyInt(), anyInt())).thenReturn(1);
 
@@ -167,8 +183,34 @@ class CreditServiceTest extends BaseTest {
         }
 
         @Test
-        @DisplayName("processCheckInCredit - 签到应奖励1分")
-        void processCheckInCredit_shouldReward1() {
+        @DisplayName("processReturnCredit - 逾期归还应扣分")
+        void processReturnCredit_overdue_shouldDeduct() {
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+            when(userMapper.updateCreditScore(anyLong(), anyInt(), anyInt())).thenReturn(1);
+
+            creditService.processReturnCredit(1L, 100L, 3,
+                    LocalDateTime.now().minusDays(17), LocalDateTime.now());
+
+            verify(creditLogMapper).insert(any());
+        }
+
+        @Test
+        @DisplayName("processReturnCredit - 提前归还应额外奖励")
+        void processReturnCredit_early_shouldExtraReward() {
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+            when(userMapper.updateCreditScore(anyLong(), anyInt(), anyInt())).thenReturn(1);
+
+            LocalDateTime dueDate = LocalDateTime.now().plusDays(5);
+            LocalDateTime returnDate = LocalDateTime.now();
+
+            creditService.processReturnCredit(1L, 100L, 0, dueDate, returnDate);
+
+            verify(creditLogMapper).insert(any());
+        }
+
+        @Test
+        @DisplayName("processCheckInCredit - 签到应奖励")
+        void processCheckInCredit_shouldReward() {
             when(userMapper.selectById(1L)).thenReturn(testUser);
             when(userMapper.updateCreditScore(anyLong(), anyInt(), anyInt())).thenReturn(1);
 
@@ -200,6 +242,77 @@ class CreditServiceTest extends BaseTest {
 
             assertThrows(ResourceNotFoundException.class,
                     () -> creditService.getUserCredit(999L));
+        }
+
+        @Test
+        @DisplayName("获取用户等级 - 白金")
+        void getUserLevel_platinum() {
+            testUser.setCreditScore(250);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+
+            CreditLevelResponse level = creditService.getUserLevel(1L);
+
+            assertEquals("白金", level.getLevel());
+            assertNull(level.getNextLevelScore());
+        }
+
+        @Test
+        @DisplayName("获取用户等级 - 金牌")
+        void getUserLevel_gold() {
+            testUser.setCreditScore(200);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+
+            CreditLevelResponse level = creditService.getUserLevel(1L);
+
+            assertEquals("金牌", level.getLevel());
+            assertEquals(Constants.Credit.PLATINUM_THRESHOLD, level.getNextLevelScore());
+        }
+
+        @Test
+        @DisplayName("获取用户等级 - 银牌")
+        void getUserLevel_silver() {
+            testUser.setCreditScore(130);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+
+            CreditLevelResponse level = creditService.getUserLevel(1L);
+
+            assertEquals("银牌", level.getLevel());
+            assertEquals(Constants.Credit.GOLD_THRESHOLD, level.getNextLevelScore());
+        }
+
+        @Test
+        @DisplayName("获取用户等级 - 铜牌")
+        void getUserLevel_bronze() {
+            testUser.setCreditScore(80);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+
+            CreditLevelResponse level = creditService.getUserLevel(1L);
+
+            assertEquals("铜牌", level.getLevel());
+            assertEquals(Constants.Credit.SILVER_THRESHOLD, level.getNextLevelScore());
+        }
+
+        @Test
+        @DisplayName("获取用户等级 - 普通")
+        void getUserLevel_normal() {
+            testUser.setCreditScore(30);
+            when(userMapper.selectById(1L)).thenReturn(testUser);
+
+            CreditLevelResponse level = creditService.getUserLevel(1L);
+
+            assertEquals("普通", level.getLevel());
+            assertEquals(Constants.Credit.BRONZE_THRESHOLD, level.getNextLevelScore());
+        }
+
+        @Test
+        @DisplayName("获取积分规则列表")
+        void getCreditRules_shouldReturnRules() {
+            java.util.List<CreditRuleResponse> rules = creditService.getCreditRules();
+
+            assertNotNull(rules);
+            assertFalse(rules.isEmpty());
+            assertTrue(rules.stream().anyMatch(r -> "borrow_reward".equals(r.getRuleKey())));
+            assertTrue(rules.stream().anyMatch(r -> "overdue_per_day".equals(r.getRuleKey())));
         }
     }
 }

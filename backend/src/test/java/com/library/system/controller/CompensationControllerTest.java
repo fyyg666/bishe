@@ -71,7 +71,7 @@ class CompensationControllerTest extends ControllerTestBase {
 
         @Test
         void processCashPayment_shouldReturn200() throws Exception {
-            when(compensationService.processCashPayment(anyLong(), anyLong(), any()))
+            when(compensationService.processCashPayment(any(), any(), any()))
                     .thenReturn(new CompensationResponse());
 
             mockMvc.perform(post("/compensations/1/pay/cash")

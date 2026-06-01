@@ -55,7 +55,7 @@ export function renewBook(id, data) {
   return request({
     url: `/borrows/${id}/renew`,
     method: 'post',
-    params: { days: data?.extendDays || data?.days }
+    data: { days: data?.extendDays || data?.days }
   })
 }
 
@@ -68,5 +68,18 @@ export function getMyBorrows(params) {
     url: '/borrows/my',
     method: 'get',
     params
+  })
+}
+
+export function checkOverdue() {
+  return request({ url: '/borrows/overdue/check', method: 'post' })
+}
+
+export function exportBorrows(params) {
+  return request({
+    url: '/borrows/export',
+    method: 'get',
+    params,
+    responseType: 'blob'
   })
 }

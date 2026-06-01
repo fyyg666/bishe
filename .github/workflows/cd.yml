@@ -271,7 +271,7 @@ jobs:
             cd ${{ env.DEPLOY_PATH }}
             
             # 登录到 GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.DOCKER_REGISTRY }} -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # 拉取新镜像
             echo "📥 拉取最新镜像..."

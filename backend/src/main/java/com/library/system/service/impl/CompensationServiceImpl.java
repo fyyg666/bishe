@@ -6,12 +6,16 @@ import com.library.system.common.Constants;
 import com.library.system.dto.CompensationRequest;
 import com.library.system.dto.CompensationResponse;
 import com.library.system.dto.PageResult;
+import com.library.system.entity.Book;
+import com.library.system.entity.BorrowRecord;
 import com.library.system.entity.Compensation;
 import com.library.system.entity.User;
 import com.library.system.enums.CompensationStatus;
 import com.library.system.enums.ErrorCode;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ResourceNotFoundException;
+import com.library.system.mapper.BookMapper;
+import com.library.system.mapper.BorrowRecordMapper;
 import com.library.system.mapper.CompensationMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.CompensationService;
@@ -44,6 +48,8 @@ public class CompensationServiceImpl implements CompensationService {
     private final CompensationMapper compensationMapper;
     private final UserMapper userMapper;
     private final CreditService creditService;
+    private final BorrowRecordMapper borrowRecordMapper;
+    private final BookMapper bookMapper;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -55,6 +61,20 @@ public class CompensationServiceImpl implements CompensationService {
                 + String.format("%06d", SECURE_RANDOM.nextInt(1000000));
 
         Compensation compensation = new Compensation();
+
+        if (request.getBorrowId() != null) {
+            BorrowRecord borrowRecord = borrowRecordMapper.selectById(request.getBorrowId());
+            if (borrowRecord == null || borrowRecord.getDeleted() == 1) {
+                throw new ResourceNotFoundException(ErrorCode.BORROW_RECORD_NOT_FOUND, "关联的借阅记录不存在");
+            }
+        }
+        if (request.getBookId() != null) {
+            Book book = bookMapper.selectById(request.getBookId());
+            if (book == null || book.getDeleted() == 1) {
+                throw new ResourceNotFoundException(ErrorCode.BOOK_NOT_FOUND, "关联的图书不存在");
+            }
+        }
+
         compensation.setOrderNo(orderNo);
         compensation.setUserId(request.getUserId());
         compensation.setBorrowId(request.getBorrowId());
@@ -98,7 +118,7 @@ public class CompensationServiceImpl implements CompensationService {
     public CompensationResponse getCompensationById(Long id) {
         Compensation compensation = compensationMapper.selectById(id);
         if (compensation == null || compensation.getDeleted() == 1) {
-            throw new ResourceNotFoundException(ErrorCode.INTERNAL_ERROR, "赔偿记录不存在");
+            throw new ResourceNotFoundException(ErrorCode.COMPENSATION_NOT_FOUND, "赔偿记录不存在");
         }
         return convertToResponse(compensation);
     }
@@ -163,10 +183,10 @@ public class CompensationServiceImpl implements CompensationService {
     public void cancelCompensation(Long id, Long operatorId, String reason) {
         Compensation compensation = compensationMapper.selectById(id);
         if (compensation == null || compensation.getDeleted() == 1) {
-            throw new ResourceNotFoundException(ErrorCode.INTERNAL_ERROR, "赔偿记录不存在");
+            throw new ResourceNotFoundException(ErrorCode.COMPENSATION_NOT_FOUND, "赔偿记录不存在");
         }
         if (!CompensationStatus.PENDING.name().equals(compensation.getStatus())) {
-            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "只能取消待处理的赔偿订单");
+            throw new BusinessException(ErrorCode.COMPENSATION_STATUS_ERROR, "只能取消待处理的赔偿订单");
         }
         compensation.setStatus(CompensationStatus.CANCELLED.name());
         compensation.setReviewerId(operatorId);
@@ -182,10 +202,10 @@ public class CompensationServiceImpl implements CompensationService {
     private Compensation getValidCompensation(Long id) {
         Compensation compensation = compensationMapper.selectById(id);
         if (compensation == null || compensation.getDeleted() == 1) {
-            throw new ResourceNotFoundException(ErrorCode.INTERNAL_ERROR, "赔偿记录不存在");
+            throw new ResourceNotFoundException(ErrorCode.COMPENSATION_NOT_FOUND, "赔偿记录不存在");
         }
         if (!CompensationStatus.PENDING.name().equals(compensation.getStatus())) {
-            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "该赔偿订单已处理");
+            throw new BusinessException(ErrorCode.COMPENSATION_ALREADY_PROCESSED, "该赔偿订单已处理");
         }
         return compensation;
     }

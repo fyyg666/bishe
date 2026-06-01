@@ -11,6 +11,7 @@
         :rules="rules"
         class="register-form"
         label-width="80px"
+        aria-label="注册表单"
         @submit.prevent="handleRegister"
       >
         <el-form-item
@@ -21,6 +22,7 @@
             v-model="registerForm.username"
             placeholder="3-20 个字符"
             prefix-icon="User"
+            aria-label="用户名"
           />
         </el-form-item>
         <el-form-item
@@ -33,6 +35,7 @@
             placeholder="至少 6 位"
             prefix-icon="Lock"
             show-password
+            aria-label="密码"
           />
           <el-progress
             v-if="registerForm.password"
@@ -45,6 +48,8 @@
           <span
             v-if="passwordStrength.text"
             class="strength-text"
+            role="status"
+            aria-live="polite"
           >{{ passwordStrength.text }}</span>
         </el-form-item>
         <el-form-item
@@ -57,6 +62,7 @@
             placeholder="再次输入密码"
             prefix-icon="Lock"
             show-password
+            aria-label="确认密码"
           />
         </el-form-item>
         <el-form-item
@@ -67,6 +73,7 @@
             v-model="registerForm.email"
             placeholder="example@mail.com"
             prefix-icon="Message"
+            aria-label="邮箱"
           />
         </el-form-item>
         <el-form-item
@@ -77,6 +84,7 @@
             v-model="registerForm.phone"
             placeholder="11 位手机号"
             prefix-icon="Phone"
+            aria-label="手机号"
           />
         </el-form-item>
         <el-form-item
@@ -87,6 +95,7 @@
             v-model="registerForm.realName"
             placeholder="请输入真实姓名"
             prefix-icon="UserFilled"
+            aria-label="真实姓名"
           />
         </el-form-item>
         <el-form-item>

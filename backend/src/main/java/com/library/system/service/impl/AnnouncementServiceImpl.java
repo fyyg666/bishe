@@ -105,7 +105,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
             
             throw new ResourceNotFoundException(ErrorCode.ANNOUNCEMENT_NOT_FOUND, "公告不存在");
         }
-        return convertToResponse(announcement);
+        return convertToResponseWithPublisher(announcement, buildPublisherMap(announcement));
     }
 
     @Override
@@ -154,7 +154,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         announcementMapper.insert(announcement);
 
         log.info("公告创建成功: {}", announcement.getTitle());
-        return convertToResponse(announcement);
+        return convertToResponseWithPublisher(announcement, buildPublisherMap(announcement));
     }
 
     @Override
@@ -186,7 +186,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         announcementMapper.updateById(announcement);
 
         log.info("公告更新成功: id={}", id);
-        return convertToResponse(announcement);
+        return convertToResponseWithPublisher(announcement, buildPublisherMap(announcement));
     }
 
     @Override
@@ -221,31 +221,15 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         log.info("公告删除成功: id={}", id);
     }
 
-    /**
-     * 将Announcement实体转换为AnnouncementResponse DTO（单条查询）
-     */
-    private AnnouncementResponse convertToResponse(Announcement announcement) {
-        AnnouncementResponse.AnnouncementResponseBuilder builder = AnnouncementResponse.builder()
-                .id(announcement.getId())
-                .title(announcement.getTitle())
-                .content(announcement.getContent())
-                .type(announcement.getType())
-                .priority(announcement.getPriority())
-                .publisherId(announcement.getPublisherId())
-                .status(announcement.getStatus())
-                .publishTime(announcement.getPublishTime())
-                .createTime(announcement.getCreateTime());
-
-        // 获取发布人姓名
-        if (announcement.getPublisherId() != null) {
-            User publisher = userMapper.selectById(announcement.getPublisherId());
-            if (publisher != null) {
-                builder.publisherName(publisher.getRealName() != null ?
-                        publisher.getRealName() : publisher.getUsername());
-            }
+    private Map<Long, User> buildPublisherMap(Announcement announcement) {
+        if (announcement.getPublisherId() == null) {
+            return Map.of();
         }
-
-        return builder.build();
+        User publisher = userMapper.selectById(announcement.getPublisherId());
+        if (publisher == null) {
+            return Map.of();
+        }
+        return Map.of(publisher.getId(), publisher);
     }
 
     /**

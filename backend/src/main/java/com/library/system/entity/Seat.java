@@ -25,6 +25,8 @@ public class Seat implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    private Long branchId;
+
     /** 阅览室ID */
     private Long roomId;
 

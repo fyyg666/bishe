@@ -1,8 +1,11 @@
 package com.library.system.service;
 
+import com.library.system.dto.ImportResultDTO;
 import com.library.system.dto.PageResult;
 import com.library.system.dto.ReaderResponse;
 import com.library.system.entity.User;
+
+import java.io.InputStream;
 
 /**
  * 读者服务接口 
@@ -131,4 +134,6 @@ public interface ReaderService {
      * @return true=是管理员，false=否
      */
     boolean isCurrentUserAdmin(String username);
+
+    ImportResultDTO importReaders(InputStream inputStream);
 }

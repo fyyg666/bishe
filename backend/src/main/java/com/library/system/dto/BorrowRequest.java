@@ -27,6 +27,6 @@ public class BorrowRequest {
      * 借阅天数（默认30天）
      */
     @Min(value = 1, message = "借阅天数不能小于1天")
-    @Max(value = 90, message = "借阅天数不能超过90天")
+    @Max(value = 60, message = "借阅天数不能超过60天")
     private Integer borrowDays;
 }

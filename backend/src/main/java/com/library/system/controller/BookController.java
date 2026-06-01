@@ -2,6 +2,7 @@ package com.library.system.controller;
 
 import com.library.system.dto.*;
 import com.library.system.service.BookService;
+import com.library.system.service.IsbnLookupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -34,9 +36,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "图书管理", description = "图书的CRUD、分页查询、热门图书推荐等")
 @SecurityRequirement(name = "bearerAuth")
-public class BookController {
+public class BookController extends BaseController {
 
     private final BookService bookService;
+    private final IsbnLookupService isbnLookupService;
 
     /**
      * 分页查询图书列表
@@ -53,10 +56,11 @@ public class BookController {
             @Parameter(description = "当前页（默认1）") @RequestParam(defaultValue = "1") Long current,
             @Parameter(description = "每页大小（默认10）") @RequestParam(defaultValue = "10") Long size,
             @Parameter(description = "关键词（标题/作者/ISBN）") @RequestParam(required = false) String keyword,
-            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId) {
-        log.debug("查询图书列表: current={}, size={}, keyword={}, categoryId={}",
-                current, size, keyword, categoryId);
-        PageResult<BookResponse> result = bookService.listBooks(current, size, keyword, categoryId);
+            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "作者") @RequestParam(required = false) String author) {
+        log.debug("查询图书列表: current={}, size={}, keyword={}, categoryId={}, author={}",
+                current, size, keyword, categoryId, author);
+        PageResult<BookResponse> result = bookService.listBooks(current, size, keyword, categoryId, author);
         return ApiResponse.success(result);
     }
 
@@ -176,5 +180,70 @@ public class BookController {
             @Parameter(description = "ISBN号", required = true) @RequestParam String isbn) {
         boolean exists = bookService.isIsbnExists(isbn);
         return ApiResponse.success(exists);
+    }
+
+    @Operation(summary = "ISBN查询书目数据", description = "通过ISBN从Open Library/Google Books查询书目信息")
+    @GetMapping("/isbn-lookup")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<IsbnLookupResponse> lookupIsbn(
+            @Parameter(description = "ISBN号", required = true) @RequestParam String isbn) {
+        return ApiResponse.success(isbnLookupService.lookup(isbn).orElse(null));
+    }
+
+    @Operation(summary = "导出图书列表Excel", description = "导出图书列表为Excel文件（需要管理员权限）")
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public void exportBooks(
+            @Parameter(description = "关键词") @RequestParam(required = false) String keyword,
+            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
+            jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("utf-8");
+        String fileName = java.net.URLEncoder.encode("图书列表_" + java.time.LocalDate.now(), "UTF-8");
+        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
+        List<BookExportDTO> data = bookService.getExportData(keyword, categoryId);
+        com.alibaba.excel.EasyExcel.write(response.getOutputStream(), BookExportDTO.class)
+                .autoCloseStream(false)
+                .sheet("图书列表")
+                .doWrite(data);
+    }
+
+    @Operation(summary = "批量导入图书", description = "从Excel文件批量导入图书数据（需要管理员权限）")
+    @PostMapping("/import")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public ApiResponse<ImportResultDTO> importBooks(
+            @Parameter(description = "Excel文件", required = true) @RequestParam("file") MultipartFile file) throws java.io.IOException {
+        log.info("批量导入图书: fileName={}", file.getOriginalFilename());
+        ImportResultDTO result = bookService.importBooks(file.getInputStream());
+        return ApiResponse.success(result);
+    }
+
+    @Operation(summary = "高级组合检索", description = "多条件组合检索图书")
+    @GetMapping("/advanced-search")
+    public ApiResponse<PageResult<BookResponse>> advancedSearch(
+            @Parameter(description = "书名") @RequestParam(required = false) String title,
+            @Parameter(description = "作者") @RequestParam(required = false) String author,
+            @Parameter(description = "ISBN") @RequestParam(required = false) String isbn,
+            @Parameter(description = "出版社") @RequestParam(required = false) String publisher,
+            @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "出版日期起") @RequestParam(required = false) String publishDateStart,
+            @Parameter(description = "出版日期止") @RequestParam(required = false) String publishDateEnd,
+            @Parameter(description = "排序方式: default/borrowCount/date") @RequestParam(defaultValue = "default") String orderBy,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Long current,
+            @Parameter(description = "每页条数") @RequestParam(defaultValue = "10") Long size) {
+        return ApiResponse.success(bookService.advancedSearch(current, size, title, author, isbn,
+                publisher, categoryId, publishDateStart, publishDateEnd, orderBy));
+    }
+
+    @Operation(summary = "分类聚合", description = "获取图书分类聚合数据（面状导航）")
+    @GetMapping("/facets/categories")
+    public ApiResponse<java.util.List<java.util.Map<String, Object>>> getCategoryFacet() {
+        return ApiResponse.success(bookService.getCategoryFacet());
+    }
+
+    @Operation(summary = "作者聚合", description = "获取图书作者聚合数据（面状导航TOP10）")
+    @GetMapping("/facets/authors")
+    public ApiResponse<java.util.List<java.util.Map<String, Object>>> getAuthorFacet() {
+        return ApiResponse.success(bookService.getAuthorFacet());
     }
 }

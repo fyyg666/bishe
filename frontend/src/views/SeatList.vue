@@ -196,6 +196,8 @@
 </template>
 
 <script setup>
+defineOptions({ name: 'SeatList' })
+
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSeatMap, getMyReservations, cancelReserve, checkIn, checkOut } from '@/api/seat'
@@ -245,7 +247,7 @@ async function loadReservations() {
   loading.value = true
   try {
     const res = await getMyReservations({
-      page: pagination.current,
+      current: pagination.current,
       size: pagination.size
     })
     reservations.value = res.data?.records || res.data || []

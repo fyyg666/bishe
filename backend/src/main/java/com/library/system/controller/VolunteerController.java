@@ -5,6 +5,8 @@ import com.library.system.dto.PageResult;
 import com.library.system.dto.VolunteerRequest;
 import com.library.system.dto.VolunteerResponse;
 import com.library.system.dto.VolunteerStatsDto;
+import com.library.system.enums.ErrorCode;
+import com.library.system.exception.ForbiddenException;
 import com.library.system.service.VolunteerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -35,7 +38,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "志愿服务管理", description = "志愿服务申请的增删改查和审核操作")
 @SecurityRequirement(name = "bearerAuth")
-public class VolunteerController {
+public class VolunteerController extends BaseController {
 
     private final VolunteerService volunteerService;
 
@@ -47,6 +50,7 @@ public class VolunteerController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "查询成功")
     })
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     public ApiResponse<PageResult<VolunteerResponse>> listVolunteers(
             @Parameter(description = "当前页（默认1）")
             @RequestParam(defaultValue = "1") Long current,
@@ -73,8 +77,7 @@ public class VolunteerController {
             @RequestParam(defaultValue = "10") Long size,
             Authentication authentication) {
         log.debug("查询我的志愿服务记录: current={}, size={}", current, size);
-        // FIXED: 从JWT的principal中直接获取userId（authentication.getName()返回的是userId字符串）
-        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        Long userId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success(volunteerService.getMyVolunteers(current, size, userId));
     }
 
@@ -87,11 +90,24 @@ public class VolunteerController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "志愿服务记录不存在")
     })
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<VolunteerResponse> getVolunteerById(
             @Parameter(description = "志愿服务ID", required = true)
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
         log.debug("查询志愿服务详情: id={}", id);
-        return ApiResponse.success(volunteerService.getVolunteerById(id));
+        VolunteerResponse response = volunteerService.getVolunteerById(id);
+        if (!isAdminOrLibrarian(authentication)
+                && !response.getUserId().equals(getUserIdFromAuthentication(authentication))) {
+            throw new ForbiddenException(ErrorCode.INSUFFICIENT_PERMISSION, "无权查看他人的志愿服务记录");
+        }
+        return ApiResponse.success(response);
+    }
+
+    private boolean isAdminOrLibrarian(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_ADMIN") || a.equals("ROLE_LIBRARIAN"));
     }
 
     /**
@@ -109,7 +125,7 @@ public class VolunteerController {
             @RequestBody @Valid VolunteerRequest request,
             Authentication authentication) {
         log.info("申请志愿服务");
-        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        Long userId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success("志愿服务申请成功",
                 volunteerService.createVolunteer(userId, request));
     }
@@ -131,7 +147,7 @@ public class VolunteerController {
             @RequestBody @Valid VolunteerRequest request,
             Authentication authentication) {
         log.info("更新志愿服务记录: id={}", id);
-        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        Long userId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success("志愿服务记录更新成功",
                 volunteerService.updateVolunteer(id, userId, request));
     }
@@ -150,7 +166,7 @@ public class VolunteerController {
             @PathVariable Long id,
             Authentication authentication) {
         log.info("取消志愿服务: id={}", id);
-        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        Long userId = getUserIdFromAuthentication(authentication);
         volunteerService.cancelVolunteer(id, userId);
         return ApiResponse.success("志愿服务申请已取消", null);
     }
@@ -174,7 +190,7 @@ public class VolunteerController {
             @RequestParam(required = false) String remark,
             Authentication authentication) {
         log.info("审核志愿服务: id={}, approved={}", id, approved);
-        Long reviewerId = Long.valueOf(authentication.getPrincipal().toString());
+        Long reviewerId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success("志愿服务审核完成",
                 volunteerService.reviewVolunteer(id, reviewerId, approved, remark));
     }
@@ -225,7 +241,7 @@ public class VolunteerController {
     })
     @GetMapping("/stats")
     public ApiResponse<VolunteerStatsDto> getVolunteerStats(Authentication authentication) {
-        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        Long userId = getUserIdFromAuthentication(authentication);
         return ApiResponse.success(volunteerService.getVolunteerStats(userId));
     }
 }

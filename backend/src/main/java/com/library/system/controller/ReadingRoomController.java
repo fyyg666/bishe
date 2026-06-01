@@ -27,7 +27,7 @@ import java.util.List;
 @RequestMapping("/reading-rooms")
 @RequiredArgsConstructor
 @Tag(name = "阅览室管理", description = "阅览室列表查询")
-public class ReadingRoomController {
+public class ReadingRoomController extends BaseController {
 
     private final ReadingRoomMapper readingRoomMapper;
 

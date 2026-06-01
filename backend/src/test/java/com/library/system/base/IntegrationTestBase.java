@@ -33,8 +33,9 @@ public abstract class IntegrationTestBase {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    // MySQL Testcontainer
+    // MySQL Testcontainer — 生命周期由 Testcontainers 管理
     @Container
+    @SuppressWarnings("resource")
     protected static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>(
             DockerImageName.parse("mysql:8.0")
     )
@@ -43,8 +44,9 @@ public abstract class IntegrationTestBase {
             .withPassword("test")
             .withReuse(true);
 
-    // Redis Testcontainer
+    // Redis Testcontainer — 生命周期由 Testcontainers 管理
     @Container
+    @SuppressWarnings("resource")
     protected static final GenericContainer<?> redisContainer = new GenericContainer<>(
             DockerImageName.parse("redis:7-alpine")
     )

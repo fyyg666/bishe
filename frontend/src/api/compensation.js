@@ -27,7 +27,7 @@ export function processCashPayment(id, remark) {
   return request({
     url: `/compensations/${id}/pay/cash`,
     method: 'post',
-    params: { remark }
+    data: { remark }
   })
 }
 
@@ -35,7 +35,7 @@ export function processCreditPayment(id, creditAmount, remark) {
   return request({
     url: `/compensations/${id}/pay/credit`,
     method: 'post',
-    params: { creditAmount, remark }
+    data: { creditAmount, remark }
   })
 }
 
@@ -43,7 +43,7 @@ export function processVolunteerPayment(id, hours, remark) {
   return request({
     url: `/compensations/${id}/pay/volunteer`,
     method: 'post',
-    params: { hours, remark }
+    data: { hours, remark }
   })
 }
 
@@ -51,6 +51,6 @@ export function cancelCompensation(id, reason) {
   return request({
     url: `/compensations/${id}/cancel`,
     method: 'post',
-    params: { reason }
+    data: { reason }
   })
 }

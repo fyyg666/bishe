@@ -9,6 +9,7 @@ import com.library.system.mapper.*;
 import com.library.system.service.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +44,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
+    @Cacheable(value = "statisticsCache", key = "'overview'")
     public StatisticsResponse getOverview() {
         return StatisticsResponse.builder()
                 .borrowStatistics(getBorrowStatistics())

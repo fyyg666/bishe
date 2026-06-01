@@ -16,6 +16,7 @@
         :model="loginForm"
         :rules="rules"
         class="login-form"
+        aria-label="登录表单"
         @submit.prevent="handleLogin"
       >
         <el-form-item prop="username">
@@ -24,6 +25,7 @@
             placeholder="用户名"
             :prefix-icon="UserIcon"
             size="large"
+            aria-label="用户名"
           />
         </el-form-item>
         <el-form-item prop="password">
@@ -34,6 +36,7 @@
             :prefix-icon="LockIcon"
             size="large"
             show-password
+            aria-label="密码"
             @keyup.enter="handleLogin"
           />
         </el-form-item>
@@ -45,14 +48,18 @@
               size="large"
               :prefix-icon="KeyIcon"
               class="captcha-input"
+              aria-label="验证码"
               @keyup.enter="handleLogin"
             />
             <img
               :src="captchaImage"
-              alt="验证码"
+              alt="验证码图片，点击刷新"
               class="captcha-img"
+              role="button"
+              tabindex="0"
               @click="loadCaptcha"
-            />
+              @keydown.enter="loadCaptcha"
+            >
           </div>
         </el-form-item>
         <el-form-item>

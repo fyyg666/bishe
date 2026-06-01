@@ -14,6 +14,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 读者控制器
@@ -34,7 +35,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "读者管理", description = "读者信息的增删改查和管理操作")
 @SecurityRequirement(name = "bearerAuth")
-public class ReaderController {
+public class ReaderController extends BaseController {
 
     private final ReaderService readerService;
 
@@ -168,6 +169,19 @@ public class ReaderController {
         readerService.changePassword(id, currentUserId,
                 request.getOldPassword(), request.getNewPassword());
         return ApiResponse.success("密码修改成功", null);
+    }
+
+    /**
+     * 批量导入读者
+     */
+    @Operation(summary = "批量导入读者", description = "从Excel文件批量导入读者数据（需要管理员权限）")
+    @PostMapping("/import")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    public ApiResponse<ImportResultDTO> importReaders(
+            @Parameter(description = "Excel文件", required = true) @RequestParam("file") MultipartFile file) throws java.io.IOException {
+        log.info("批量导入读者: fileName={}", file.getOriginalFilename());
+        ImportResultDTO result = readerService.importReaders(file.getInputStream());
+        return ApiResponse.success(result);
     }
 
     /**

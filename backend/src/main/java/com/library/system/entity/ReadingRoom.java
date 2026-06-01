@@ -25,6 +25,8 @@ public class ReadingRoom implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    private Long branchId;
+
     /** 阅览室名称 */
     private String name;
 

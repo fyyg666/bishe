@@ -71,17 +71,7 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
 
         List<com.library.system.entity.VolunteerService> records = resultPage.getRecords();
         if (!records.isEmpty()) {
-            // 收集所有需要查询的用户ID（包括userId和reviewerId）
-            Set<Long> userIds = new java.util.HashSet<>();
-            records.forEach(r -> {
-                if (r.getUserId() != null) userIds.add(r.getUserId());
-                if (r.getReviewerId() != null) userIds.add(r.getReviewerId());
-            });
-            // 批量查询用户
-            Map<Long, User> userMap = userIds.isEmpty() ? 
-                Map.of() : 
-                userMapper.selectBatchIds(userIds).stream()
-                    .collect(Collectors.toMap(User::getId, u -> u));
+            Map<Long, User> userMap = batchLoadUserMap(records);
             
             List<VolunteerResponse> responseList = records.stream()
                     .map(v -> convertToResponseWithUsers(v, userMap))
@@ -102,15 +92,7 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
 
         List<com.library.system.entity.VolunteerService> records = resultPage.getRecords();
         if (!records.isEmpty()) {
-            Set<Long> userIds = new java.util.HashSet<>();
-            records.forEach(r -> {
-                if (r.getUserId() != null) userIds.add(r.getUserId());
-                if (r.getReviewerId() != null) userIds.add(r.getReviewerId());
-            });
-            Map<Long, User> userMap = userIds.isEmpty() ? 
-                Map.of() : 
-                userMapper.selectBatchIds(userIds).stream()
-                    .collect(Collectors.toMap(User::getId, u -> u));
+            Map<Long, User> userMap = batchLoadUserMap(records);
             
             List<VolunteerResponse> responseList = records.stream()
                     .map(v -> convertToResponseWithUsers(v, userMap))
@@ -131,7 +113,7 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
             
             throw new ResourceNotFoundException(ErrorCode.VOLUNTEER_NOT_FOUND, "志愿服务记录不存在");
         }
-        return convertToResponse(volunteer);
+        return convertToResponseWithUsers(volunteer, batchLoadUserMap(List.of(volunteer)));
     }
 
     @Override
@@ -165,7 +147,7 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
         volunteerServiceMapper.insert(volunteer);
 
         log.info("志愿服务申请成功: userId={}", userId);
-        return convertToResponse(volunteer);
+        return convertToResponseWithUsers(volunteer, batchLoadUserMap(List.of(volunteer)));
     }
 
     @Override
@@ -207,7 +189,7 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
         volunteerServiceMapper.updateById(volunteer);
 
         log.info("志愿服务记录更新成功: id={}", id);
-        return convertToResponse(volunteer);
+        return convertToResponseWithUsers(volunteer, batchLoadUserMap(List.of(volunteer)));
     }
 
     @Override
@@ -274,7 +256,7 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
         }
 
         log.info("志愿服务审核完成: id={}, approved={}", id, approved);
-        return convertToResponse(volunteer);
+        return convertToResponseWithUsers(volunteer, batchLoadUserMap(List.of(volunteer)));
     }
 
     @Override
@@ -284,15 +266,7 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
 
         List<com.library.system.entity.VolunteerService> records = resultPage.getRecords();
         if (!records.isEmpty()) {
-            Set<Long> userIds = new java.util.HashSet<>();
-            records.forEach(r -> {
-                if (r.getUserId() != null) userIds.add(r.getUserId());
-                if (r.getReviewerId() != null) userIds.add(r.getReviewerId());
-            });
-            Map<Long, User> userMap = userIds.isEmpty() ? 
-                Map.of() : 
-                userMapper.selectBatchIds(userIds).stream()
-                    .collect(Collectors.toMap(User::getId, u -> u));
+            Map<Long, User> userMap = batchLoadUserMap(records);
             
             List<VolunteerResponse> responseList = records.stream()
                     .map(v -> convertToResponseWithUsers(v, userMap))
@@ -347,44 +321,14 @@ public class VolunteerServiceImpl implements com.library.system.service.Voluntee
                 .build();
     }
 
-    /**
-     * 将VolunteerService实体转换为VolunteerResponse DTO（单条查询，保留用于单个详情场景）
-     */
-    private VolunteerResponse convertToResponse(com.library.system.entity.VolunteerService volunteer) {
-        VolunteerResponse.VolunteerResponseBuilder builder = VolunteerResponse.builder()
-                .id(volunteer.getId())
-                .userId(volunteer.getUserId())
-                .serviceDate(volunteer.getServiceDate())
-                .startTime(volunteer.getStartTime())
-                .endTime(volunteer.getEndTime())
-                .serviceHours(volunteer.getServiceHours())
-                .serviceType(volunteer.getServiceType())
-                .description(volunteer.getDescription())
-                .status(volunteer.getStatus())
-                .reviewerId(volunteer.getReviewerId())
-                .reviewTime(volunteer.getReviewTime())
-                .reviewRemark(volunteer.getReviewRemark())
-                .createTime(volunteer.getCreateTime());
-
-        // 获取用户名
-        if (volunteer.getUserId() != null) {
-            User user = userMapper.selectById(volunteer.getUserId());
-            if (user != null) {
-                builder.username(user.getUsername())
-                       .realName(user.getRealName() != null ? user.getRealName() : user.getUsername());
-            }
-        }
-
-        // 获取审核人姓名
-        if (volunteer.getReviewerId() != null) {
-            User reviewer = userMapper.selectById(volunteer.getReviewerId());
-            if (reviewer != null) {
-                builder.reviewerName(reviewer.getRealName() != null ?
-                        reviewer.getRealName() : reviewer.getUsername());
-            }
-        }
-
-        return builder.build();
+    private Map<Long, User> batchLoadUserMap(List<com.library.system.entity.VolunteerService> records) {
+        Set<Long> userIds = new java.util.HashSet<>();
+        records.forEach(r -> {
+            if (r.getUserId() != null) userIds.add(r.getUserId());
+            if (r.getReviewerId() != null) userIds.add(r.getReviewerId());
+        });
+        return userIds.isEmpty() ? Map.of() : userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
     }
 
     /**

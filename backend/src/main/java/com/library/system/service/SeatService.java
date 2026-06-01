@@ -100,4 +100,12 @@ public interface SeatService {
      * @return 座位列表
      */
     List<Seat> getSeatsByRoom(Long roomId);
+
+    /**
+     * 获取座位详情
+     *
+     * @param id 座位ID
+     * @return 座位详情
+     */
+    SeatDetailResponse getSeatDetail(Long id);
 }

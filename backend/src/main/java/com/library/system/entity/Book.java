@@ -30,6 +30,8 @@ public class Book implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    private Long branchId;
+
     /** ISBN编号 */
     private String isbn;
 

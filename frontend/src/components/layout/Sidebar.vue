@@ -1,6 +1,8 @@
 <template>
   <el-aside
-    :width="isCollapsed ? '64px' : '240px'"
+    role="navigation"
+    aria-label="主导航"
+    :width="computedCollapsed ? '64px' : '240px'"
     class="sidebar"
   >
     <div class="sidebar-inner">
@@ -9,13 +11,13 @@
         @click="toggleCollapse"
       >
         <div class="logo-icon">
-          <el-icon :size="isCollapsed ? 22 : 24">
+          <el-icon :size="computedCollapsed ? 22 : 24">
             <Reading />
           </el-icon>
         </div>
         <transition name="fade">
           <span
-            v-if="!isCollapsed"
+            v-if="!computedCollapsed"
             class="logo-text"
           >图书馆系统</span>
         </transition>
@@ -23,9 +25,10 @@
 
       <el-menu
         :default-active="activeMenu"
-        :collapse="isCollapsed"
+        :collapse="computedCollapsed"
         :router="true"
         class="nav-menu"
+        @select="handleMenuSelect"
       >
         <el-menu-item index="/dashboard">
           <el-icon><HomeFilled /></el-icon>
@@ -39,10 +42,34 @@
             图书管理
           </template>
         </el-menu-item>
+        <el-menu-item index="/unified-search">
+          <el-icon><Search /></el-icon>
+          <template #title>
+            统一检索
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/digital-resources"
+        >
+          <el-icon><Monitor /></el-icon>
+          <template #title>
+            数字资源管理
+          </template>
+        </el-menu-item>
         <el-menu-item index="/borrows">
           <el-icon><Tickets /></el-icon>
           <template #title>
             借阅管理
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/borrow-rules"
+        >
+          <el-icon><List /></el-icon>
+          <template #title>
+            借阅规则
           </template>
         </el-menu-item>
         <el-menu-item index="/seats">
@@ -57,34 +84,136 @@
             信用积分
           </template>
         </el-menu-item>
-        <el-menu-item index="/readers">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/readers"
+        >
           <el-icon><UserFilled /></el-icon>
           <template #title>
             读者管理
           </template>
         </el-menu-item>
-        <el-menu-item index="/announcements">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/announcements"
+        >
           <el-icon><BellFilled /></el-icon>
           <template #title>
             公告管理
           </template>
         </el-menu-item>
-        <el-menu-item index="/volunteers">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/volunteers"
+        >
           <el-icon><HelpFilled /></el-icon>
           <template #title>
             志愿服务
           </template>
         </el-menu-item>
-        <el-menu-item index="/statistics">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/statistics"
+        >
           <el-icon><DataAnalysis /></el-icon>
           <template #title>
             统计分析
           </template>
         </el-menu-item>
-        <el-menu-item index="/compensations">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/reports"
+        >
+          <el-icon><DataLine /></el-icon>
+          <template #title>
+            自定义报表
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/compensations"
+        >
           <el-icon><WarningFilled /></el-icon>
           <template #title>
             赔偿管理
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/budget-funds"
+        >
+          <el-icon><Wallet /></el-icon>
+          <template #title>
+            预算管理
+          </template>
+        </el-menu-item>
+        <el-menu-item index="/suggestions">
+          <el-icon><ShoppingCart /></el-icon>
+          <template #title>
+            荐购管理
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/marc"
+        >
+          <el-icon><Document /></el-icon>
+          <template #title>
+            MARC编目
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/z3950"
+        >
+          <el-icon><Connection /></el-icon>
+          <template #title>
+            Z39.50联机编目
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/purchase-orders"
+        >
+          <el-icon><ShoppingCart /></el-icon>
+          <template #title>
+            采购管理
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/vendors"
+        >
+          <el-icon><Shop /></el-icon>
+          <template #title>
+            供应商管理
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/serial/subscriptions"
+        >
+          <el-icon><Notebook /></el-icon>
+          <template #title>
+            期刊管理
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/serial/routings"
+        >
+          <el-icon><Guide /></el-icon>
+          <template #title>
+            期刊路由分发
+          </template>
+        </el-menu-item>
+        <el-menu-item
+          v-if="isAdmin"
+          index="/branches"
+        >
+          <el-icon><School /></el-icon>
+          <template #title>
+            分馆管理
           </template>
         </el-menu-item>
         <el-menu-item index="/profile">
@@ -95,7 +224,7 @@
         </el-menu-item>
       </el-menu>
 
-      <div class="sidebar-footer">
+      <div v-if="!forceExpanded" class="sidebar-footer">
         <div
           class="collapse-btn"
           @click="toggleCollapse"
@@ -115,14 +244,32 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
+const props = defineProps({
+  forceExpanded: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['navigate'])
+
 const route = useRoute()
 const userStore = useUserStore()
 const isCollapsed = ref(false)
 
+const computedCollapsed = computed(() => {
+  return props.forceExpanded ? false : isCollapsed.value
+})
+
 const activeMenu = computed(() => route.path)
+const isAdmin = computed(() => userStore.role === 'ADMIN' || userStore.role === 'LIBRARIAN')
 
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
+}
+
+function handleMenuSelect() {
+  emit('navigate')
 }
 </script>
 

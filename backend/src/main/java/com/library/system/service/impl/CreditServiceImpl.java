@@ -12,12 +12,14 @@ import com.library.system.exception.BusinessException;
 import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.CreditService;
+import com.library.system.service.SysConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,12 +36,11 @@ public class CreditServiceImpl implements CreditService {
 
     private final CreditLogMapper creditLogMapper;
     private final UserMapper userMapper;
+    private final SysConfigService sysConfigService;
 
     private static final Map<String, String> TYPE_DESC_MAP;
-    private static final Map<String, Integer> CREDIT_RULES;
 
     static {
-        // 类型描述
         Map<String, String> typeDescMap = new HashMap<>();
         typeDescMap.put("BORROW", "借阅奖励");
         typeDescMap.put("RETURN", "按时归还奖励");
@@ -50,18 +51,6 @@ public class CreditServiceImpl implements CreditService {
         typeDescMap.put("CHECKIN", "签到奖励");
         typeDescMap.put("OTHER", "其他");
         TYPE_DESC_MAP = Collections.unmodifiableMap(typeDescMap);
-
-        // 积分规则（统一从 Constants.Credit 读取，确保单一数据源）
-        Map<String, Integer> creditRules = new HashMap<>();
-        creditRules.put("BORROW", Constants.Credit.BORROW_REWARD);
-        creditRules.put("RETURN", Constants.Credit.RETURN_ON_TIME);
-        creditRules.put("RETURN_EARLY", Constants.Credit.RETURN_EARLY);
-        creditRules.put("OVERDUE_PER_DAY", -Constants.Credit.OVERDUE_PER_DAY);
-        creditRules.put("DAMAGE", -Constants.Credit.DAMAGE_PENALTY);
-        creditRules.put("LOST", -Constants.Credit.LOST_PENALTY);
-        creditRules.put("VOLUNTEER_PER_HOUR", Constants.Credit.VOLUNTEER_PER_HOUR);
-        creditRules.put("CHECKIN", Constants.Credit.CHECKIN_REWARD);
-        CREDIT_RULES = Collections.unmodifiableMap(creditRules);
     }
 
     @Override
@@ -180,7 +169,7 @@ public class CreditServiceImpl implements CreditService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void processBorrowCredit(Long userId, Long borrowId) {
-        Integer value = CREDIT_RULES.get("BORROW");
+        int value = sysConfigService.getIntValue("credit.borrow_reward", Constants.Credit.BORROW_REWARD);
         addCredit(userId, value, "BORROW",
                 "借阅图书奖励",
                 borrowId, "BORROW_RECORD");
@@ -192,20 +181,20 @@ public class CreditServiceImpl implements CreditService {
                                     LocalDateTime dueDate, LocalDateTime returnDate) {
         if (overdueDays > 0) {
             // 逾期扣减积分
-            Integer dailyPenalty = CREDIT_RULES.get("OVERDUE_PER_DAY");
+            int dailyPenalty = sysConfigService.getIntValue("credit.overdue_per_day", Constants.Credit.OVERDUE_PER_DAY);
             int totalPenalty = dailyPenalty * overdueDays;
             deductCredit(userId, Math.abs(totalPenalty), "OVERDUE",
                     "图书逾期" + overdueDays + "天",
                     borrowId, "BORROW_RECORD");
         } else if (returnDate != null && dueDate != null && returnDate.toLocalDate().isBefore(dueDate.toLocalDate())) {
             // 提前归还奖励积分
-            Integer value = CREDIT_RULES.get("RETURN_EARLY");
+            int value = sysConfigService.getIntValue("credit.return_early", Constants.Credit.RETURN_EARLY);
             addCredit(userId, value, "RETURN_EARLY",
                     "提前归还图书奖励",
                     borrowId, "BORROW_RECORD");
         } else {
             // 按时归还奖励积分
-            Integer value = CREDIT_RULES.get("RETURN");
+            int value = sysConfigService.getIntValue("credit.return_on_time", Constants.Credit.RETURN_ON_TIME);
             addCredit(userId, value, "RETURN",
                     "按时归还图书奖励",
                     borrowId, "BORROW_RECORD");
@@ -215,7 +204,7 @@ public class CreditServiceImpl implements CreditService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void processCheckInCredit(Long userId, Long reservationId) {
-        Integer value = CREDIT_RULES.get("CHECKIN");
+        int value = sysConfigService.getIntValue("credit.checkin_reward", Constants.Credit.CHECKIN_REWARD);
         addCredit(userId, value, "CHECKIN",
                 "座位签到奖励",
                 reservationId, "SEAT_RESERVATION");
@@ -235,5 +224,47 @@ public class CreditServiceImpl implements CreditService {
                 .description(log.getDescription())
                 .createTime(log.getCreateTime())
                 .build();
+    }
+
+    @Override
+    public List<CreditRuleResponse> getCreditRules() {
+        List<CreditRuleResponse> rules = new ArrayList<>();
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("borrow_reward").ruleName("借阅奖励")
+                .score(sysConfigService.getIntValue("credit.borrow_reward", Constants.Credit.BORROW_REWARD))
+                .description("成功借阅图书奖励积分").type("REWARD").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("return_on_time").ruleName("按时归还奖励")
+                .score(sysConfigService.getIntValue("credit.return_on_time", Constants.Credit.RETURN_ON_TIME))
+                .description("按时归还图书奖励积分").type("REWARD").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("return_early").ruleName("提前归还奖励")
+                .score(sysConfigService.getIntValue("credit.return_early", Constants.Credit.RETURN_EARLY))
+                .description("提前归还图书额外奖励").type("REWARD").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("overdue_per_day").ruleName("逾期扣分")
+                .score(sysConfigService.getIntValue("credit.overdue_per_day", Constants.Credit.OVERDUE_PER_DAY))
+                .description("逾期归还图书每天扣除积分").type("PENALTY").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("no_show").ruleName("预约未签到扣分")
+                .score(sysConfigService.getIntValue("credit.no_show", Constants.Credit.NO_SHOW))
+                .description("预约座位未签到扣除积分").type("PENALTY").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("damage_penalty").ruleName("图书损坏扣分")
+                .score(sysConfigService.getIntValue("credit.damage_penalty", Constants.Credit.DAMAGE_PENALTY))
+                .description("损坏图书扣除积分").type("PENALTY").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("lost_penalty").ruleName("图书丢失扣分")
+                .score(sysConfigService.getIntValue("credit.lost_penalty", Constants.Credit.LOST_PENALTY))
+                .description("丢失图书扣除积分").type("PENALTY").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("volunteer_per_hour").ruleName("志愿服务奖励")
+                .score(sysConfigService.getIntValue("credit.volunteer_per_hour", Constants.Credit.VOLUNTEER_PER_HOUR))
+                .description("每小时志愿服务奖励积分").type("REWARD").build());
+        rules.add(CreditRuleResponse.builder()
+                .ruleKey("checkin_reward").ruleName("签到奖励")
+                .score(sysConfigService.getIntValue("credit.checkin_reward", Constants.Credit.CHECKIN_REWARD))
+                .description("座位签到奖励积分").type("REWARD").build());
+        return rules;
     }
 }

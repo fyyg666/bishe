@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 
@@ -24,6 +23,9 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class CaffeineConfig {
 
+    /** 默认缓存名称集合 */
+    private static final String[] DEFAULT_CACHE_NAMES = {"books", "readers", "hotBooks", "userSessions", "statistics", "announcements", "bookCache"};
+
     @Value("${spring.cache.redis-ttl-minutes:30}")
     private long redisTtlMinutes;
 
@@ -39,17 +41,15 @@ public class CaffeineConfig {
      * FIXED: P2-001 替换独立CaffeineCacheManager，实现真正级联缓存
      */
     @Bean
-    @Primary
     @Profile("!no-redis")
     public CacheManager twoLevelCacheManager(RedisTemplate<String, Object> redisTemplate) {
         Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
                 .maximumSize(5000)
-                .expireAfterWrite(60, TimeUnit.SECONDS)
+                .expireAfterAccess(10, TimeUnit.MINUTES)
                 .recordStats()
                 .softValues();
 
-        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions", "statistics", "announcements"};
-        return new TwoLevelCacheManager(caffeine, redisTemplate, cacheNames,
+        return new TwoLevelCacheManager(caffeine, redisTemplate, DEFAULT_CACHE_NAMES,
                 cachePrefix, redisTtlMinutes);
     }
 
@@ -66,8 +66,7 @@ public class CaffeineConfig {
                 .recordStats()
                 .softValues();
 
-        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions", "statistics", "announcements"};
-        return new TwoLevelCacheManager(caffeine, null, cacheNames,
+        return new TwoLevelCacheManager(caffeine, null, DEFAULT_CACHE_NAMES,
                 "local:", redisTtlMinutes);
     }
 
@@ -83,8 +82,7 @@ public class CaffeineConfig {
                 .recordStats()
                 .softValues();
 
-        String[] cacheNames = {"books", "readers", "hotBooks", "userSessions", "announcements"};
-        return new TwoLevelCacheManager(caffeine, null, cacheNames,
+        return new TwoLevelCacheManager(caffeine, null, DEFAULT_CACHE_NAMES,
                 "local:", redisTtlMinutes);
     }
 

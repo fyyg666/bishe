@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -87,6 +89,28 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e, HttpServletRequest request) {
         log.warn("业务异常 [{}]: {}", request.getRequestURI(), e.getMessage());
         return buildErrorResponse(e.getErrorCode(), e.getMessage(), request.getRequestURI());
+    }
+
+    /**
+     * 处理Spring Security权限拒绝异常 (AccessDeniedException)
+     * 当@PreAuthorize拒绝访问时抛出，应返回403而非500
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
+        log.warn("访问被拒绝 [{}]: {}", request.getRequestURI(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ErrorCode.INSUFFICIENT_PERMISSION, "权限不足", request.getRequestURI()));
+    }
+
+    /**
+     * 处理Spring Security认证异常 (AuthenticationException)
+     * JWT认证失败时抛出，应返回401
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException e, HttpServletRequest request) {
+        log.warn("认证失败 [{}]: {}", request.getRequestURI(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ErrorCode.AUTH_FAILED, "认证失败", request.getRequestURI()));
     }
 
     /**
