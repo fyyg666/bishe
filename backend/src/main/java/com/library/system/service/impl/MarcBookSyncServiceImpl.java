@@ -8,6 +8,9 @@ import com.library.system.dto.MarcRecordRequest;
 import com.library.system.dto.MarcRecordResponse;
 import com.library.system.entity.Book;
 import com.library.system.entity.MarcRecord;
+import com.library.system.enums.ErrorCode;
+import com.library.system.exception.BusinessException;
+import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.BookMapper;
 import com.library.system.mapper.MarcRecordMapper;
 import com.library.system.service.MarcBookSyncService;
@@ -38,7 +41,7 @@ public class MarcBookSyncServiceImpl implements MarcBookSyncService {
     public MarcRecordResponse bookToMarc(Long bookId) {
         Book book = bookMapper.selectById(bookId);
         if (book == null) {
-            throw new RuntimeException("图书不存在: " + bookId);
+            throw new ResourceNotFoundException("图书不存在: " + bookId);
         }
 
         List<MarcRecordRequest.FieldRequest> fields = new ArrayList<>();
@@ -182,7 +185,7 @@ public class MarcBookSyncServiceImpl implements MarcBookSyncService {
     public void syncFromBook(Long bookId) {
         Book book = bookMapper.selectById(bookId);
         if (book == null) {
-            throw new RuntimeException("图书不存在: " + bookId);
+            throw new ResourceNotFoundException("图书不存在: " + bookId);
         }
 
         MarcRecord existing = findMarcByBookId(bookId);
@@ -373,7 +376,7 @@ public class MarcBookSyncServiceImpl implements MarcBookSyncService {
         try {
             return objectMapper.writeValueAsString(subfields);
         } catch (Exception e) {
-            throw new RuntimeException("序列化子字段失败", e);
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "序列化子字段失败", e);
         }
     }
 

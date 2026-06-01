@@ -147,33 +147,42 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+@use '@/styles/mixins.scss' as *;
+
+$dark-bg: #1e1e1e;
+$dark-surface: #2c2c2c;
+$dark-border: #3c3c3c;
+$dark-text: #ccc;
+$dark-text-muted: #aaa;
+
 .pdf-reader {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1e1e1e;
+  background: $dark-bg;
 }
 
 .pdf-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: #2c2c2c;
-  border-bottom: 1px solid #3c3c3c;
+  padding: $space-2 $space-4;
+  background: $dark-surface;
+  border-bottom: 1px solid $dark-border;
   flex-shrink: 0;
 
   .toolbar-left,
   .toolbar-right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $space-1;
   }
 
   .page-info,
   .zoom-info {
-    color: #ccc;
-    font-size: 14px;
+    color: $dark-text;
+    font-size: $font-size-base;
     min-width: 60px;
     text-align: center;
   }
@@ -184,7 +193,7 @@ onBeforeUnmount(() => {
   overflow: auto;
   display: flex;
   justify-content: center;
-  padding: 20px;
+  padding: $space-5;
 }
 
 .pdf-pages {
@@ -199,13 +208,24 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #ccc;
-  gap: 16px;
+  color: $dark-text;
+  gap: $space-4;
 }
 
 .pdf-error {
   p {
-    color: #f56c6c;
+    color: $danger;
+  }
+}
+
+@include mobile {
+  .pdf-toolbar {
+    flex-wrap: wrap;
+    gap: $space-2;
+    padding: $space-2 $space-3;
+  }
+  .pdf-content {
+    padding: $space-3;
   }
 }
 </style>

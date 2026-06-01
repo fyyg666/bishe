@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.library.system.dto.MarcFrameworkResponse;
 import com.library.system.entity.MarcFramework;
 import com.library.system.entity.MarcFrameworkField;
+import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.MarcFrameworkFieldMapper;
 import com.library.system.mapper.MarcFrameworkMapper;
 import com.library.system.service.MarcFrameworkService;
@@ -38,7 +39,7 @@ public class MarcFrameworkServiceImpl implements MarcFrameworkService {
     public MarcFrameworkResponse getFramework(Long id) {
         MarcFramework framework = marcFrameworkMapper.selectById(id);
         if (framework == null) {
-            throw new RuntimeException("MARC框架不存在: " + id);
+            throw new ResourceNotFoundException("MARC框架不存在: " + id);
         }
         return convertToResponse(framework);
     }
@@ -49,7 +50,7 @@ public class MarcFrameworkServiceImpl implements MarcFrameworkService {
         wrapper.eq(MarcFramework::getCode, code);
         MarcFramework framework = marcFrameworkMapper.selectOne(wrapper);
         if (framework == null) {
-            throw new RuntimeException("MARC框架不存在: " + code);
+            throw new ResourceNotFoundException("MARC框架不存在: " + code);
         }
         return convertToResponse(framework);
     }
@@ -90,7 +91,7 @@ public class MarcFrameworkServiceImpl implements MarcFrameworkService {
     public MarcFrameworkResponse updateFramework(Long id, MarcFrameworkResponse request) {
         MarcFramework framework = marcFrameworkMapper.selectById(id);
         if (framework == null) {
-            throw new RuntimeException("MARC框架不存在: " + id);
+            throw new ResourceNotFoundException("MARC框架不存在: " + id);
         }
 
         framework.setName(request.getName());

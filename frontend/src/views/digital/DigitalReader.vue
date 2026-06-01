@@ -113,26 +113,35 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+@use '@/styles/mixins.scss' as *;
+
+$dark-bg: #1e1e1e;
+$dark-surface: #2c2c2c;
+$dark-border: #3c3c3c;
+$dark-text: #ccc;
+$dark-text-bright: #eee;
+
 .digital-reader {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #1e1e1e;
+  background: $dark-bg;
 }
 
 .reader-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  background: #2c2c2c;
-  border-bottom: 1px solid #3c3c3c;
+  padding: $space-2 $space-4;
+  background: $dark-surface;
+  border-bottom: 1px solid $dark-border;
   flex-shrink: 0;
 
   .reader-title {
-    color: #eee;
-    font-size: 16px;
-    font-weight: 500;
+    color: $dark-text-bright;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-medium;
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -156,17 +165,26 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #ccc;
-  gap: 16px;
+  color: $dark-text;
+  gap: $space-4;
 
   p {
-    font-size: 16px;
+    font-size: $font-size-lg;
   }
 }
 
 .reader-error {
   p {
-    color: #f56c6c;
+    color: $danger;
+  }
+}
+
+@include mobile {
+  .reader-header {
+    padding: $space-2 $space-3;
+    .reader-title {
+      font-size: $font-size-base;
+    }
   }
 }
 </style>

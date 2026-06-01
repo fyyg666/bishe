@@ -15,12 +15,14 @@
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+
 .not-found {
   height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: $bg-page;
 
   .error-content {
     text-align: center;
@@ -28,21 +30,21 @@
     h1 {
       font-size: 120px;
       font-weight: bold;
-      color: #409eff;
-      margin-bottom: 20px;
+      color: $primary;
+      margin-bottom: $space-5;
       line-height: 1;
     }
 
     h2 {
       font-size: 30px;
-      color: #303133;
-      margin-bottom: 15px;
+      color: $text-primary;
+      margin-bottom: $space-3;
     }
 
     p {
-      font-size: 16px;
-      color: #909399;
-      margin-bottom: 30px;
+      font-size: $font-size-lg;
+      color: $text-secondary;
+      margin-bottom: $space-8;
     }
   }
 }

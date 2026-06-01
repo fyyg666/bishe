@@ -1,60 +1,44 @@
-@use './variables.scss' as *;
+@use './mixins.scss' as *;
 
-$breakpoint-sm: 768px;
-$breakpoint-md: 992px;
-$breakpoint-lg: 1200px;
-
-@mixin mobile {
-  @media (max-width: #{$breakpoint-sm - 1px}) {
-    @content;
-  }
-}
-
-@mixin tablet {
-  @media (min-width: #{$breakpoint-sm}) and (max-width: #{$breakpoint-md - 1px}) {
-    @content;
-  }
-}
-
-@mixin desktop {
-  @media (min-width: #{$breakpoint-md}) {
-    @content;
-  }
-}
-
-.hidden-mobile {
+.hidden-mobile,
+.ls-hidden-mobile {
   @include mobile {
     display: none !important;
   }
 }
 
-.hidden-tablet {
+.hidden-tablet,
+.ls-hidden-tablet {
   @include tablet {
     display: none !important;
   }
 }
 
-.hidden-desktop {
+.hidden-desktop,
+.ls-hidden-desktop {
   @include desktop {
     display: none !important;
   }
 }
 
-.show-mobile {
+.show-mobile,
+.ls-show-mobile {
   display: none !important;
   @include mobile {
     display: revert !important;
   }
 }
 
-.show-tablet {
+.show-tablet,
+.ls-show-tablet {
   display: none !important;
   @include tablet {
     display: revert !important;
   }
 }
 
-.show-desktop {
+.show-desktop,
+.ls-show-desktop {
   display: none !important;
   @include desktop {
     display: revert !important;

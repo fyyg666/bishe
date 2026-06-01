@@ -1,5 +1,6 @@
 package com.library.system.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -83,5 +84,11 @@ public class SeatReservationRequest {
     public String getEndTimeStr() {
         if (endTime == null) return null;
         return endTime.toString();
+    }
+
+    @AssertTrue(message = "开始时间必须在结束时间之前")
+    public boolean isStartTimeBeforeEndTime() {
+        if (startTime == null || endTime == null) return true;
+        return startTime.isBefore(endTime);
     }
 }

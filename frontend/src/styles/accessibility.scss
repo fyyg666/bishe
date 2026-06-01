@@ -1,3 +1,5 @@
+@use 'variables.scss' as *;
+
 .skip-to-content {
   position: absolute;
   top: -100%;
@@ -5,9 +7,9 @@
   transform: translateX(-50%);
   z-index: 10000;
   padding: 12px 24px;
-  background: #fff;
-  color: #1a1a1a;
-  border: 2px solid #1a1a1a;
+  background: $bg-card;
+  color: $text-primary;
+  border: 2px solid $text-primary;
   border-radius: 4px;
   font-size: 14px;
   font-weight: 600;
@@ -16,7 +18,7 @@
 
   &:focus {
     top: 8px;
-    outline: 3px solid #2563eb;
+    outline: 3px solid $primary;
     outline-offset: 2px;
   }
 }
@@ -33,8 +35,13 @@
   border: 0;
 }
 
-*:focus-visible {
-  outline: 3px solid #2563eb;
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 3px solid $primary;
   outline-offset: 2px;
 }
 
@@ -53,6 +60,10 @@
   :root {
     --el-border-color: #000;
     --el-border-color-light: #333;
+  }
+  html.dark {
+    --el-border-color: #fff;
+    --el-border-color-light: #ccc;
   }
 
   .el-button {

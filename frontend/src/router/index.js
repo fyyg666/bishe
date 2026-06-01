@@ -282,8 +282,9 @@ router.beforeEach(async (to, from, next) => {
   
   const userStore = useUserStore()
   
-  // Check if route requires authentication
-  if (!to.meta.public && to.meta.requiresAuth !== false) {
+  const isPublic = to.meta.public === true
+  const requiresAuth = to.meta.requiresAuth !== false
+  if (!isPublic && requiresAuth) {
     if (!userStore.token) {
       next('/login')
       return

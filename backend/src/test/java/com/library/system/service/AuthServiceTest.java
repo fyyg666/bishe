@@ -161,6 +161,18 @@ class AuthServiceTest extends BaseTest {
 
             assertThrows(BusinessException.class, () -> authService.login(loginRequest));
         }
+
+        @Test
+        @DisplayName("连续5次密码错误后账户锁定")
+        void login_whenMaxFailAttempts_shouldLockAccount() {
+            when(userMapper.selectByUsername("testuser")).thenReturn(testUser);
+            when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
+            when(accountLockService.recordLoginFailure(1L, "testuser")).thenReturn(5);
+            loginRequest.setPassword("wrongPassword");
+            BusinessException ex = assertThrows(BusinessException.class,
+                    () -> authService.login(loginRequest));
+            assertTrue(ex.getMessage().contains("锁定"));
+        }
     }
 
     @Nested

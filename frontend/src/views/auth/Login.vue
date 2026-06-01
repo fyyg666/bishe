@@ -301,4 +301,12 @@ onMounted(() => {
     &:hover { color: $primary-dark; text-decoration: underline; }
   }
 }
+
+@include mobile {
+  .login-box {
+    width: 100%;
+    max-width: 400px;
+    padding: $space-8 $space-4 $space-6;
+  }
+}
 </style>

@@ -16,7 +16,7 @@
       <div v-if="!isMobile" class="header-search">
         <el-input
           v-model="searchKeyword"
-          placeholder="搜索图书…"
+          placeholder="搜索图书、作者、ISBN…"
           :prefix-icon="SearchIcon"
           clearable
           size="default"
@@ -68,13 +68,7 @@
               @click="handleNotificationClick(item)"
             >
               <div class="notification-title">
-                <el-tag
-                  v-if="item.status === 'UNREAD'"
-                  type="danger"
-                  size="small"
-                  effect="dark"
-                  round
-                >新</el-tag>
+                <span class="unread-dot" v-if="item.status === 'UNREAD'"></span>
                 <span>{{ item.title }}</span>
               </div>
               <div class="notification-content">{{ item.content }}</div>
@@ -93,12 +87,11 @@
       >
         <span class="user-info">
           <el-avatar
-            :size="30"
+            :size="28"
             icon="UserFilled"
             class="user-avatar"
           />
           <span v-if="!isMobile" class="username">{{ userStore.username }}</span>
-          <el-icon v-if="!isMobile" class="dropdown-arrow"><ArrowDown /></el-icon>
         </span>
         <template #dropdown>
           <el-dropdown-menu>
@@ -163,6 +156,7 @@ onMounted(() => {
     fetchUnreadCount()
     pollTimer = setInterval(fetchUnreadCount, 30000)
   }
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
@@ -170,6 +164,7 @@ onUnmounted(() => {
     clearInterval(pollTimer)
     pollTimer = null
   }
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 async function fetchUnreadCount() {
@@ -178,6 +173,19 @@ async function fetchUnreadCount() {
     notificationCount.value = res.data || 0
   } catch {
     // silently ignore
+  }
+}
+
+function handleVisibilityChange() {
+  if (!userStore.isLoggedIn) return
+  if (document.hidden) {
+    if (pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
+  } else {
+    fetchUnreadCount()
+    pollTimer = setInterval(fetchUnreadCount, 30000)
   }
 }
 
@@ -282,10 +290,8 @@ function handleUserCommand(command) {
   justify-content: space-between;
   height: $header-height !important;
   padding: 0 $space-5;
-  background: oklch(1 0 0 / 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid $border-light;
+  @include glass(0.72, $glass-blur-header);
+  border-bottom: 0.5px solid $border-light;
 }
 
 .header-left {
@@ -301,36 +307,38 @@ function handleUserCommand(command) {
 
   &:hover {
     color: $primary;
-    transform: scale(1.1);
   }
 
   &:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
   }
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: $space-4;
+  gap: $space-3;
 }
 
 .header-search {
-  width: 220px;
+  width: 240px;
 
   :deep(.el-input__wrapper) {
-    background: $gray-50;
+    background: $gray-100;
     box-shadow: none !important;
-    border-radius: 20px;
+    border-radius: $radius-full;
     padding: 2px 16px;
+    border: 1px solid transparent;
+    transition: all $transition-fast;
 
     &:hover {
-      background: $gray-100;
+      background: $gray-200;
     }
 
     &.is-focus {
       background: $bg-card;
-      box-shadow: 0 0 0 2px $primary-lighter inset !important;
+      border-color: $primary;
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12) !important;
     }
   }
 
@@ -344,15 +352,17 @@ function handleUserCommand(command) {
 .icon-btn {
   color: $text-regular;
   cursor: pointer;
-  transition: color $transition-fast, transform $transition-fast;
+  padding: 6px;
+  border-radius: $radius-full;
+  transition: all $transition-fast;
 
   &:hover {
     color: $primary;
-    transform: scale(1.1);
+    background: rgba(0, 0, 0, 0.04);
   }
 
   &:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
   }
 }
 
@@ -366,7 +376,7 @@ function handleUserCommand(command) {
   transition: background $transition-fast;
 
   &:hover {
-    background: $gray-50;
+    background: rgba(0, 0, 0, 0.04);
   }
 
   .user-avatar {
@@ -382,89 +392,88 @@ function handleUserCommand(command) {
     max-width: 100px;
     @include truncate;
   }
-
-  .dropdown-arrow {
-    color: $text-secondary;
-    font-size: 12px;
-    transition: transform $transition-fast;
-  }
-
-  &:hover .dropdown-arrow {
-    transform: rotate(180deg);
-  }
 }
 </style>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+@use '@/styles/mixins.scss' as *;
+
 .notification-drawer {
-  padding: 0 4px;
+  padding: 0;
 }
 
 .notification-header {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 12px;
+  margin-bottom: $space-4;
 }
 
 .notification-empty {
-  padding: 40px 0;
+  padding: 60px 0;
 }
 
 .notification-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .notification-item {
-  padding: 12px;
-  border-radius: 8px;
-  background: #fafafa;
+  padding: $space-4;
+  border-radius: $radius-md;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background $transition-fast;
+  border: 1px solid transparent;
 
   &:hover {
-    background: #f0f0f0;
+    background: $gray-50;
   }
 
-  &.unread {
-    background: #ecf5ff;
-    border-left: 3px solid #409eff;
+    &.unread {
+      background: $primary-lighter;
+      border-color: rgba(0, 113, 227, 0.1);
 
-    &:hover {
-      background: #d9ecff;
-    }
+      &:hover {
+        background: #DAE9FF;
+      }
   }
+}
+
+.unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: $radius-full;
+  background: $primary;
+  flex-shrink: 0;
 }
 
 .notification-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
+  gap: $space-2;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
   margin-bottom: 4px;
 }
 
 .notification-content {
-  font-size: 13px;
-  color: #606266;
-  line-height: 1.5;
-  margin-bottom: 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  font-size: $font-size-xs;
+  color: $text-regular;
+  line-height: $line-height-base;
+  margin-bottom: 6px;
+  @include multi-truncate(2);
 }
 
 .notification-time {
-  font-size: 12px;
-  color: #909399;
+  font-size: 11px;
+  color: $text-secondary;
 }
 
 .notification-more {
   text-align: center;
-  padding: 12px 0;
+  padding: $space-4 0;
 }
 </style>

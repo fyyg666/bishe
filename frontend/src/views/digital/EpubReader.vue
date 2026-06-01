@@ -236,26 +236,45 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+@use '@/styles/mixins.scss' as *;
+
+$dark-bg: #1e1e1e;
+$dark-surface: #2c2c2c;
+$dark-border: #3c3c3c;
+$dark-text: #ccc;
+$dark-text-muted: #aaa;
+$sepia-bg: #f4ecd8;
+$sepia-text: #5b4636;
+$sepia-surface: #ebe2cc;
+$sepia-border: #d4c9af;
+$sepia-border-light: #e8dcc4;
+$sepia-text-muted: #8b7355;
+$light-surface: #f5f5f5;
+$light-border: #e0e0e0;
+$light-border-light: #f0f0f0;
+$light-text-muted: #666;
+
 .epub-reader {
   display: flex;
   height: 100%;
-  background: #fff;
-  color: #333;
+  background: $bg-white;
+  color: $text-primary;
 
   &.theme-sepia {
-    background: #f4ecd8;
-    color: #5b4636;
+    background: $sepia-bg;
+    color: $sepia-text;
   }
 
   &.theme-dark {
-    background: #1e1e1e;
-    color: #ccc;
+    background: $dark-bg;
+    color: $dark-text;
   }
 }
 
 .epub-sidebar {
   width: 280px;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid $light-border;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -265,10 +284,10 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    font-weight: 600;
-    font-size: 16px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: $space-3 $space-4;
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
+    border-bottom: 1px solid $light-border;
   }
 
   .toc-list {
@@ -277,19 +296,19 @@ onBeforeUnmount(() => {
   }
 
   .toc-item {
-    padding: 10px 12px;
+    padding: $space-2 $space-3;
     cursor: pointer;
-    font-size: 14px;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background 0.2s;
+    font-size: $font-size-base;
+    border-bottom: 1px solid $light-border-light;
+    transition: background $transition-fast;
 
     &:hover {
       background: rgba(64, 158, 255, 0.1);
     }
 
     &.active {
-      color: #409eff;
-      font-weight: 600;
+      color: $primary;
+      font-weight: $font-weight-semibold;
     }
   }
 }
@@ -305,23 +324,23 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
+  padding: $space-2 $space-4;
+  background: $light-surface;
+  border-bottom: 1px solid $light-border;
   flex-shrink: 0;
 
   .toolbar-left,
   .toolbar-right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $space-1;
   }
 
   .font-size-info {
-    font-size: 13px;
+    font-size: $font-size-sm;
     min-width: 40px;
     text-align: center;
-    color: #666;
+    color: $light-text-muted;
   }
 }
 
@@ -343,12 +362,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 16px;
+  gap: $space-4;
 }
 
 .epub-error {
   p {
-    color: #f56c6c;
+    color: $danger;
   }
 }
 
@@ -356,39 +375,39 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 24px;
-  background: #f5f5f5;
-  border-top: 1px solid #e0e0e0;
+  padding: $space-3 $space-6;
+  background: $light-surface;
+  border-top: 1px solid $light-border;
   flex-shrink: 0;
 
   .nav-info {
-    font-size: 14px;
-    color: #666;
+    font-size: $font-size-base;
+    color: $light-text-muted;
     text-align: center;
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 0 12px;
+    padding: 0 $space-3;
   }
 }
 
 .theme-dark {
   .epub-toolbar,
   .epub-nav {
-    background: #2c2c2c;
-    border-color: #3c3c3c;
+    background: $dark-surface;
+    border-color: $dark-border;
   }
 
   .epub-sidebar {
-    border-color: #3c3c3c;
+    border-color: $dark-border;
 
     .sidebar-header {
-      border-color: #3c3c3c;
+      border-color: $dark-border;
     }
 
     .toc-item {
-      border-color: #3c3c3c;
+      border-color: $dark-border;
 
       &:hover {
         background: rgba(64, 158, 255, 0.15);
@@ -398,32 +417,47 @@ onBeforeUnmount(() => {
 
   .font-size-info,
   .nav-info {
-    color: #aaa;
+    color: $dark-text-muted;
   }
 }
 
 .theme-sepia {
   .epub-toolbar,
   .epub-nav {
-    background: #ebe2cc;
-    border-color: #d4c9af;
+    background: $sepia-surface;
+    border-color: $sepia-border;
   }
 
   .epub-sidebar {
-    border-color: #d4c9af;
+    border-color: $sepia-border;
 
     .sidebar-header {
-      border-color: #d4c9af;
+      border-color: $sepia-border;
     }
 
     .toc-item {
-      border-color: #e8dcc4;
+      border-color: $sepia-border-light;
     }
   }
 
   .font-size-info,
   .nav-info {
-    color: #8b7355;
+    color: $sepia-text-muted;
+  }
+}
+
+@include mobile {
+  .epub-sidebar {
+    position: absolute;
+    z-index: $z-overlay;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    box-shadow: $shadow-lg;
+  }
+  .epub-toolbar {
+    flex-wrap: wrap;
+    gap: $space-2;
   }
 }
 </style>

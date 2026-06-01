@@ -6,6 +6,7 @@ import com.library.system.dto.MarcRecordRequest;
 import com.library.system.dto.MarcRecordResponse;
 import com.library.system.entity.MarcField;
 import com.library.system.entity.MarcRecord;
+import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.MarcFieldMapper;
 import com.library.system.mapper.MarcRecordMapper;
 import com.library.system.service.MarcRecordService;
@@ -60,7 +61,7 @@ public class MarcRecordServiceImpl implements MarcRecordService {
     public MarcRecordResponse getRecord(Long id) {
         MarcRecord record = marcRecordMapper.selectById(id);
         if (record == null) {
-            throw new RuntimeException("MARC记录不存在: " + id);
+            throw new ResourceNotFoundException("MARC记录不存在: " + id);
         }
         return convertToResponse(record);
     }
@@ -70,7 +71,7 @@ public class MarcRecordServiceImpl implements MarcRecordService {
     public MarcRecordResponse updateRecord(Long id, MarcRecordRequest request) {
         MarcRecord record = marcRecordMapper.selectById(id);
         if (record == null) {
-            throw new RuntimeException("MARC记录不存在: " + id);
+            throw new ResourceNotFoundException("MARC记录不存在: " + id);
         }
 
         record.setRecordType(request.getRecordType());
@@ -141,7 +142,7 @@ public class MarcRecordServiceImpl implements MarcRecordService {
         wrapper.eq(MarcRecord::getBookId, bookId);
         MarcRecord record = marcRecordMapper.selectOne(wrapper);
         if (record == null) {
-            throw new RuntimeException("图书 " + bookId + " 对应的MARC记录不存在");
+            throw new ResourceNotFoundException("图书 " + bookId + " 对应的MARC记录不存在");
         }
         return convertToResponse(record);
     }
@@ -150,7 +151,7 @@ public class MarcRecordServiceImpl implements MarcRecordService {
     public void linkToBook(Long recordId, Long bookId) {
         MarcRecord record = marcRecordMapper.selectById(recordId);
         if (record == null) {
-            throw new RuntimeException("MARC记录不存在: " + recordId);
+            throw new ResourceNotFoundException("MARC记录不存在: " + recordId);
         }
         record.setBookId(bookId);
         marcRecordMapper.updateById(record);

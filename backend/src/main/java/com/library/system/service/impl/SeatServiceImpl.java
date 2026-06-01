@@ -1,7 +1,6 @@
 package com.library.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.library.system.common.Constants;
 import com.library.system.dto.*;
@@ -156,31 +155,34 @@ public class SeatServiceImpl implements SeatService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelReservation(Long userId, Long reservationId) {
-        SeatReservation reservation = seatReservationMapper.selectById(reservationId);
-        if (reservation == null || reservation.getDeleted() == 1) {
-            throw new ResourceNotFoundException(ErrorCode.SEAT_RESERVATION_NOT_FOUND, "预约记录不存在");
-        }
-        if (!reservation.getUserId().equals(userId)) {
-            throw new ForbiddenException(ErrorCode.INSUFFICIENT_PERMISSION, "无权操作此预约记录");
-        }
-        if (!Constants.ReservationStatus.PENDING.equals(reservation.getStatus())) { 
-            throw new BusinessException(ErrorCode.SEAT_RESERVATION_CONFLICT, "只能取消待使用的预约");
-        }
+        String lockKey = "seat:cancel:" + reservationId;
 
-        // 检查是否在预约时间前2小时
-        LocalDateTime reservationStart = LocalDateTime.of(
-                reservation.getReservationDate(), reservation.getStartTime());
-        int cancelBeforeHours = sysConfigService.getIntValue("seat.cancel_before_hours", 2);
-        if (LocalDateTime.now().plusHours(cancelBeforeHours).isAfter(reservationStart)) {
-            throw new BusinessException(ErrorCode.SEAT_CANCEL_TOO_LATE,
-                    "预约开始前" + cancelBeforeHours + "小时内无法取消");
-        }
+        lockTemplate.executeWithLock(lockKey, () -> {
+            SeatReservation reservation = seatReservationMapper.selectById(reservationId);
+            if (reservation == null || reservation.getDeleted() == 1) {
+                throw new ResourceNotFoundException(ErrorCode.SEAT_RESERVATION_NOT_FOUND, "预约记录不存在");
+            }
+            if (!reservation.getUserId().equals(userId)) {
+                throw new ForbiddenException(ErrorCode.INSUFFICIENT_PERMISSION, "无权操作此预约记录");
+            }
+            if (!Constants.ReservationStatus.PENDING.equals(reservation.getStatus())) { 
+                throw new BusinessException(ErrorCode.SEAT_RESERVATION_CONFLICT, "只能取消待使用的预约");
+            }
 
-        reservation.setStatus(Constants.ReservationStatus.CANCELLED); 
-        reservation.setCancelReason("用户主动取消");
-        seatReservationMapper.updateById(reservation);
+            LocalDateTime reservationStart = LocalDateTime.of(
+                    reservation.getReservationDate(), reservation.getStartTime());
+            int cancelBeforeHours = sysConfigService.getIntValue("seat.cancel_before_hours", 2);
+            if (LocalDateTime.now().plusHours(cancelBeforeHours).isAfter(reservationStart)) {
+                throw new BusinessException(ErrorCode.SEAT_CANCEL_TOO_LATE,
+                        "预约开始前" + cancelBeforeHours + "小时内无法取消");
+            }
 
-        log.info("座位预约取消成功: userId={}, reservationId={}", userId, reservationId);
+            reservation.setStatus(Constants.ReservationStatus.CANCELLED); 
+            reservation.setCancelReason("用户主动取消");
+            seatReservationMapper.updateById(reservation);
+
+            log.info("座位预约取消成功: userId={}, reservationId={}", userId, reservationId);
+        });
     }
 
     @Override
@@ -286,7 +288,9 @@ public class SeatServiceImpl implements SeatService {
 
     @Override
     public List<ReadingRoom> getReadingRooms() {
-        return readingRoomMapper.selectList(null);
+        LambdaQueryWrapper<ReadingRoom> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ReadingRoom::getDeleted, 0);
+        return readingRoomMapper.selectList(wrapper);
     }
 
     @Override
@@ -359,29 +363,25 @@ public class SeatServiceImpl implements SeatService {
     }
 
     private void resetExpiredBan(User user) {
-        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(User::getId, user.getId())
-               .set(User::getViolationCount, 0)
-               .set(User::getBanUntil, (LocalDateTime) null);
-        userMapper.update(null, wrapper);
+        User freshUser = userMapper.selectById(user.getId());
+        if (freshUser != null) {
+            freshUser.setViolationCount(0);
+            freshUser.setBanUntil(null);
+            userMapper.updateById(freshUser);
+        }
     }
 
     /**
      * 增加用户违约次数，达到阈值自动封禁72小时
      */
     private void incrementUserViolation(Long userId) {
+        LocalDateTime banUntil = LocalDateTime.now().plusHours(72);
+        userMapper.incrementViolationCount(userId, Constants.SeatLimit.VIOLATION_THRESHOLD, banUntil);
+
         User user = userMapper.selectById(userId);
-        if (user == null) return;
-
-        int newCount = (user.getViolationCount() != null ? user.getViolationCount() : 0) + 1;
-        user.setViolationCount(newCount);
-
-        if (newCount >= Constants.SeatLimit.VIOLATION_THRESHOLD) {
-            user.setBanUntil(LocalDateTime.now().plusHours(72));
-            log.warn("用户违约次数达{}次，已封禁72小时: userId={}", newCount, userId);
+        if (user != null && user.getViolationCount() != null && user.getViolationCount() >= Constants.SeatLimit.VIOLATION_THRESHOLD) {
+            log.warn("用户违约次数达{}次，已封禁72小时: userId={}", user.getViolationCount(), userId);
         }
-
-        userMapper.updateById(user);
     }
 
     /**

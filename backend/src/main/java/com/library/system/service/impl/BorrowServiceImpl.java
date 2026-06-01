@@ -9,6 +9,7 @@ import com.library.system.entity.BorrowRecord;
 import com.library.system.entity.BorrowRule;
 import com.library.system.entity.User;
 import com.library.system.enums.ErrorCode;
+import com.library.system.event.BorrowEvent;
 import com.library.system.exception.BusinessException;
 import com.library.system.exception.ForbiddenException;
 import com.library.system.exception.ResourceNotFoundException;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -54,6 +56,7 @@ public class BorrowServiceImpl implements BorrowService {
     private final NotificationService notificationService;
     private final BookReservationService bookReservationService;
     private final BorrowRuleService borrowRuleService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 逾期罚款每天金额
     private static final BigDecimal DAILY_FINE = new BigDecimal("0.10");
@@ -81,12 +84,16 @@ public class BorrowServiceImpl implements BorrowService {
                 performBorrowOperation(book, user, borrowDays);
 
                 BorrowRecord record = createBorrowRecord(userId, user, book, borrowDays);
-                creditService.processBorrowCredit(userId, record.getId());
 
                 log.info("图书借阅成功: user={}, book={}", user.getUsername(), book.getTitle());
-                notificationService.createNotification(userId, "借阅成功",
-                        "您已成功借阅《" + book.getTitle() + "》，到期日为" + record.getDueDate().toLocalDate(),
-                        "BORROW", record.getId());
+
+                eventPublisher.publishEvent(BorrowEvent.builder()
+                        .type("BORROW")
+                        .userId(userId)
+                        .borrowId(record.getId())
+                        .bookTitle(book.getTitle())
+                        .dueDate(record.getDueDate())
+                        .build());
                 return convertToResponse(record);
             });
 
@@ -119,16 +126,19 @@ public class BorrowServiceImpl implements BorrowService {
                 updateBookStock(book);
                 updateUserBorrowCount(user);
 
-                creditService.processReturnCredit(userId, borrowId, overdueDays, record.getDueDate(), returnDateTime);
-
                 log.info("图书归还成功: user={}, book={}, overdueDays={}",
                         user.getUsername(), book.getTitle(), overdueDays);
 
-                String returnContent = overdueDays > 0
-                        ? "您已归还《" + book.getTitle() + "》，逾期" + overdueDays + "天，罚款" + fineAmount + "元"
-                        : "您已归还《" + book.getTitle() + "》，感谢按时归还";
-                notificationService.createNotification(userId, "归还成功", returnContent,
-                        "RETURN", record.getId());
+                eventPublisher.publishEvent(BorrowEvent.builder()
+                        .type("RETURN")
+                        .userId(userId)
+                        .borrowId(borrowId)
+                        .bookTitle(book.getTitle())
+                        .dueDate(record.getDueDate())
+                        .overdueDays(overdueDays)
+                        .fineAmount(fineAmount)
+                        .returnDate(returnDateTime)
+                        .build());
 
                 try {
                     bookReservationService.notifyNextInQueue(record.getBookId());
@@ -166,9 +176,13 @@ public class BorrowServiceImpl implements BorrowService {
                 log.info("图书续借成功: userId={}, borrowId={}, newDueDate={}",
                         userId, borrowId, record.getDueDate());
 
-                notificationService.createNotification(userId, "续借成功",
-                        "您已续借《" + record.getBookTitle() + "》，新到期日为" + record.getDueDate().toLocalDate(),
-                        "RENEW", record.getId());
+                eventPublisher.publishEvent(BorrowEvent.builder()
+                        .type("RENEW")
+                        .userId(userId)
+                        .borrowId(record.getId())
+                        .bookTitle(record.getBookTitle())
+                        .dueDate(record.getDueDate())
+                        .build());
 
                 return convertToResponse(record);
             });

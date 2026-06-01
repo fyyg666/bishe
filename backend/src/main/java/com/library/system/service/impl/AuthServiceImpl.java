@@ -110,6 +110,12 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.AUTH_FAILED, "两次输入的密码不一致");
         }
 
+        if (request.getPassword().length() < 8
+                || !request.getPassword().matches(".*[a-zA-Z].*")
+                || !request.getPassword().matches(".*\\d.*")) {
+            throw new BusinessException(ErrorCode.PASSWORD_COMPLEXITY, "密码长度至少8位，且必须包含字母和数字");
+        }
+
         // 检查用户名是否存在
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, request.getUsername());

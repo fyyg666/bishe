@@ -205,6 +205,15 @@ class BookServiceTest extends BaseTest {
 
             assertThrows(ResourceNotFoundException.class, () -> bookService.deleteBook(999L));
         }
+
+        @Test
+        @DisplayName("删除失败 - 图书有活跃借阅")
+        void deleteBook_withActiveBorrows_shouldThrowException() {
+            testBook.setBorrowCount(3);
+            when(bookMapper.selectById(1L)).thenReturn(testBook);
+            assertThrows(BusinessException.class,
+                    () -> bookService.deleteBook(1L));
+        }
     }
 
     @Nested

@@ -1,5 +1,5 @@
 <template>
-  <div class="marc-editor">
+  <div class="marc-editor" v-loading="loading">
     <el-card>
       <template #header>
         <div class="card-header">
@@ -149,6 +149,7 @@ function onFieldUpdate() {
 
 onMounted(async () => {
   if (isEdit.value) {
+    loading.value = true
     try {
       const res = await getMarcRecord(route.params.id)
       const data = res.data
@@ -168,6 +169,8 @@ onMounted(async () => {
       }
     } catch {
       ElMessage.error('加载MARC记录失败')
+    } finally {
+      loading.value = false
     }
   } else {
     form.fields = [

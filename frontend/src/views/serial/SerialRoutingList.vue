@@ -656,6 +656,7 @@ async function loadSubscriptions() {
     }
   } catch (error) {
     console.error('加载订阅列表失败:', error)
+    ElMessage.error('加载订阅列表失败')
   }
 }
 
@@ -671,6 +672,7 @@ async function loadIssues(subscriptionId, targetRef) {
     }
   } catch (error) {
     console.error('加载到刊列表失败:', error)
+    ElMessage.error('加载到刊列表失败')
   }
 }
 
@@ -847,6 +849,7 @@ async function handleSubmitCreate() {
     }
   } catch (error) {
     console.error('创建失败:', error)
+    ElMessage.error('创建失败')
   } finally {
     submitLoading.value = false
   }
@@ -869,6 +872,7 @@ async function handleSubmitBatch() {
     }
   } catch (error) {
     console.error('批量分发失败:', error)
+    ElMessage.error('批量分发失败')
   } finally {
     submitLoading.value = false
   }
@@ -900,6 +904,7 @@ async function handleSubmitTemplate() {
     }
   } catch (error) {
     console.error('模板创建失败:', error)
+    ElMessage.error('模板创建失败')
   } finally {
     submitLoading.value = false
   }

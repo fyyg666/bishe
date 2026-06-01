@@ -27,3 +27,23 @@ const breadcrumbs = computed(() => {
     }))
 })
 </script>
+
+<style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+@use '@/styles/mixins.scss' as *;
+
+:deep(.el-breadcrumb__inner) {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@include mobile {
+  :deep(.el-breadcrumb__inner) {
+    max-width: 120px;
+  }
+}
+</style>

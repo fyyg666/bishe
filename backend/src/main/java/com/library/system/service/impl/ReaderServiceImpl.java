@@ -17,10 +17,10 @@ import com.library.system.service.ReaderService;
 import com.library.system.util.DataMaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -53,9 +53,6 @@ public class ReaderServiceImpl implements ReaderService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
-
-    @Value("${library.default-password:123456}")
-    private String defaultPassword;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -156,9 +153,11 @@ public class ReaderServiceImpl implements ReaderService {
         user.setBorrowCount(0);
         user.setMaxBorrowCount(Constants.BorrowLimit.MAX_BORROW_COUNT); 
 
-        userMapper.insert(user);
-
-        log.info("读者注册成功: {}, cardNumber: {}", user.getUsername(), cardNumber);
+        try {
+            userMapper.insert(user);
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException(ErrorCode.READER_ALREADY_EXISTS, "用户名已存在");
+        }
         return convertToResponse(user);
     }
 
@@ -361,7 +360,8 @@ public class ReaderServiceImpl implements ReaderService {
                 }
                 User user = new User();
                 user.setUsername(dto.getUsername());
-                user.setPassword(passwordEncoder.encode(defaultPassword));
+                user.setPassword(passwordEncoder.encode(
+                        Constants.Security.generateDefaultPassword(SECURE_RANDOM)));
                 user.setRealName(dto.getRealName());
                 user.setPhone(dto.getPhone());
                 user.setEmail(dto.getEmail());

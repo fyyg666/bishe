@@ -52,10 +52,13 @@ public class Compensation implements Serializable {
 
     private LocalDateTime reviewTime;
 
+    @Version
     private Integer version;
 
+    @TableField("created_at")
     private LocalDateTime createTime;
 
+    @TableField("updated_at")
     private LocalDateTime updateTime;
 
     @TableLogic

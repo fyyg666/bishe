@@ -1,8 +1,7 @@
 // ============================================
-// SCSS Mixins & Utilities — v2.0
+// SCSS Mixins & Utilities — v4.0 (Apple Inspired)
 // ============================================
 
-@use 'sass:color';
 @use './variables.scss' as *;
 
 // ── Flex ────────────────────────────────────
@@ -23,29 +22,61 @@
   flex-direction: column;
 }
 
-// ── Card ────────────────────────────────────
+// ── Card — Apple: border-only, no shadow ────
 @mixin card($padding: $space-6, $radius: $radius-lg) {
   background: $bg-card;
   border-radius: $radius;
   padding: $padding;
   border: 1px solid $border-light;
-  box-shadow: $shadow-sm;
-  transition: box-shadow $transition-base, transform $transition-base;
+  box-shadow: none;
+  transition: border-color $transition-base;
 
   &:hover {
-    box-shadow: $shadow-md;
+    border-color: $gray-300;
+    box-shadow: none;
   }
 }
 
-// ── Glass ───────────────────────────────────
-@mixin glass($opacity: 0.92, $blur: 16px) {
-  background: oklch(1 0 0 / $opacity);
+// ── Card with hover lift (for interactive cards like dash shortcuts) ──
+@mixin card-interactive($padding: $space-6, $radius: $radius-lg) {
+  background: $bg-card;
+  border-radius: $radius;
+  padding: $padding;
+  border: 1px solid $border-light;
+  box-shadow: none;
+  cursor: pointer;
+  transition: border-color $transition-base, transform $transition-base;
+
+  &:hover {
+    border-color: $gray-300;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+    transition: transform 60ms $ease-spring-out;
+  }
+
+  &:not(:active) {
+    transition: transform 200ms $ease-bounce, border-color $transition-base;
+  }
+}
+
+// ── Glass — Apple-style frosted ─────────────
+@mixin glass($opacity: 0.72, $blur: $glass-blur-header) {
+  background: rgba(255, 255, 255, $opacity);
   backdrop-filter: blur($blur);
   -webkit-backdrop-filter: blur($blur);
 }
 
-// ── Scrollbar ──────────────────────────────
-@mixin scrollbar($width: 6px, $thumb: $gray-300, $track: transparent) {
+@mixin glass-dark($opacity: 0.72, $blur: $glass-blur-header) {
+  background: rgba(28, 28, 30, $opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+}
+
+// ── Scrollbar — Apple style thin ────────────
+@mixin scrollbar($width: 6px, $thumb: $gray-200, $track: transparent) {
   &::-webkit-scrollbar {
     width: $width;
     height: $width;
@@ -53,7 +84,7 @@
   &::-webkit-scrollbar-thumb {
     background: $thumb;
     border-radius: 3px;
-    &:hover { background: $gray-400; }
+    &:hover { background: $gray-300; }
   }
   &::-webkit-scrollbar-track {
     background: $track;
@@ -74,21 +105,12 @@
   overflow: hidden;
 }
 
-// ── Hover lift ─────────────────────────────
-@mixin hover-lift($amount: -2px) {
-  transition: transform $transition-base, box-shadow $transition-base;
-  &:hover {
-    transform: translateY($amount);
-    box-shadow: $shadow-md;
-  }
-}
-
-// ── Shimmer skeleton ───────────────────────
+// ── Shimmer skeleton — cold gray tones ─────
 @mixin shimmer {
   background: linear-gradient(
     90deg,
     $gray-100 25%,
-    $gray-200 37%,
+    $gray-50 37%,
     $gray-100 63%
   );
   background-size: 200% 100%;
@@ -98,6 +120,37 @@
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+// ── Title style — Apple heading ────────────
+@mixin apple-title {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.022em;
+  color: $text-primary;
+}
+
+// ── Stat number — Apple dashboard style ────
+@mixin stat-number {
+  font-size: 40px;
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+  color: $text-primary;
+  font-family: $font-mono;
+  font-variant-numeric: tabular-nums;
+}
+
+// ── Hairline border ────────────────────────
+@mixin hairline($color: $border) {
+  border: none;
+  box-shadow: 0 0.5px 0 0 $color inset;
+}
+
+// ── Focus ring — Apple blue ────────────────
+@mixin focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
 }
 
 // ── Responsive ─────────────────────────────

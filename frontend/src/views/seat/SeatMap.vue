@@ -1,5 +1,5 @@
 <template>
-  <div class="seat-map">
+  <div class="seat-map" v-loading="loading">
     <!-- 区域选择 -->
     <el-card class="area-card">
       <el-radio-group

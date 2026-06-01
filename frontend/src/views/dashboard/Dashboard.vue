@@ -1,158 +1,129 @@
 <template>
-  <div class="dashboard">
-    <el-row
-      :gutter="20"
-      class="stats-row"
-    >
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card
-          shadow="hover"
-          class="stat-card"
-        >
-          <div class="stat-icon book-icon">
-            <el-icon><Reading /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">
-              {{ stats.bookCount }}
-            </div>
-            <div class="stat-label">
-              图书总数
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card
-          shadow="hover"
-          class="stat-card"
-        >
-          <div class="stat-icon borrow-icon">
-            <el-icon><Tickets /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">
-              {{ stats.borrowCount }}
-            </div>
-            <div class="stat-label">
-              在借数量
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card
-          shadow="hover"
-          class="stat-card"
-        >
-          <div class="stat-icon seat-icon">
-            <el-icon><Grid /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">
-              {{ stats.seatCount }}
-            </div>
-            <div class="stat-label">
-              可用座位
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card
-          shadow="hover"
-          class="stat-card"
-        >
-          <div class="stat-icon credit-icon">
-            <el-icon><Coin /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">
-              {{ stats.creditScore }}
-            </div>
-            <div class="stat-label">
-              我的积分
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+  <div class="dashboard" v-loading="loading">
+    <!-- Stats Row — Apple-style big numbers -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">图书总数</span>
+        <span class="stat-value">{{ stats.bookCount }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">在借数量</span>
+        <span class="stat-value">{{ stats.borrowCount }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">可用座位</span>
+        <span class="stat-value">{{ stats.seatCount }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">我的积分</span>
+        <span class="stat-value">{{ stats.creditScore }}</span>
+      </div>
+    </div>
 
-    <el-row
-      :gutter="20"
-      class="content-row"
-    >
-      <el-col :xs="24" :sm="24" :md="userStore.isAdmin ? 16 : 24">
-        <el-card v-if="userStore.isAdmin">
-          <template #header>
-            <div class="card-header">
-              <span>近期借阅趋势</span>
-              <el-radio-group
-                v-model="trendPeriod"
-                size="small"
-                @change="loadBorrowTrend"
-              >
-                <el-radio-button value="week">
-                  本周
-                </el-radio-button>
-                <el-radio-button value="month">
-                  本月
-                </el-radio-button>
-              </el-radio-group>
-            </div>
-          </template>
-          <div
-            ref="trendChartRef"
-            class="chart-container"
-          />
-        </el-card>
-      </el-col>
-      
-      <el-col :xs="24" :sm="24" :md="8">
-        <el-card>
-          <template #header>
-            <span>快捷入口</span>
-          </template>
-          <div class="quick-actions">
-            <div
-              class="quick-item"
-              @click="$router.push('/books/add')"
+    <!-- Content Row -->
+    <div class="content-grid">
+      <!-- Main column -->
+      <div class="main-col">
+        <!-- Borrow Trend Chart (admin only) -->
+        <div v-if="userStore.isAdmin" class="panel">
+          <div class="panel-header">
+            <span class="panel-title">借阅趋势</span>
+            <el-radio-group
+              v-model="trendPeriod"
+              size="small"
+              @change="loadBorrowTrend"
             >
-              <el-icon><Plus /></el-icon>
-              <span>添加图书</span>
+              <el-radio-button value="week">本周</el-radio-button>
+              <el-radio-button value="month">本月</el-radio-button>
+            </el-radio-group>
+          </div>
+          <div ref="trendChartRef" class="chart-area" />
+        </div>
+
+        <!-- Seat Status -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">座位预约情况</span>
+          </div>
+          <div class="seat-bars">
+            <div class="seat-bar-item">
+              <div class="seat-bar-info">
+                <span class="seat-bar-label">总座位</span>
+                <span class="seat-bar-value">{{ seatStats.total }}</span>
+              </div>
+              <div class="seat-bar-track">
+                <div class="seat-bar-fill total" :style="{ width: '100%' }" />
+              </div>
             </div>
-            <div
-              class="quick-item"
-              @click="$router.push('/borrows/page')"
-            >
-              <el-icon><Tickets /></el-icon>
-              <span>借阅图书</span>
+            <div class="seat-bar-item">
+              <div class="seat-bar-info">
+                <span class="seat-bar-label">已预约</span>
+                <span class="seat-bar-value">{{ seatStats.reserved }}</span>
+              </div>
+              <div class="seat-bar-track">
+                <div
+                  class="seat-bar-fill reserved"
+                  :style="{ width: seatPercent('reserved') }"
+                />
+              </div>
             </div>
-            <div
-              class="quick-item"
-              @click="$router.push('/seats/map')"
-            >
-              <el-icon><Calendar /></el-icon>
-              <span>预约座位</span>
-            </div>
-            <div
-              class="quick-item"
-              @click="$router.push('/profile')"
-            >
-              <el-icon><User /></el-icon>
-              <span>个人信息</span>
+            <div class="seat-bar-item">
+              <div class="seat-bar-info">
+                <span class="seat-bar-label">空闲</span>
+                <span class="seat-bar-value available">{{ seatStats.available }}</span>
+              </div>
+              <div class="seat-bar-track">
+                <div
+                  class="seat-bar-fill free"
+                  :style="{ width: seatPercent('available') }"
+                />
+              </div>
             </div>
           </div>
-        </el-card>
-        
-        <el-card class="mt-20">
-          <template #header>
-            <span>最近公告</span>
-          </template>
-          <div
-            v-if="recentNotices.length"
-            class="notice-list"
-          >
+        </div>
+      </div>
+
+      <!-- Side column -->
+      <div class="side-col">
+        <!-- Quick Actions -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">快捷入口</span>
+          </div>
+          <div class="quick-actions">
+            <div class="quick-card" @click="$router.push('/books/add')">
+              <span class="quick-icon">
+                <el-icon :size="22"><Plus /></el-icon>
+              </span>
+              <span class="quick-label">添加图书</span>
+            </div>
+            <div class="quick-card" @click="$router.push('/borrows/page')">
+              <span class="quick-icon">
+                <el-icon :size="22"><Tickets /></el-icon>
+              </span>
+              <span class="quick-label">借阅图书</span>
+            </div>
+            <div class="quick-card" @click="$router.push('/seats/map')">
+              <span class="quick-icon">
+                <el-icon :size="22"><Calendar /></el-icon>
+              </span>
+              <span class="quick-label">预约座位</span>
+            </div>
+            <div class="quick-card" @click="$router.push('/profile')">
+              <span class="quick-icon">
+                <el-icon :size="22"><User /></el-icon>
+              </span>
+              <span class="quick-label">个人信息</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Notices -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">最近公告</span>
+          </div>
+          <div v-if="recentNotices.length" class="notice-list">
             <div
               v-for="notice in recentNotices"
               :key="notice.id"
@@ -163,65 +134,36 @@
               <span class="notice-date">{{ formatDate(notice.createdAt) }}</span>
             </div>
           </div>
-          <el-empty
-            v-else
-            description="暂无公告"
-            :image-size="60"
-          />
-        </el-card>
-        
-        <el-card class="mt-20">
-          <template #header>
-            <span>热门图书 TOP5</span>
-          </template>
-          <div
-            v-if="hotBooks.length"
-            class="hot-books-list"
-          >
+          <el-empty v-else description="暂无公告" :image-size="48" />
+        </div>
+
+        <!-- Hot Books -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">热门图书</span>
+          </div>
+          <div v-if="hotBooks.length" class="hot-list">
             <div
               v-for="(book, index) in hotBooks"
               :key="book.id || index"
-              class="hot-book-item"
+              class="hot-item"
               @click="$router.push('/books')"
             >
-              <span class="hot-book-rank">{{ index + 1 }}</span>
-              <span class="hot-book-title">{{ book.title || book.bookTitle || book.bookName }}</span>
-              <span class="hot-book-count">{{ book.borrowCount }}次</span>
+              <span class="hot-rank" :class="{ top: index < 3 }">{{ index + 1 }}</span>
+              <span class="hot-title">{{ book.title || book.bookTitle || book.bookName }}</span>
+              <span class="hot-count">{{ book.borrowCount }}次</span>
             </div>
           </div>
-          <el-empty
-            v-else
-            description="暂无数据"
-            :image-size="60"
-          />
-        </el-card>
-        
-        <el-card class="mt-20">
-          <template #header>
-            <span>座位预约情况</span>
-          </template>
-          <div class="seat-status">
-            <div class="seat-item">
-              <span class="seat-label">总座位</span>
-              <span class="seat-value">{{ seatStats.total }}</span>
-            </div>
-            <div class="seat-item">
-              <span class="seat-label">已预约</span>
-              <span class="seat-value">{{ seatStats.reserved }}</span>
-            </div>
-            <div class="seat-item">
-              <span class="seat-label">空闲</span>
-              <span class="seat-value available">{{ seatStats.available }}</span>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+          <el-empty v-else description="暂无数据" :image-size="48" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import {
@@ -235,6 +177,7 @@ import { getLatestAnnouncements } from '@/api/announcement'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
+const loading = ref(false)
 const trendPeriod = ref('week')
 
 const stats = ref({
@@ -251,11 +194,15 @@ const seatStats = ref({
 })
 
 const recentNotices = ref([])
-
 const hotBooks = ref([])
 
 const trendChartRef = ref(null)
 let trendChart = null
+
+function seatPercent(type) {
+  const total = seatStats.value.total || 1
+  return `${(seatStats.value[type] / total) * 100}%`
+}
 
 function handleResize() {
   trendChart?.resize()
@@ -272,10 +219,10 @@ onUnmounted(() => {
 })
 
 async function loadDashboardData() {
+  loading.value = true
   try {
-    const promises = [loadCreditScore(), loadNotices(), loadHotBooks()]
+    const promises = [loadCreditScore(), loadNotices(), loadHotBooks(), loadSeatStats()]
     if (userStore.isAdmin) {
-      promises.push(loadSeatStats())
       promises.push(loadStats())
       promises.push(loadBorrowTrend())
     }
@@ -283,6 +230,8 @@ async function loadDashboardData() {
     await nextTick()
   } catch (error) {
     console.error('加载仪表盘数据失败:', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -370,55 +319,79 @@ async function loadBorrowTrend() {
 
 function renderTrendChart(data) {
   if (!trendChartRef.value) return
-  
+
   try {
     if (trendChart) {
       trendChart.dispose()
     }
     trendChart = echarts.init(trendChartRef.value)
-    
+
     const dates = data.map(item => item.date)
     const borrows = data.map(item => item.borrows)
     const returns = data.map(item => item.returns)
-  
+
     const option = {
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'cross' }
+        backgroundColor: '#fff',
+        borderColor: '#E5E5EA',
+        borderWidth: 1,
+        textStyle: { color: '#1C1C1E', fontSize: 12 },
+        axisPointer: {
+          type: 'line',
+          lineStyle: { color: '#E5E5EA', type: 'dashed' }
+        }
       },
       legend: {
-        data: ['借阅', '归还']
+        data: ['借阅', '归还'],
+        bottom: 0,
+        textStyle: { color: '#8E8E93', fontSize: 12 },
+        itemWidth: 8,
+        itemHeight: 8,
+        itemGap: 20
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
+        left: 0,
+        right: 0,
+        top: 10,
+        bottom: 40,
         containLabel: true
       },
       xAxis: {
         type: 'category',
         boundaryGap: false,
         data: dates,
+        axisLine: { show: false },
+        axisTick: { show: false },
         axisLabel: {
-          rotate: 45,
-          interval: Math.floor(dates.length / 7)
+          color: '#8E8E93',
+          fontSize: 11,
+          interval: Math.floor(dates.length / 7) || 0
         }
       },
       yAxis: {
         type: 'value',
-        minInterval: 1
+        minInterval: 1,
+        splitLine: {
+          lineStyle: { color: '#F0F0F3', type: 'dashed' }
+        },
+        axisLabel: {
+          color: '#8E8E93',
+          fontSize: 11
+        }
       },
       series: [
         {
           name: '借阅',
           type: 'line',
           smooth: true,
+          symbol: 'none',
           data: borrows,
-          itemStyle: { color: '#409EFF' },
+          lineStyle: { color: '#0071E3', width: 2 },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(64,158,255,0.3)' },
-              { offset: 1, color: 'rgba(64,158,255,0.05)' }
+              { offset: 0, color: 'rgba(0,113,227,0.12)' },
+              { offset: 1, color: 'rgba(0,113,227,0.01)' }
             ])
           }
         },
@@ -426,18 +399,19 @@ function renderTrendChart(data) {
           name: '归还',
           type: 'line',
           smooth: true,
+          symbol: 'none',
           data: returns,
-          itemStyle: { color: '#67C23A' },
+          lineStyle: { color: '#34C759', width: 2 },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(103,194,58,0.3)' },
-              { offset: 1, color: 'rgba(103,194,58,0.05)' }
+              { offset: 0, color: 'rgba(52,199,89,0.1)' },
+              { offset: 1, color: 'rgba(52,199,89,0.01)' }
             ])
           }
         }
       ]
     }
-  
+
     trendChart.setOption(option)
     setTimeout(() => trendChart?.resize(), 50)
   } catch (e) {
@@ -448,16 +422,14 @@ function renderTrendChart(data) {
 function renderEmptyChart() {
   if (!trendChartRef.value) return
   try {
-    if (trendChart) {
-      trendChart.dispose()
-    }
+    if (trendChart) trendChart.dispose()
     trendChart = echarts.init(trendChartRef.value)
     trendChart.setOption({
       title: {
         text: '暂无借阅趋势数据',
         left: 'center',
         top: 'center',
-        textStyle: { color: '#909399', fontSize: 14 }
+        textStyle: { color: '#8E8E93', fontSize: 14, fontWeight: 400 }
       }
     })
     setTimeout(() => trendChart?.resize(), 50)
@@ -474,349 +446,308 @@ function renderEmptyChart() {
   padding: 0;
 }
 
-.stats-row {
-  margin-bottom: 24px;
+/* ── Stats Grid ─────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $space-4;
+  margin-bottom: $space-8;
+
+  @include tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include mobile {
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-3;
+  }
 }
 
 .stat-card {
-  border: none;
-  border-radius: 12px;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1) !important;
-  }
-
-  :deep(.el-card__body) {
-    display: flex;
-    align-items: center;
-    padding: 24px;
-  }
-
-  .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    color: #fff;
-    margin-right: 20px;
-    flex-shrink: 0;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-    transition: transform 0.3s ease;
-
-    &.book-icon {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-    &.borrow-icon {
-      background: linear-gradient(135deg, #f093fb, #f5576c);
-    }
-    &.seat-icon {
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
-      box-shadow: 0 6px 16px rgba(79, 172, 254, 0.3);
-    }
-    &.credit-icon {
-      background: linear-gradient(135deg, #43e97b, #38f9d7);
-      box-shadow: 0 6px 16px rgba(67, 233, 123, 0.3);
-    }
-  }
-
-  &:hover .stat-icon {
-    transform: scale(1.05) rotate(3deg);
-  }
-
-  .stat-info {
-    .stat-value {
-      font-size: 30px;
-      font-weight: 700;
-      color: #1a1a2e;
-      line-height: 1.2;
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: #909399;
-      margin-top: 2px;
-    }
-  }
-}
-
-@include mobile {
-  .stat-card {
-    margin-bottom: 12px;
-
-    :deep(.el-card__body) {
-      padding: 16px;
-    }
-
-    .stat-icon {
-      width: 44px;
-      height: 44px;
-      font-size: 20px;
-      margin-right: 14px;
-    }
-
-    .stat-info {
-      .stat-value {
-        font-size: 22px;
-      }
-
-      .stat-label {
-        font-size: 12px;
-      }
-    }
-  }
-
-  .stats-row {
-    margin-bottom: 16px;
-  }
-}
-
-.content-row {
-  .mt-20 {
-    margin-top: 20px;
-  }
-}
-
-.card-header {
+  @include card;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 15px;
-}
+  flex-direction: column;
+  gap: $space-2;
+  padding: $space-6;
 
-.chart-container {
-  height: 300px;
-  width: 100%;
-}
+  @include mobile {
+    padding: $space-4;
+  }
 
-@include mobile {
-  .chart-container {
-    height: 220px;
+  .stat-label {
+    font-size: 13px;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+    letter-spacing: 0;
+  }
+
+  .stat-value {
+    font-size: 40px;
+    font-weight: $font-weight-bold;
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+    color: $text-primary;
+    font-family: $font-mono;
+    font-variant-numeric: tabular-nums;
+
+    @include mobile {
+      font-size: 24px;
+    }
   }
 }
 
-.quick-actions {
+/* ── Content Grid ────────────────────────── */
+.content-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: 1fr 340px;
+  gap: $space-6;
+  align-items: start;
 
-  .quick-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px 12px;
-    background: #f5f7fa;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid transparent;
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
 
-    &:hover {
-      background: #fff;
-      border-color: #ebeef5;
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-    }
-
-    .el-icon {
-      font-size: 26px;
-      margin-bottom: 10px;
-      transition: transform 0.3s ease;
-    }
-
-    &:hover .el-icon {
-      transform: scale(1.15);
-    }
-
-    &:nth-child(1) .el-icon { color: #667eea; }
-    &:nth-child(2) .el-icon { color: #f5576c; }
-    &:nth-child(3) .el-icon { color: #4facfe; }
-    &:nth-child(4) .el-icon { color: #43e97b; }
-
-    span {
-      font-size: 13px;
-      color: #606266;
-      font-weight: 500;
-    }
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: $space-4;
   }
 }
 
-.seat-status {
-  .seat-item {
+.main-col {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+}
+
+.side-col {
+  display: flex;
+  flex-direction: column;
+  gap: $space-5;
+}
+
+/* ── Panel ───────────────────────────────── */
+.panel {
+  @include card;
+  padding: 0;
+  overflow: hidden;
+
+  .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #f0f2f5;
+    padding: $space-5 $space-6;
+    border-bottom: 1px solid $border-light;
+
+    .panel-title {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+  }
+}
+
+/* ── Chart ───────────────────────────────── */
+.chart-area {
+  height: 280px;
+  width: 100%;
+  padding: $space-5 $space-6;
+
+  @include mobile {
+    height: 220px;
+    padding: $space-4;
+  }
+}
+
+/* ── Quick Actions ───────────────────────── */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $space-3;
+  padding: $space-5;
+
+  .quick-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-2;
+    padding: $space-5 $space-3;
+    background: $gray-50;
+    border-radius: $radius-lg;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all $transition-base;
+
+    &:hover {
+      background: $bg-card;
+      border-color: $gray-200;
+    }
+
+    &:active {
+      transform: scale(0.97);
+      transition: transform 60ms $ease-spring-out;
+    }
+
+    &:not(:active) {
+      transition: transform 200ms $ease-bounce, background $transition-base, border-color $transition-base;
+    }
+
+    .quick-icon {
+      color: $primary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .quick-label {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-medium;
+      color: $text-primary;
+    }
+  }
+}
+
+/* ── Seat Bars ───────────────────────────── */
+.seat-bars {
+  padding: $space-5 $space-6;
+
+  .seat-bar-item {
+    margin-bottom: $space-5;
 
     &:last-child {
-      border-bottom: none;
+      margin-bottom: 0;
     }
 
-    .seat-label {
-      font-size: 14px;
-      color: #606266;
+    .seat-bar-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: $space-2;
+
+      .seat-bar-label {
+        font-size: $font-size-sm;
+        color: $text-regular;
+      }
+
+      .seat-bar-value {
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+        font-variant-numeric: tabular-nums;
+
+        &.available {
+          color: $success;
+        }
+      }
     }
 
-    .seat-value {
-      font-weight: 600;
-      font-size: 16px;
-      color: #303133;
+    .seat-bar-track {
+      height: 4px;
+      background: $gray-100;
+      border-radius: 2px;
+      overflow: hidden;
 
-      &.available {
-        color: #67c23a;
-      }
+      .seat-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width $transition-slow;
 
-      &.reserved {
-        color: #e6a23c;
-      }
-
-      &.total {
-        color: #409eff;
+        &.total { background: $primary; }
+        &.reserved { background: $warning; }
+        &.free { background: $success; }
       }
     }
   }
 }
 
+/* ── Notice List ─────────────────────────── */
 .notice-list {
+  padding: $space-3 $space-6 $space-5;
+
   .notice-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f2f5;
+    padding: $space-3 $space-2;
+    border-radius: $radius-sm;
     cursor: pointer;
-    transition: all 0.25s ease;
-    border-radius: 6px;
-    padding: 10px 8px;
-    margin: 0 -8px;
-
-    &:last-child {
-      border-bottom: none;
-    }
+    transition: background $transition-fast;
+    margin: 0 (-$space-2);
 
     &:hover {
-      background: #f5f7fa;
+      background: $gray-50;
 
       .notice-title {
-        color: #667eea;
+        color: $primary;
       }
     }
 
     .notice-title {
       flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 13px;
-      color: #606266;
-      margin-right: 12px;
-      transition: color 0.25s;
+      @include truncate;
+      font-size: $font-size-sm;
+      color: $text-primary;
+      margin-right: $space-3;
+      transition: color $transition-fast;
     }
 
     .notice-date {
-      font-size: 12px;
-      color: #c0c4cc;
+      font-size: 11px;
+      color: $text-secondary;
       white-space: nowrap;
     }
   }
 }
 
-.hot-books-list {
-  .hot-book-item {
+/* ── Hot Books List ──────────────────────── */
+.hot-list {
+  padding: $space-3 $space-6 $space-5;
+
+  .hot-item {
     display: flex;
     align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f2f5;
+    padding: $space-3 $space-2;
+    border-radius: $radius-sm;
     cursor: pointer;
-    transition: all 0.25s ease;
-    border-radius: 6px;
-    padding: 10px 8px;
-    margin: 0 -8px;
-
-    &:last-child {
-      border-bottom: none;
-    }
+    transition: background $transition-fast;
+    margin: 0 (-$space-2);
 
     &:hover {
-      background: #f5f7fa;
-
-      .hot-book-title {
-        color: #667eea;
-      }
+      background: $gray-50;
     }
 
-    .hot-book-rank {
+    .hot-rank {
       width: 22px;
       height: 22px;
-      border-radius: 50%;
-      background: #f0f2f5;
+      border-radius: $radius-full;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      font-weight: 600;
-      color: #909399;
-      margin-right: 10px;
+      font-size: 11px;
+      font-weight: $font-weight-semibold;
+      color: $text-secondary;
+      background: $gray-100;
+      margin-right: $space-3;
       flex-shrink: 0;
+
+      &.top {
+        background: $primary-lighter;
+        color: $primary;
+      }
     }
 
-    &:nth-child(1) .hot-book-rank {
-      background: linear-gradient(135deg, #f5a623, #f7c948);
-      color: #fff;
-    }
-
-    &:nth-child(2) .hot-book-rank {
-      background: linear-gradient(135deg, #a0a4a8, #c0c4cc);
-      color: #fff;
-    }
-
-    &:nth-child(3) .hot-book-rank {
-      background: linear-gradient(135deg, #cd7f32, #daa06a);
-      color: #fff;
-    }
-
-    .hot-book-title {
+    .hot-title {
       flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 13px;
-      color: #606266;
-      margin-right: 8px;
-      transition: color 0.25s;
+      @include truncate;
+      font-size: $font-size-sm;
+      color: $text-primary;
+      margin-right: $space-2;
     }
 
-    .hot-book-count {
-      font-size: 12px;
-      font-weight: 600;
-      color: #f5576c;
+    .hot-count {
+      font-size: 11px;
+      font-weight: $font-weight-medium;
+      color: $text-secondary;
       white-space: nowrap;
     }
-  }
-}
-
-:deep(.el-card) {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-
-  .el-card__header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #f0f2f5;
-    font-weight: 600;
-    font-size: 15px;
-    color: #1a1a2e;
-  }
-
-  .el-card__body {
-    padding: 16px 20px;
   }
 }
 </style>

@@ -5,7 +5,6 @@ import { getToken, setToken as setAuthToken, clearToken } from '@/utils/auth'
 
 // FIXED: FE-001 - 所有Token操作从localStorage迁移到Cookie
 export const useUserStore = defineStore('user', () => {
-  // 状态 - 从Cookie读取Token，不再使用localStorage
   const token = ref(getToken() || '')
   const userInfo = ref(null)
 

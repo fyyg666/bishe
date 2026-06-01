@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { getSeatMap, reserveSeat, cancelReserve, getMyReservations, checkIn, checkOut } from '@/api/seat'
 
 export const useSeatStore = defineStore('seat', () => {
@@ -26,7 +25,6 @@ export const useSeatStore = defineStore('seat', () => {
       const res = await reserveSeat(data)
       return res
     } catch (error) {
-      ElMessage.error(error.message || '操作失败')
       throw error
     }
   }
@@ -36,7 +34,6 @@ export const useSeatStore = defineStore('seat', () => {
       const res = await cancelReserve(id)
       return res
     } catch (error) {
-      ElMessage.error(error.message || '操作失败')
       throw error
     }
   }
@@ -46,7 +43,6 @@ export const useSeatStore = defineStore('seat', () => {
       const res = await checkIn(id)
       return res
     } catch (error) {
-      ElMessage.error(error.message || '操作失败')
       throw error
     }
   }
@@ -56,7 +52,6 @@ export const useSeatStore = defineStore('seat', () => {
       const res = await checkOut(id)
       return res
     } catch (error) {
-      ElMessage.error(error.message || '操作失败')
       throw error
     }
   }

@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { getBookList, getBookDetail, addBook, updateBook, deleteBook } from '@/api/book'
 
 export const useBookStore = defineStore('book', () => {
@@ -39,7 +38,6 @@ export const useBookStore = defineStore('book', () => {
       const res = await addBook(data)
       return res
     } catch (error) {
-      ElMessage.error(error.message || '操作失败')
       throw error
     }
   }
@@ -49,7 +47,6 @@ export const useBookStore = defineStore('book', () => {
       const res = await updateBook(id, data)
       return res
     } catch (error) {
-      ElMessage.error(error.message || '操作失败')
       throw error
     }
   }
@@ -59,7 +56,6 @@ export const useBookStore = defineStore('book', () => {
       const res = await deleteBook(id)
       return res
     } catch (error) {
-      ElMessage.error(error.message || '操作失败')
       throw error
     }
   }

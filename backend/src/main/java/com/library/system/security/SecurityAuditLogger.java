@@ -1,40 +1,19 @@
 package com.library.system.security;
 
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-/**
- * 安全审计日志服务
- * <p>
- * 独立于业务操作日志的安全事件记录器，使用专用的SECURITY_AUDIT Logger
- * 输出到独立的 security-audit.log 文件。
- * </p>
- * <p>
- * 记录的安全事件类型：
- * <ul>
- *   <li>登录失败 — 认证异常、密码错误、账户锁定</li>
- *   <li>权限不足 — 越权访问、角色校验失败</li>
- *   <li>异常访问 — XSS攻击检测、SQL注入检测、频率超限</li>
- *   <li>Token安全 — Token无效、Token过期、Token被吊销</li>
- *   <li>数据安全 — 敏感数据访问、批量导出操作</li>
- * </ul>
- * </p>
- *
- * FIXED: SEC-P3-02 独立security-audit.log记录安全事件
- *
- * @author Security Team
- * @version 2.0.0
- */
-@Slf4j
 @Component
 public class SecurityAuditLogger {
 
-    /** 安全审计专用Logger，通过logback配置输出到独立文件 */
     private static final org.slf4j.Logger SECURITY_LOG =
             org.slf4j.LoggerFactory.getLogger("SECURITY_AUDIT");
+
+    @Value("${security.trust-proxy-headers:false}")
+    private boolean trustProxyHeaders;
 
     /**
      * 记录登录失败事件
@@ -134,6 +113,10 @@ public class SecurityAuditLogger {
                 return "unknown";
             }
             HttpServletRequest request = attributes.getRequest();
+
+            if (!trustProxyHeaders) {
+                return request.getRemoteAddr();
+            }
 
             String ip = request.getHeader("X-Forwarded-For");
             if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {

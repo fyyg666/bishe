@@ -92,6 +92,16 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        v-model:current-page="pagination.current"
+        v-model:page-size="pagination.size"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="fetchList"
+        @current-change="fetchList"
+      />
     </el-card>
 
     <!-- 创建/编辑对话框 -->
@@ -180,7 +190,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listFunds, createFund, updateFund, deleteFund, allocateToOrder } from '@/api/budget'
 
@@ -207,11 +217,14 @@ const allocateForm = ref({ orderId: '', amount: 0 })
 async function fetchList() {
   loading.value = true
   try {
-    const params = {}
+    const params = { current: pagination.current, size: pagination.size }
     if (fiscalYear.value) params.fiscalYear = fiscalYear.value
     const res = await listFunds(params)
-    fundList.value = res.data || []
-  } catch { /* ignore */ }
+    fundList.value = res.data?.records || res.data || []
+    total.value = res.data?.total || 0
+  } catch {
+    ElMessage.error('加载预算列表失败')
+  }
   finally { loading.value = false }
 }
 
@@ -262,7 +275,11 @@ async function handleDelete(row) {
     await deleteFund(row.id)
     ElMessage.success('已删除')
     fetchList()
-  } catch { /* ignore */ }
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('删除预算失败')
+    }
+  }
 }
 
 onMounted(fetchList)
@@ -270,10 +287,11 @@ onMounted(fetchList)
 
 <style lang="scss" scoped>
 .budget-page {
-  .page-header { margin-bottom: 16px; }
+  .page-header { margin-bottom: $space-4; }
   .header-content {
     display: flex; justify-content: space-between; align-items: center;
     h2 { margin: 0; }
   }
+  .pagination { margin-top: $space-4; text-align: right; }
 }
 </style>

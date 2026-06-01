@@ -1,5 +1,5 @@
 <template>
-  <div class="seat-reserve">
+  <div class="seat-reserve" v-loading="loading">
     <el-card>
       <template #header>
         <span>座位预约</span>
@@ -232,11 +232,14 @@ onMounted(() => {
 })
 
 async function loadReservations() {
+  loading.value = true
   try {
     await seatStore.fetchMyReservations()
     reservations.value = seatStore.myReservations
   } catch {
     ElMessage.error('加载预约记录失败')
+  } finally {
+    loading.value = false
   }
 }
 

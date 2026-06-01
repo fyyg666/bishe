@@ -1,6 +1,7 @@
 package com.library.system.controller;
 
 import com.library.system.dto.*;
+import com.library.system.entity.ReadingRoom;
 import com.library.system.service.SeatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -196,5 +197,13 @@ public class SeatController extends BaseController { // FIXED: ARCH-002 继承Ba
         log.debug("检查座位可用性: seat={}, date={} {}-{}", seatNumber, date, startTime, endTime);
         boolean available = seatService.isTimeSlotAvailable(seatNumber, date, startTime, endTime);
         return ApiResponse.success(available);
+    }
+
+    @Operation(summary = "获取阅览室列表", description = "查询所有阅览室信息")
+    @GetMapping("/reading-rooms")
+    public ApiResponse<List<ReadingRoom>> getReadingRooms() {
+        log.debug("查询阅览室列表");
+        List<ReadingRoom> rooms = seatService.getReadingRooms();
+        return ApiResponse.success(rooms);
     }
 }

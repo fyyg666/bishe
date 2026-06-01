@@ -1,5 +1,5 @@
 <template>
-  <div class="book-add">
+  <div class="book-add" v-loading="loading">
     <el-card>
       <template #header>
         <div class="card-header">
@@ -183,7 +183,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { useBookStore } from '@/stores/book'
 import { useCategories } from '@/composables/useCategories'
 import { getToken } from '@/utils/auth'
-import { lookupIsbn } from '@/api/book'
+import { checkIsbn, lookupIsbn } from '@/api/book'
 
 const route = useRoute()
 const router = useRouter()

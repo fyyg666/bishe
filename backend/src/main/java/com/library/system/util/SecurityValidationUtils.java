@@ -1,10 +1,12 @@
 package com.library.system.util;
 
+import com.library.system.common.Constants;
 import com.library.system.entity.User;
 import com.library.system.enums.ErrorCode;
 import com.library.system.exception.ForbiddenException;
 import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.UserMapper;
+import com.library.system.security.SecurityAuditLogger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,6 +34,7 @@ import org.springframework.stereotype.Component;
 public class SecurityValidationUtils {
 
     private final UserMapper userMapper;
+    private final SecurityAuditLogger securityAuditLogger;
 
     /**
      * 验证用户存在且未被禁用
@@ -47,7 +50,7 @@ public class SecurityValidationUtils {
             log.warn("用户不存在: userId={}", userId);
             throw new ResourceNotFoundException(ErrorCode.READER_NOT_FOUND, "用户不存在");
         }
-        if ("DISABLED".equals(user.getStatus())) {
+        if (Constants.UserStatus.DISABLED.equals(user.getStatus())) {
             log.warn("用户已被禁用: userId={}, username={}", userId, user.getUsername());
             throw new ForbiddenException(ErrorCode.INSUFFICIENT_PERMISSION, "用户已被禁用");
         }
@@ -66,6 +69,7 @@ public class SecurityValidationUtils {
         if (!operatorId.equals(resourceUserId)) {
             log.warn("无权操作{}: operatorId={}, resourceUserId={}", 
                     resourceName, operatorId, resourceUserId);
+            securityAuditLogger.logAccessDenied(operatorId, resourceName, "OWNER");
             throw new ForbiddenException(
                     ErrorCode.INSUFFICIENT_PERMISSION, 
                     "无权操作此" + resourceName);
@@ -83,6 +87,7 @@ public class SecurityValidationUtils {
         if (!requiredRole.equals(user.getRole())) {
             log.warn("角色权限不足: userId={}, userRole={}, requiredRole={}", 
                     user.getId(), user.getRole(), requiredRole);
+            securityAuditLogger.logAccessDenied(user.getId(), "role_check", requiredRole);
             throw new ForbiddenException(
                     ErrorCode.INSUFFICIENT_PERMISSION, 
                     "需要" + requiredRole + "权限");
@@ -127,12 +132,13 @@ public class SecurityValidationUtils {
         // 检查是否为管理员
         User operator = userMapper.selectById(operatorId);
         if (operator != null && 
-                ("ADMIN".equals(operator.getRole()) || "LIBRARIAN".equals(operator.getRole()))) {
+                (Constants.Role.ADMIN.equals(operator.getRole()) || Constants.Role.LIBRARIAN.equals(operator.getRole()))) {
             return; // 管理员或图书管理员，允许操作
         }
 
         log.warn("无权操作{}: operatorId={}, resourceUserId={}", 
                 resourceName, operatorId, resourceUserId);
+        securityAuditLogger.logAccessDenied(operatorId, resourceName, Constants.Role.ADMIN + "/" + Constants.Role.LIBRARIAN);
         throw new ForbiddenException(
                 ErrorCode.INSUFFICIENT_PERMISSION, 
                 "无权操作此" + resourceName);

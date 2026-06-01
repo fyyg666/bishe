@@ -1,5 +1,5 @@
 <template>
-  <div class="borrow-page">
+  <div class="borrow-page" v-loading="loading">
     <el-card>
       <template #header>
         <span>借阅图书</span>

@@ -1,5 +1,6 @@
 package com.library.system.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.library.system.entity.ReadingRoom;
 import com.library.system.entity.Seat;
 import com.library.system.mapper.ReadingRoomMapper;
@@ -31,7 +32,9 @@ public class SeatReservationServiceImpl implements SeatReservationService {
 
     @Override
     public List<ReadingRoom> getReadingRooms() {
-        return readingRoomMapper.selectList(null);
+        LambdaQueryWrapper<ReadingRoom> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ReadingRoom::getDeleted, 0);
+        return readingRoomMapper.selectList(wrapper);
     }
 
     @Override

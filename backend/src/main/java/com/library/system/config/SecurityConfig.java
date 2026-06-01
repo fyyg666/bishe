@@ -106,24 +106,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .headers(headers -> headers
-                        // 防止点击劫持
                         .frameOptions(frame -> frame.deny())
-                        // 防止MIME类型嗅探
                         .contentTypeOptions(contentType -> {})
-                        // XSS防护头
                         .xssProtection(xss -> xss.disable())
-                        // Referrer策略
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                        // 缓存控制
                         .cacheControl(cache -> cache.disable())
-                        // 自定义安全头
                         .addHeaderWriter(new StaticHeadersWriter("X-Content-Type-Options", "nosniff"))
                         .addHeaderWriter(new StaticHeadersWriter("X-Frame-Options", "DENY"))
-                        .addHeaderWriter(new StaticHeadersWriter("X-XSS-Protection", "1; mode=block"))
                         .addHeaderWriter(new StaticHeadersWriter("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
-                        // Content Security Policy (CSP)
                         .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy", 
-                                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"))
+                                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"))
                 )
 
                 // 配置CORS

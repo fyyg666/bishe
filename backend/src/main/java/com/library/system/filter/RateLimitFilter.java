@@ -21,15 +21,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 
-/**
- * API限流过滤器
- * 基于Redis + Lua脚本实现滑动窗口限流算法
- *
- * FIXED: P2-006 从固定窗口计数器改为真正的滑动窗口算法
- * 使用Redis ZSET存储请求时间戳，通过Lua脚本保证原子性，
- * 精确统计滑动窗口内的请求数量，避免固定窗口的边界突发问题。
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -46,15 +39,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${rate-limit.trust-proxy-headers:false}")
     private boolean trustProxyHeaders;
 
-    /** 标记Redis是否在启动时可用，避免每次限流检查都重复输出警告 */
     private volatile boolean redisAvailable = true;
 
-    /** Redis不可用时的本地限流降级，基于Semaphore限制最大并发请求数 */
-    private final java.util.concurrent.Semaphore localRateLimiter = new java.util.concurrent.Semaphore(100);
+    private final Semaphore localRateLimiter = new Semaphore(100);
 
-    /**
-     * 启动时检查Redis连接可用性
-     */
     @PostConstruct
     public void checkRedisAvailable() {
         try {
@@ -76,22 +64,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${rate-limiter.redis-key-prefix:rate:}")
     private String rateLimitPrefix;
 
-    /**
-     * FIXED: SEC-P2-02 登录接口独立限流配置（5次/分钟）
-     */
     @Value("${rate-limiter.login-limit:5}")
     private int loginLimit;
 
-    /** 注册接口独立限流配置（3次/分钟，比登录更严格） */
     @Value("${rate-limiter.register-limit:3}")
     private int registerLimit;
 
-    /** 敏感接口路径（需要独立严格限流） */
     private static final Set<String> SENSITIVE_PATHS = Set.of(
             "/auth/login"
     );
 
-    /** 高消耗接口路径（10分钟10次） */
     private static final Set<String> HEAVY_PATHS = Set.of(
             "/statistics/export",
             "/statistics/monthly",
@@ -99,13 +81,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/borrows/export"
     );
 
-    /** 登录限流key前缀 */
     private static final String LOGIN_RATE_PREFIX = "login_rate:";
-
-    /** 注册限流key前缀 */
     private static final String REGISTER_RATE_PREFIX = "register_rate:";
-
-    /** 高消耗接口限流key前缀 */
     private static final String HEAVY_RATE_PREFIX = "heavy_rate:";
 
     @Value("${rate-limiter.heavy-limit:10}")
@@ -114,20 +91,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${rate-limiter.heavy-window-seconds:600}")
     private int heavyWindowSeconds;
 
-    /**
-     * Lua脚本: 滑动窗口限流
-     * KEYS[1] = 限流key
-     * ARGV[1] = 当前时间戳(毫秒)
-     * ARGV[2] = 窗口大小(毫秒)
-     * ARGV[3] = 限流阈值
-     *
-     * 逻辑:
-     * 1. 移除窗口之外的旧记录
-     * 2. 添加当前请求
-     * 3. 统计窗口内请求数量
-     * 4. 设置key过期时间(防止内存泄漏)
-     * 5. 返回当前窗口内请求数和是否被限流
-     */
     private static final String SLIDING_WINDOW_LUA_SCRIPT = """
             local key = KEYS[1]
             local now = tonumber(ARGV[1])
@@ -167,39 +130,47 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         String relativePath = getRelativePath(request);
+        int[] localPermits = {0};
 
-        // 注册接口独立限流（3次/分钟，比登录更严格）
-        if ("/auth/register".equals(relativePath)) {
-            if (!checkRegisterRateLimit(request, response)) {
-                return;
+        try {
+            if ("/auth/register".equals(relativePath)) {
+                if (!checkRegisterRateLimit(request, response, localPermits)) {
+                    return;
+                }
+            }
+
+            if (SENSITIVE_PATHS.contains(relativePath)) {
+                if (!checkLoginRateLimit(request, response, localPermits)) {
+                    return;
+                }
+            }
+
+            if (HEAVY_PATHS.contains(relativePath)) {
+                String clientId = getClientIp(request);
+                String key = HEAVY_RATE_PREFIX + clientId + ":" + relativePath;
+                if (!checkHeavyPathRateLimit(request, response, key, localPermits)) {
+                    return;
+                }
+            }
+
+            checkGeneralRateLimit(request, response, localPermits);
+
+            filterChain.doFilter(request, response);
+        } finally {
+            if (localPermits[0] > 0) {
+                localRateLimiter.release(localPermits[0]);
             }
         }
+    }
 
-        if (SENSITIVE_PATHS.contains(relativePath)) {
-            if (!checkLoginRateLimit(request, response)) {
-                return; // 登录限流触发，直接返回
-            }
-        }
-
-        // 高消耗接口独立限流（每10分钟10次）
-        if (HEAVY_PATHS.contains(relativePath)) {
-            String clientId = getClientIp(request);
-            String key = HEAVY_RATE_PREFIX + clientId + ":" + relativePath;
-            if (!checkHeavyPathRateLimit(request, response, key)) {
-                return;
-            }
-        }
-
-        // 通用API限流检查
+    private void checkGeneralRateLimit(HttpServletRequest request, HttpServletResponse response, int[] localPermits) throws IOException {
         String clientId = getClientIdentifier(request);
         String key = rateLimitPrefix + clientId + ":" + request.getRequestURI();
-        boolean localFallbackAcquired = false;
 
         try {
             long now = System.currentTimeMillis();
             long windowMillis = windowSize * 1000L;
 
-            // 通过Lua脚本原子性执行滑动窗口限流
             @SuppressWarnings("unchecked")
             List<Object> result = redisTemplate.execute(
                     slidingWindowScript,
@@ -216,7 +187,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 if (currentCount > limit) {
                     log.warn("滑动窗口限流触发: clientId={}, uri={}, count={}/{}",
                             clientId, request.getRequestURI(), currentCount, limit);
-                    
+
                     securityAuditLogger.logRateLimitExceeded(clientId,
                             request.getRequestURI(), currentCount, limit);
 
@@ -229,16 +200,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     ApiResponse<Void> apiResponse = ApiResponse.error(
                             429, "请求过于频繁，请稍后再试");
                     response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
-                    return;
+                    throw new RateLimitedException();
                 }
 
-                // 添加限流响应头
                 response.setHeader("X-RateLimit-Limit", String.valueOf(limit));
                 response.setHeader("X-RateLimit-Remaining",
                         String.valueOf(Math.max(0, limit - currentCount)));
             }
 
         } catch (RuntimeException | IOException e) {
+            if (e instanceof RateLimitedException) {
+                throw (RateLimitedException) e;
+            }
             if (redisAvailable) {
                 redisAvailable = false;
                 log.error("滑动窗口限流检查异常(Redis不可用)，降级为本地限流: {}", e.getMessage());
@@ -248,27 +221,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 response.setContentType("application/json;charset=UTF-8");
                 ApiResponse<Void> apiResponse = ApiResponse.error(429, "系统繁忙，请稍后再试");
                 response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
-                return;
+                throw new RateLimitedException();
             }
-            localFallbackAcquired = true;
-        }
-
-        try {
-            filterChain.doFilter(request, response);
-        } finally {
-            if (localFallbackAcquired) {
-                localRateLimiter.release();
-            }
+            localPermits[0]++;
         }
     }
 
-    /**
-     * FIXED: SEC-P2-02 登录接口独立限流检查（5次/分钟）
-     * 登录接口使用独立的Redis key和更严格的限流阈值
-     *
-     * @return true=通过限流，false=被限流
-     */
-    private boolean checkLoginRateLimit(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean checkLoginRateLimit(HttpServletRequest request, HttpServletResponse response, int[] localPermits) throws IOException {
         String clientId = getClientIp(request);
         String key = LOGIN_RATE_PREFIX + clientId;
 
@@ -291,7 +250,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
                 if (currentCount > limit) {
                     log.warn("登录接口限流触发: ip={}, count={}/{}", clientId, currentCount, limit);
-                    
+
                     securityAuditLogger.logRateLimitExceeded("ip:" + clientId,
                             "/auth/login", currentCount, limit);
 
@@ -323,19 +282,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
                 return false;
             }
-            // semaphore会在调用方filterChain执行后统一释放，此处不提前释放
+            localPermits[0]++;
         }
 
         return true;
     }
 
-    /**
-     * 注册接口独立限流检查（3次/分钟）
-     * 注册接口使用独立的Redis key和更严格的限流阈值，防止恶意批量注册
-     *
-     * @return true=通过限流，false=被限流
-     */
-    private boolean checkRegisterRateLimit(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean checkRegisterRateLimit(HttpServletRequest request, HttpServletResponse response, int[] localPermits) throws IOException {
         String clientId = getClientIp(request);
         String key = REGISTER_RATE_PREFIX + clientId;
 
@@ -390,16 +343,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
                 return false;
             }
-            // semaphore会在调用方filterChain执行后统一释放，此处不提前释放
+            localPermits[0]++;
         }
 
         return true;
     }
 
-    /**
-     * 高消耗接口独立限流检查（10分钟10次）
-     */
-    private boolean checkHeavyPathRateLimit(HttpServletRequest request, HttpServletResponse response, String key) throws IOException {
+    private boolean checkHeavyPathRateLimit(HttpServletRequest request, HttpServletResponse response, String key, int[] localPermits) throws IOException {
         try {
             long now = System.currentTimeMillis();
             long windowMillis = heavyWindowSeconds * 1000L;
@@ -417,6 +367,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 if (currentCount > heavyLimit) {
                     log.warn("高消耗接口限流触发: uri={}, count={}/{}",
                             request.getRequestURI(), currentCount, heavyLimit);
+
+                    securityAuditLogger.logRateLimitExceeded(
+                            getClientIp(request), request.getRequestURI(), currentCount, heavyLimit);
 
                     response.setStatus(429);
                     response.setContentType("application/json;charset=UTF-8");
@@ -441,14 +394,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
                 return false;
             }
-            localRateLimiter.release();
+            localPermits[0]++;
         }
         return true;
     }
 
-    /**
-     * 获取相对于context-path的请求路径
-     */
     private String getRelativePath(HttpServletRequest request) {
         String path = request.getRequestURI();
         String contextPath = request.getContextPath();
@@ -458,9 +408,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return path;
     }
 
-    /**
-     * 获取客户端标识
-     */
     private String getClientIdentifier(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
         if (userId != null) {
@@ -471,9 +418,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return "ip:" + ip;
     }
 
-    /**
-     * 获取客户端真实IP地址
-     */
     private String getClientIp(HttpServletRequest request) {
         if (!trustProxyHeaders) {
             return request.getRemoteAddr();
@@ -483,7 +427,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
             if (ip.contains(",")) {
                 String[] ips = ip.split(",");
-                ip = ips[0].trim();  // FIXED: 取第一个IP（真实客户端），而非最后一个（代理IP）
+                ip = ips[0].trim();
             }
             return ip;
         }
@@ -497,5 +441,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return path.contains("/actuator/health")
                 || path.contains("/actuator/info")
                 || path.contains("/actuator/prometheus");
+    }
+
+    private static class RateLimitedException extends RuntimeException {
+        RateLimitedException() {
+            super("rate_limited", null, false, false);
+        }
     }
 }

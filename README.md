@@ -41,12 +41,13 @@
 
 ### 2. 数据库初始化
 
-```bash
-# 登录MySQL
-mysql -u root -p
+本项目使用 **Flyway** 进行数据库版本管理与自动迁移。Spring Boot 启动时会自动执行 `backend/src/main/resources/db/migration/` 下的迁移脚本，无需手动执行 SQL。
 
-# 执行初始化脚本
-source backend/src/main/resources/schema.sql
+**前置条件**：确保 MySQL 中已存在名为 `library_system` 的空数据库，Flyway 将按版本顺序创建并升级所有表结构。
+
+```bash
+# 登录MySQL并创建空数据库（仅需首次执行）
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS library_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
 ### 3. 后端启动
@@ -129,8 +130,8 @@ library-system-v2/
 │   │   ├── security/         # 安全模块
 │   │   └── common/           # 公共模块
 │   ├── src/main/resources/
+│   │   ├── db/migration/     # Flyway 迁移脚本
 │   │   ├── mapper/           # MyBatis XML
-│   │   ├── schema.sql        # 数据库脚本
 │   │   └── application.yml   # 配置文件
 │   └── pom.xml
 │

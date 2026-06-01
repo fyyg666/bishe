@@ -5,7 +5,7 @@ import { refreshToken as apiRefreshToken } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 
-// FIXED: FE-001 - 使用Cookie Token + CSRF Token替代localStorage
+// FIXED: FE-001 - 使用sessionStorage存储Token，通过BroadcastChannel跨标签页同步
 // FIXED: FE-003 - 使用环境变量替代硬编码baseURL
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',

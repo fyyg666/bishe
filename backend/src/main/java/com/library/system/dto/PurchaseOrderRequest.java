@@ -1,6 +1,7 @@
 package com.library.system.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,7 @@ public class PurchaseOrderRequest {
         private String isbn;
 
         @NotNull(message = "数量不能为空")
+        @Min(value = 1, message = "数量必须大于0")
         private Integer quantity;
 
         @NotNull(message = "单价不能为空")

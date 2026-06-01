@@ -1,5 +1,5 @@
 // ============================================
-// Global Styles — v3.0 (Warm & Gentle)
+// Global Styles — v4.0 (Apple Inspired)
 // ============================================
 
 @use './variables.scss' as *;
@@ -25,93 +25,148 @@ html, body, #app {
 }
 
 ::selection {
-  background: oklch($primary-l + 0.2 $primary-s * 0.4 $primary-h);
+  background: $primary-lighter;
   color: $text-primary;
 }
 
-@include scrollbar;
+html {
+  @include scrollbar;
+  scrollbar-width: thin;
+  scrollbar-color: $gray-200 transparent;
+}
+
+/* ── Font Stack ───────────────────────────── */
+/*
+  'DM Sans' → 'SF Pro Display' → system fallback
+  'SF Mono' → 'JetBrains Mono' → system fallback
+*/
+
+/* ── Apple-style page title ──────────────── */
+.app-page-title {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.022em;
+  color: $text-primary;
+  margin-bottom: $space-8;
+}
 
 /* ── Utility ──────────────────────────────── */
 .page-container { max-width: $content-max-width; margin: 0 auto; }
 
 .page-header {
-  margin-bottom: $space-6;
-  padding-bottom: $space-4;
-  border-bottom: 1px solid $border-light;
-  h2 { font-size: $font-size-xl; font-weight: $font-weight-semibold; color: $text-primary; }
+  margin-bottom: $space-8;
+  h2 {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    letter-spacing: -0.022em;
+    color: $text-primary;
+  }
 }
 
 .table-toolbar {
-  margin-bottom: $space-4;
+  margin-bottom: $space-5;
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: $space-3;
 }
 
-.mt-2 { margin-top: $space-2; } .mt-4 { margin-top: $space-4; } .mt-6 { margin-top: $space-6; }
-.mb-4 { margin-bottom: $space-4; } .mb-6 { margin-bottom: $space-6; }
-.flex { display: flex; } .flex-col { display: flex; flex-direction: column; }
+.mt-2 { margin-top: $space-2; }
+.mt-4 { margin-top: $space-4; }
+.mt-6 { margin-top: $space-6; }
+.mb-4 { margin-bottom: $space-4; }
+.mb-6 { margin-bottom: $space-6; }
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
 .flex-wrap { display: flex; flex-wrap: wrap; }
-.gap-2 { gap: $space-2; } .gap-3 { gap: $space-3; } .gap-4 { gap: $space-4; }
+.gap-2 { gap: $space-2; }
+.gap-3 { gap: $space-3; }
+.gap-4 { gap: $space-4; }
 .w-full { width: 100%; }
 
 /* ── Element Plus Theme ───────────────────── */
 :root {
+  // Primary
   --el-color-primary: #{$primary};
   --el-color-primary-light-3: #{$primary-light};
   --el-color-primary-light-5: #{$primary-lighter};
   --el-color-primary-dark-2: #{$primary-dark};
+  // Status
   --el-color-success: #{$success};
   --el-color-warning: #{$warning};
   --el-color-danger: #{$danger};
   --el-color-info: #{$info};
-
+  // Shape
   --el-border-radius-base: #{$radius-md};
   --el-border-radius-small: #{$radius-sm};
   --el-border-radius-round: #{$radius-lg};
+  // Font
   --el-font-size-base: #{$font-size-base};
   --el-font-size-small: #{$font-size-sm};
   --el-font-size-large: #{$font-size-lg};
-
+  // Background
   --el-bg-color: #{$bg-page};
   --el-bg-color-overlay: #{$bg-card};
+  --el-bg-color-page: #{$bg-page};
+  // Border
   --el-border-color: #{$border};
   --el-border-color-light: #{$border-light};
+  --el-border-color-lighter: #{$border-light};
+  --el-border-color-extra-light: #{$border-light};
+  // Text
   --el-text-color-primary: #{$text-primary};
   --el-text-color-regular: #{$text-regular};
   --el-text-color-secondary: #{$text-secondary};
   --el-text-color-placeholder: #{$text-placeholder};
+  // Fill
   --el-fill-color-light: #{$gray-50};
   --el-fill-color-lighter: #{$gray-100};
+  --el-fill-color-blank: #{$bg-card};
+  // Other
+  --el-transition-duration: 0.2s;
+  --el-transition-duration-fast: 0.12s;
 }
 
-/* ── Cards — border-only, no heavy shadow ──── */
+/* ── Cards — border-only, Apple-style ──────── */
 .el-card {
   border: 1px solid $border-light;
   border-radius: $radius-lg;
-  box-shadow: $shadow-sm;
-  transition: box-shadow $transition-base;
+  box-shadow: none;
+  transition: border-color $transition-base;
 
   .el-card__header {
-    padding: $space-4 $space-5;
+    padding: $space-5 $space-6;
     border-bottom: 1px solid $border-light;
-    font-weight: $font-weight-medium;
-    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
     color: $text-primary;
   }
 
-  .el-card__body { padding: $space-5; }
+  .el-card__body {
+    padding: $space-6;
+  }
 
-  &:hover { box-shadow: $shadow-md; }
+  &:hover {
+    border-color: $gray-300;
+    box-shadow: none;
+  }
 }
 
-/* ── Buttons ──────────────────────────────── */
+/* ── Buttons — Apple-style flat ────────────── */
 .el-button {
   font-weight: $font-weight-medium;
   border-radius: $radius-md;
-  transition: all $transition-base;
+  transition: all $transition-fast;
+  letter-spacing: -0.01em;
 
-  &:active { transform: scale(0.97); }
+  &:active {
+    transform: scale(0.97);
+    transition: transform 60ms $ease-spring-out;
+  }
+
+  // Release bounce
+  &:not(:active) {
+    transition: transform 200ms $ease-bounce, box-shadow $transition-base;
+  }
 
   &.el-button--primary {
     --el-button-bg-color: #{$primary};
@@ -120,78 +175,470 @@ html, body, #app {
     --el-button-hover-border-color: #{$primary-light};
     --el-button-active-bg-color: #{$primary-dark};
     --el-button-active-border-color: #{$primary-dark};
+    --el-button-text-color: #FFFFFF;
+    box-shadow: none;
+
+    &:hover {
+      box-shadow: $shadow-primary;
+    }
+  }
+
+  // Default button — Apple outlined style
+  &.el-button--default {
+    --el-button-bg-color: #{$bg-card};
+    --el-button-border-color: #{$gray-200};
+    --el-button-hover-bg-color: #{$gray-50};
+    --el-button-hover-border-color: #{$gray-300};
+    --el-button-text-color: #{$text-primary};
+    box-shadow: none;
+  }
+
+  // Text / link button
+  &.el-button--text,
+  &.is-link {
+    --el-button-text-color: #{$primary};
+    font-weight: $font-weight-medium;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+
+    &:hover {
+      --el-button-text-color: #{$primary-dark};
+      background: transparent;
+    }
+  }
+
+  // Small size
+  &.el-button--small {
+    border-radius: $radius-sm;
   }
 }
 
-/* ── Inputs ───────────────────────────────── */
+/* ── Inputs — Apple gray background ────────── */
 .el-input__wrapper {
-  box-shadow: 0 0 0 1px $border inset !important;
+  background-color: $bg-input !important;
+  box-shadow: none !important;
   border-radius: $radius-md;
-  transition: box-shadow $transition-fast;
+  border: 1px solid transparent;
+  transition: all $transition-fast;
 
-  &:hover { box-shadow: 0 0 0 1px $gray-300 inset !important; }
-  &.is-focus { box-shadow: 0 0 0 2px $primary inset !important; }
+  &:hover {
+    background-color: $gray-200 !important;
+  }
+
+  &.is-focus {
+    background-color: $bg-card !important;
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12) !important;
+  }
 }
 
 .el-select .el-input__wrapper,
 .el-date-editor .el-input__wrapper {
-  box-shadow: 0 0 0 1px $border inset !important;
+  background-color: $bg-input !important;
+  box-shadow: none !important;
+  border: 1px solid transparent;
 }
 
-/* ── Table ────────────────────────────────── */
+/* ── Input sizes ──────────────────────────── */
+.el-input--small .el-input__wrapper {
+  border-radius: $radius-sm;
+}
+
+.el-input--large .el-input__wrapper {
+  border-radius: $radius-md;
+}
+
+/* ── Textarea ──────────────────────────────── */
+.el-textarea__inner {
+  background-color: $bg-input;
+  border: 1px solid transparent;
+  border-radius: $radius-md;
+  transition: all $transition-fast;
+  font-family: $font-family;
+
+  &:hover {
+    background-color: $gray-200;
+  }
+
+  &:focus {
+    background-color: $bg-card;
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+  }
+}
+
+/* ── Table — Apple Numbers style ───────────── */
 .el-table {
   border-radius: $radius-lg;
   overflow: hidden;
+  --el-table-border-color: #{$border-light};
+  --el-table-header-bg-color: #{$bg-card};
 
+  // Header — clean white, bottom border only
   th.el-table__cell {
-    background-color: $gray-50 !important;
+    background-color: $bg-card !important;
     color: $text-regular;
     font-weight: $font-weight-medium;
+    font-size: $font-size-sm;
+    text-transform: none;
+    letter-spacing: 0;
+    border-bottom: 1px solid $border-light;
+    padding: $space-3 $space-4;
+    height: 44px;
   }
 
+  // Body cells
+  td.el-table__cell {
+    padding: 10px $space-4;
+    height: 44px;
+    border-bottom: 1px solid $border-light;
+  }
+
+  // Row hover — subtle gray, no color
   .el-table__body tr:hover > td {
-    background-color: oklch(0.97 0.008 #{$primary-h} / 0.25) !important;
+    background-color: $gray-50 !important;
   }
 
+  // Striped
   &--striped .el-table__body tr.el-table__row--striped td {
     background-color: $gray-50;
   }
+
+  // No border variant
+  .el-table__inner-wrapper::before {
+    display: none;
+  }
 }
 
-/* ── Dialog ───────────────────────────────── */
+/* ── Dialog — Apple sheet style ───────────── */
 .el-dialog {
   --el-dialog-border-radius: #{$radius-xl};
   border-radius: $radius-xl;
+  box-shadow: $shadow-overlay;
+
+  .el-dialog__header {
+    padding: $space-6 $space-6 0;
+    margin-right: 0;
+    border-bottom: none;
+
+    .el-dialog__title {
+      font-size: $font-size-xl;
+      font-weight: $font-weight-semibold;
+      letter-spacing: -0.01em;
+      color: $text-primary;
+    }
+  }
+
+  .el-dialog__headerbtn {
+    top: $space-6;
+    right: $space-6;
+    width: 28px;
+    height: 28px;
+    border-radius: $radius-full;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $gray-100;
+
+      .el-dialog__close {
+        color: $text-primary;
+      }
+    }
+  }
+
+  .el-dialog__body {
+    padding: $space-6;
+  }
+
+  .el-dialog__footer {
+    padding: 0 $space-6 $space-6;
+  }
 }
 
-/* ── Message ──────────────────────────────── */
+/* ── Message / Notification ───────────────── */
 .el-message {
   border-radius: $radius-md !important;
-  border-width: 1px !important;
-  .el-message__content { font-size: $font-size-sm; }
+  border: none !important;
+  box-shadow: $shadow-overlay;
+  padding: $space-3 $space-5;
+
+  .el-message__content {
+    font-size: $font-size-sm;
+  }
 }
 
-/* ── Menu ─────────────────────────────────── */
-.el-menu { border-right: none !important; }
+/* ── Menu — clean sidebar nav ─────────────── */
+.el-menu {
+  border-right: none !important;
+}
 
-/* ── Pagination ───────────────────────────── */
+/* ── Pagination — simple Apple style ──────── */
 .el-pagination {
   font-weight: $font-weight-normal;
-  button:hover { color: $primary !important; }
-  .el-pager li.active { color: $primary; font-weight: $font-weight-semibold; }
+  padding: $space-4 0;
+
+  button {
+    border-radius: $radius-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $primary !important;
+      background: $primary-lighter;
+    }
+  }
+
+  .el-pager li {
+    border-radius: $radius-sm;
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+    font-weight: $font-weight-medium;
+    margin: 0 2px;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $primary;
+    }
+
+    &.active {
+      background: $primary;
+      color: #fff;
+      font-weight: $font-weight-semibold;
+    }
+  }
 }
 
-/* ── Tag ──────────────────────────────────── */
+/* ── Tag — pill style ──────────────────────── */
 .el-tag {
-  border-radius: $radius-sm;
+  border-radius: $radius-full;
   font-weight: $font-weight-medium;
+  font-size: $font-size-xs;
+  padding: 2px 10px;
 }
 
-/* ── Transitions ──────────────────────────── */
-.fade-enter-active, .fade-leave-active { transition: opacity 200ms $ease-out-expo; }
+/* ── Dropdown — Apple menu style ──────────── */
+.el-dropdown-menu {
+  border-radius: $radius-md;
+  box-shadow: $shadow-overlay;
+  border: 1px solid $border-light;
+  padding: $space-2;
+
+  .el-dropdown-menu__item {
+    border-radius: $radius-sm;
+    padding: 8px 12px;
+    font-size: $font-size-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $gray-100;
+    }
+  }
+}
+
+/* ── Tooltip ──────────────────────────────── */
+.el-tooltip__trigger:focus-visible {
+  outline: 2px solid $primary;
+  outline-offset: 2px;
+  border-radius: $radius-sm;
+}
+
+/* ── Checkbox / Radio ─────────────────────── */
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: $primary;
+  border-color: $primary;
+  border-radius: $radius-sm;
+}
+
+.el-radio__input.is-checked .el-radio__inner {
+  background-color: $primary;
+  border-color: $primary;
+}
+
+/* ── Switch — Apple toggle style ──────────── */
+.el-switch.is-checked .el-switch__core {
+  background-color: $success;
+  border-color: $success;
+}
+
+/* ── Divider ──────────────────────────────── */
+.el-divider--horizontal {
+  border-color: $border-light;
+  margin: $space-6 0;
+}
+
+/* ── Breadcrumb ───────────────────────────── */
+.el-breadcrumb {
+  font-size: $font-size-sm;
+
+  .el-breadcrumb__item {
+    .el-breadcrumb__inner {
+      color: $text-regular;
+      transition: color $transition-fast;
+
+      &:hover {
+        color: $primary;
+      }
+    }
+
+    &:last-child .el-breadcrumb__inner {
+      color: $text-primary;
+      font-weight: $font-weight-medium;
+    }
+  }
+}
+
+/* ── Loading / Skeleton ───────────────────── */
+.el-loading-mask {
+  border-radius: inherit;
+}
+
+/* ── Scrollbar ────────────────────────────── */
+.el-scrollbar__thumb {
+  background: $gray-300;
+  border-radius: 3px;
+
+  &:hover {
+    background: $gray-400;
+  }
+}
+
+/* ── Transitions — Apple spring ───────────── */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 200ms $ease-spring-out;
+}
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-.slide-fade-enter-active { transition: all 250ms $ease-out-expo; }
-.slide-fade-leave-active { transition: all 150ms $ease-out-expo; }
-.slide-fade-enter-from { transform: translateY(6px); opacity: 0; }
+.slide-fade-enter-active { transition: all 300ms $ease-spring-out; }
+.slide-fade-leave-active { transition: all 150ms $ease-spring-in; }
+.slide-fade-enter-from { transform: translateY(8px); opacity: 0; }
 .slide-fade-leave-to { opacity: 0; }
+
+// Page transition — horizontal slide (Apple navigation)
+.page-enter-active {
+  transition: all 300ms $ease-spring-out;
+}
+.page-leave-active {
+  transition: all 150ms $ease-spring-in;
+}
+.page-enter-from {
+  transform: translateX(20px);
+  opacity: 0;
+}
+.page-leave-to {
+  opacity: 0;
+}
+
+/* ── Responsive utility classes ───────────── */
+.fe-responsive-row {
+  margin-bottom: $space-5;
+  @include mobile { margin-bottom: $space-3; }
+}
+
+.fe-stat-card {
+  margin-bottom: $space-5;
+
+  .stat-value {
+    font-size: 40px;
+    font-weight: $font-weight-bold;
+    letter-spacing: -0.022em;
+    color: $text-primary;
+    line-height: 1.1;
+    font-family: $font-mono;
+    font-variant-numeric: tabular-nums;
+    @include mobile { font-size: 24px; }
+  }
+
+  .stat-label {
+    font-size: 13px;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+    margin-top: $space-1;
+    @include mobile { font-size: 12px; }
+  }
+}
+
+.fe-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $space-8;
+
+  h2 {
+    margin: 0;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    letter-spacing: -0.022em;
+    color: $text-primary;
+    @include mobile { font-size: 20px; }
+  }
+
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $space-3;
+  }
+}
+
+.fe-table-card {
+  margin-bottom: $space-5;
+  overflow-x: auto;
+}
+
+.fe-chart-container {
+  height: 300px;
+  @include mobile { height: 200px; }
+}
+
+.fe-button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  @include mobile {
+    width: 100%;
+
+    .el-button {
+      flex: 1;
+      min-width: 80px;
+    }
+  }
+}
+
+.fe-empty-container {
+  padding: 60px 20px;
+  text-align: center;
+  @include mobile { padding: 40px 12px; }
+}
+
+/* ── Glass utility class ──────────────────── */
+.glass-panel {
+  background: $bg-card;
+  backdrop-filter: blur($glass-blur-panel);
+  -webkit-backdrop-filter: blur($glass-blur-panel);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* ── Apple-style form layout ──────────────── */
+.app-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $space-5 $space-6;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.app-form-full {
+  grid-column: 1 / -1;
+}
+
+.app-form-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  margin-bottom: $space-2;
+  display: block;
+}

@@ -109,25 +109,27 @@
       width="500px"
     >
       <el-form
+        ref="createFormRef"
         :model="createForm"
+        :rules="createRules"
         label-width="100px"
       >
-        <el-form-item label="用户ID">
+        <el-form-item label="用户ID" prop="userId">
           <el-input v-model="createForm.userId" />
         </el-form-item>
-        <el-form-item label="借阅记录ID">
+        <el-form-item label="借阅记录ID" prop="borrowId">
           <el-input v-model="createForm.borrowId" />
         </el-form-item>
-        <el-form-item label="图书ID">
+        <el-form-item label="图书ID" prop="bookId">
           <el-input v-model="createForm.bookId" />
         </el-form-item>
-        <el-form-item label="书名">
+        <el-form-item label="书名" prop="bookTitle">
           <el-input v-model="createForm.bookTitle" />
         </el-form-item>
-        <el-form-item label="ISBN">
+        <el-form-item label="ISBN" prop="isbn">
           <el-input v-model="createForm.isbn" />
         </el-form-item>
-        <el-form-item label="赔偿类型">
+        <el-form-item label="赔偿类型" prop="compType">
           <el-select v-model="createForm.compType">
             <el-option
               label="丢失"
@@ -139,13 +141,13 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="赔偿金额">
+        <el-form-item label="赔偿金额" prop="amount">
           <el-input
             v-model="createForm.amount"
             type="number"
           />
         </el-form-item>
-        <el-form-item label="支付方式">
+        <el-form-item label="支付方式" prop="paymentMethod">
           <el-select v-model="createForm.paymentMethod">
             <el-option
               label="现金"
@@ -161,7 +163,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item label="备注" prop="remark">
           <el-input
             v-model="createForm.remark"
             type="textarea"
@@ -280,6 +282,15 @@ const total = ref(0)
 const showCreateDialog = ref(false)
 const showPaymentDialog = ref(false)
 const currentCompensation = ref(null)
+const createFormRef = ref(null)
+
+const createRules = {
+  compType: [{ required: true, message: '请选择赔偿类型', trigger: 'change' }],
+  amount: [
+    { required: true, message: '请输入赔偿金额', trigger: 'blur' },
+    { type: 'number', min: 0.01, message: '赔偿金额必须为正数', trigger: 'blur' }
+  ]
+}
 
 const createForm = ref({
   userId: '', borrowId: '', bookId: '', bookTitle: '',
@@ -301,14 +312,18 @@ async function fetchList() {
 }
 
 async function handleCreate() {
-  creating.value = true
-  try {
-    await createCompensation(createForm.value)
-    ElMessage.success('赔偿单创建成功')
-    showCreateDialog.value = false
-    fetchList()
-  } catch (e) { ElMessage.error(e.message) }
-  finally { creating.value = false }
+  if (!createFormRef.value) return
+  await createFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    creating.value = true
+    try {
+      await createCompensation(createForm.value)
+      ElMessage.success('赔偿单创建成功')
+      showCreateDialog.value = false
+      fetchList()
+    } catch (e) { ElMessage.error(e.message) }
+    finally { creating.value = false }
+  })
 }
 
 async function viewDetail(row) {

@@ -21,7 +21,7 @@
           <el-input
             v-model="registerForm.username"
             placeholder="3-20 个字符"
-            prefix-icon="User"
+            :prefix-icon="UserIcon"
             aria-label="用户名"
           />
         </el-form-item>
@@ -33,7 +33,7 @@
             v-model="registerForm.password"
             type="password"
             placeholder="至少 6 位"
-            prefix-icon="Lock"
+            :prefix-icon="LockIcon"
             show-password
             aria-label="密码"
           />
@@ -60,7 +60,7 @@
             v-model="registerForm.confirmPassword"
             type="password"
             placeholder="再次输入密码"
-            prefix-icon="Lock"
+            :prefix-icon="LockIcon"
             show-password
             aria-label="确认密码"
           />
@@ -72,7 +72,7 @@
           <el-input
             v-model="registerForm.email"
             placeholder="example@mail.com"
-            prefix-icon="Message"
+            :prefix-icon="MessageIcon"
             aria-label="邮箱"
           />
         </el-form-item>
@@ -83,7 +83,7 @@
           <el-input
             v-model="registerForm.phone"
             placeholder="11 位手机号"
-            prefix-icon="Phone"
+            :prefix-icon="PhoneIcon"
             aria-label="手机号"
           />
         </el-form-item>
@@ -94,7 +94,7 @@
           <el-input
             v-model="registerForm.realName"
             placeholder="请输入真实姓名"
-            prefix-icon="UserFilled"
+            :prefix-icon="UserFilledIcon"
             aria-label="真实姓名"
           />
         </el-form-item>
@@ -120,10 +120,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { User, Lock, Message, Phone, UserFilled } from '@element-plus/icons-vue'
 import { register } from '@/api/auth'
+
+const UserIcon = h(User)
+const LockIcon = h(Lock)
+const MessageIcon = h(Message)
+const PhoneIcon = h(Phone)
+const UserFilledIcon = h(UserFilled)
 
 const router = useRouter()
 const registerFormRef = ref(null)
@@ -274,6 +281,14 @@ async function handleRegister() {
 
   a { color: $primary; text-decoration: none; font-weight: $font-weight-medium;
     &:hover { text-decoration: underline; }
+  }
+}
+
+@include mobile {
+  .register-box {
+    width: 100%;
+    max-width: 480px;
+    padding: $space-8 $space-4 $space-6;
   }
 }
 </style>

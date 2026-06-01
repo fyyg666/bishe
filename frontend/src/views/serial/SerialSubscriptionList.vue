@@ -512,6 +512,7 @@ async function handleSubmit() {
     }
   } catch (error) {
     console.error('提交失败:', error)
+    ElMessage.error('提交失败')
   } finally {
     submitLoading.value = false
   }

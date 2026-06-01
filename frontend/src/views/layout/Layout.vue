@@ -39,7 +39,6 @@ import { useFocusTrap } from '@/composables/useFocusTrap'
 
 const { isMobile } = useResponsive()
 const sidebarVisible = ref(false)
-const drawerRef = ref(null)
 const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap()
 
 function onNavigate() {
@@ -82,22 +81,24 @@ onUnmounted(() => {
 }
 
 .main-content {
-  padding: calc($header-height + $space-5) $space-6 $space-6;
+  padding: calc($header-height + $space-8) $space-10 $space-10;
   overflow-y: auto;
   height: 100vh;
   @include scrollbar;
+
+  @include tablet {
+    padding: calc($header-height + $space-6) $space-6 $space-6;
+  }
 }
 
 @include mobile {
   .main-content {
-    padding: calc($header-height + $space-3) $space-3 $space-3;
+    padding: calc($header-height + $space-3) $space-4 $space-4;
   }
 }
 </style>
 
 <style lang="scss">
-@use '@/styles/mixins.scss' as *;
-
 .sidebar-drawer {
   .el-drawer__body {
     padding: 0;

@@ -186,6 +186,12 @@
           </div>
         </el-card>
       </el-col>
+    </el-row>
+
+    <el-row
+      :gutter="20"
+      class="charts-row"
+    >
       <el-col :span="12">
         <el-card class="chart-card">
           <template #header>

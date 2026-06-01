@@ -60,6 +60,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 
                 securityAuditLogger.logTokenSecurityEvent("TOKEN_INVALID",
                         "uri=" + request.getRequestURI());
+                response.setContentType("application/json;charset=UTF-8");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"code\":401,\"message\":\"Token无效或已过期\"}");
                 response.getWriter().flush();
@@ -73,6 +74,7 @@ public class JwtFilter extends OncePerRequestFilter {
                         tokenType, request.getRequestURI());
                 securityAuditLogger.logTokenSecurityEvent("TOKEN_TYPE_MISMATCH",
                         "uri=" + request.getRequestURI() + ", type=" + tokenType);
+                response.setContentType("application/json;charset=UTF-8");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"code\":401,\"message\":\"Token类型无效\"}");
                 response.getWriter().flush();
@@ -87,6 +89,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 
                 securityAuditLogger.logTokenSecurityEvent("TOKEN_REVOKED",
                         "uri=" + request.getRequestURI());
+                response.setContentType("application/json;charset=UTF-8");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"code\":401,\"message\":\"Token已被吊销\"}");
                 response.getWriter().flush();
@@ -119,6 +122,7 @@ public class JwtFilter extends OncePerRequestFilter {
             
             securityAuditLogger.logTokenSecurityEvent("TOKEN_ERROR",
                     "uri=" + request.getRequestURI() + ", error=" + e.getMessage());
+            response.setContentType("application/json;charset=UTF-8");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("{\"code\":401,\"message\":\"Token处理异常\"}");
             response.getWriter().flush();

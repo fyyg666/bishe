@@ -35,7 +35,7 @@ test.describe('管理员后台 E2E 测试', () => {
     // 使用读者账号登录
     await page.goto('/login');
     await page.waitForSelector('input', { timeout: 5000 });
-    await page.locator('input').first().fill('reader1');
+    await page.locator('input').first().fill('reader01');
     await page.locator('input[type="password"]').first().fill('test123');
     await page.locator('button').filter({ hasText: /登录|登 录/ }).click();
     await page.waitForURL(/dashboard|home|index/, { timeout: 10000 });

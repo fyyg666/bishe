@@ -1,5 +1,5 @@
 <template>
-  <div class="credit-view">
+  <div class="credit-view" v-loading="loading">
     <!-- 积分概览 -->
     <el-row
       :gutter="20"
@@ -155,6 +155,7 @@ const creditInfo = ref({
   returnOnTimeRate: 100
 })
 
+const loading = ref(false)
 const rules = ref([])
 const records = ref([])
 const total = ref(0)
@@ -165,10 +166,17 @@ const pagination = reactive({
 })
 
 onMounted(() => {
-  loadCreditInfo()
-  loadRules()
-  loadRecords()
+  loadAllData()
 })
+
+async function loadAllData() {
+  loading.value = true
+  try {
+    await Promise.all([loadCreditInfo(), loadRules(), loadRecords()])
+  } finally {
+    loading.value = false
+  }
+}
 
 async function loadCreditInfo() {
   try {

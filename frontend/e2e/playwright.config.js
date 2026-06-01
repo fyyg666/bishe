@@ -28,7 +28,7 @@ export default defineConfig({
   /* 使用配置 */
   use: {
     /* 基础 URL */
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
     /* 追踪 */
     trace: 'on-first-retry',
     /* 截图 */

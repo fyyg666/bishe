@@ -19,8 +19,8 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -83,7 +83,7 @@ mybatis-plus:
 # JWT配置
 # 生产环境必须通过JWT_SECRET环境变量设置强密钥（至少32字符）
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:library-dev-jwt-secret-key-2026-min-32-chars}
   access-token-expiration: 7200000
   refresh-token-expiration: 604800000
   key-rotation-days: 90
@@ -114,7 +114,9 @@ minio:
   max-file-size: 10
 
 library:
-  default-password: ${LIBRARY_DEFAULT_PASSWORD:123456}
+  # 默认密码已改用 Constants.Security.generateDefaultPassword() 随机生成强密码
+  # 不再从此处读取硬编码默认值
+
 
 # 日志配置
 logging:
@@ -215,8 +217,8 @@ spring:
       on-profile: dev
   datasource:
     url: jdbc:mysql://localhost:3306/library_system?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
   data:
     redis:
       host: localhost

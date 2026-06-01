@@ -17,7 +17,7 @@
 | 3 | Cookie未设HttpOnly | review CRITICAL-1 | △ **架构变更** | 改用 `sessionStorage` + `BroadcastChannel`，不再使用 Cookie |
 | 4 | Pinia孤立实例 | frontend-bugs BUG-01 | ✅ **已修复** | `store/index.js` 已删除，Pinia 统一在 `main.js` 创建 |
 | 5 | IDOR漏洞-读者详情 | gstack-security F-001 | ✅ **已修复** | `/readers/{id}` 添加 `@PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")` |
-| 6 | 默认密码 `123456` | gstack-security F-004 | ❌ **未修复** | `Constants.Security.DEFAULT_PASSWORD = "123456"` 仍硬编码 (Constants.java L227) |
+| 6 | 默认密码 `123456` | gstack-security F-004 | ✅ **已修复 (2026-06-01)** | `application.yml` 移除 `default-password` 项；`ReaderServiceImpl` 改用 `Constants.Security.generateDefaultPassword()` 生成12位随机强密码 |
 
 ---
 
@@ -757,9 +757,9 @@ if (sslEnabled) {
 
 | 状态 | 数量 | 占比 |
 |------|------|------|
-| ✅ 已修复 | 4 | 66.7% |
+| ✅ 已修复 | 5 | 83.3% |
 | △ 架构变更（不再适用） | 1 | 16.7% |
-| ❌ 未修复 | 1 | 16.7% |
+| ❌ 未修复 | 0 | 0% |
 
 ---
 

@@ -11,7 +11,7 @@
         @click="toggleCollapse"
       >
         <div class="logo-icon">
-          <el-icon :size="computedCollapsed ? 22 : 24">
+          <el-icon :size="computedCollapsed ? 18 : 20">
             <Reading />
           </el-icon>
         </div>
@@ -19,7 +19,7 @@
           <span
             v-if="!computedCollapsed"
             class="logo-text"
-          >图书馆系统</span>
+          >智图</span>
         </transition>
       </div>
 
@@ -106,7 +106,7 @@
           v-if="isAdmin"
           index="/volunteers"
         >
-          <el-icon><HelpFilled /></el-icon>
+          <el-icon><Service /></el-icon>
           <template #title>
             志愿服务
           </template>
@@ -229,7 +229,7 @@
           class="collapse-btn"
           @click="toggleCollapse"
         >
-          <el-icon :size="18">
+          <el-icon :size="16">
             <Fold v-if="!isCollapsed" />
             <Expand v-else />
           </el-icon>
@@ -277,12 +277,15 @@ function handleMenuSelect() {
 @use '@/styles/mixins.scss' as *;
 
 .sidebar {
-  background: $gray-750;
+  background: $bg-sidebar-glass;
+  backdrop-filter: blur($glass-blur-sidebar);
+  -webkit-backdrop-filter: blur($glass-blur-sidebar);
   transition: width $transition-slow;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
   z-index: 1;
+  border-right: 0.5px solid rgba(0, 0, 0, 0.08);
 }
 
 .sidebar-inner {
@@ -292,7 +295,7 @@ function handleMenuSelect() {
 }
 
 .logo-area {
-  height: 60px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -300,31 +303,31 @@ function handleMenuSelect() {
   padding: 0 $space-4;
   cursor: pointer;
   user-select: none;
-  border-bottom: 1px solid oklch(1 0 0 / 0.06);
   flex-shrink: 0;
-  transition: background $transition-base;
+  transition: background $transition-fast;
 
   &:hover {
-    background: oklch(1 0 0 / 0.04);
+    background: rgba(0, 0, 0, 0.03);
   }
 
   .logo-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     background: $primary;
-    border-radius: $radius-md;
-    color: $bg-card;
+    border-radius: $radius-full;
+    color: #fff;
     flex-shrink: 0;
+    transition: all $transition-base;
   }
 
   .logo-text {
-    color: oklch(0.92 0.008 50);
+    color: $text-primary;
     font-size: $font-size-lg;
-    font-weight: $font-weight-medium;
-    letter-spacing: 0.5px;
+    font-weight: $font-weight-semibold;
+    letter-spacing: -0.01em;
     white-space: nowrap;
   }
 }
@@ -332,37 +335,67 @@ function handleMenuSelect() {
 .nav-menu {
   flex: 1;
   overflow-y: auto;
-  padding: $space-3 0;
+  padding: $space-2 0;
   background: transparent !important;
 
   :deep(.el-menu-item) {
     margin: 1px $space-2;
     border-radius: $radius-md;
-    height: 40px;
-    line-height: 40px;
-    color: oklch(0.75 0.01 42) !important;
+    height: 38px;
+    line-height: 38px;
+    color: $text-regular !important;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-normal;
     transition: all $transition-fast;
+    position: relative;
 
     .el-icon {
-      color: oklch(0.65 0.01 40);
+      color: $text-regular;
+      font-size: 18px;
       transition: color $transition-fast;
     }
 
     &:hover {
-      background: oklch(1 0 0 / 0.05) !important;
-      color: oklch(0.9 0.01 45) !important;
+      background: rgba(0, 0, 0, 0.04) !important;
+      color: $text-primary !important;
 
       .el-icon {
-        color: oklch(0.85 0.01 45);
+        color: $text-primary;
       }
     }
 
     &.is-active {
-      background: $primary !important;
-      color: #fff !important;
+      background: $primary-lighter !important;
+      color: $primary !important;
+      font-weight: $font-weight-semibold;
+
+      // Left accent bar (Apple style)
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 20px;
+        background: $primary;
+        border-radius: 0 2px 2px 0;
+      }
 
       .el-icon {
-        color: #fff;
+        color: $primary;
+      }
+    }
+  }
+
+  // Collapsed state — center icons
+  &.el-menu--collapse {
+    :deep(.el-menu-item) {
+      justify-content: center;
+      padding: 0 !important;
+
+      &.is-active::before {
+        left: 0;
       }
     }
   }
@@ -371,21 +404,26 @@ function handleMenuSelect() {
 .sidebar-footer {
   flex-shrink: 0;
   padding: $space-3 $space-4;
-  border-top: 1px solid oklch(1 0 0 / 0.06);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.06);
 
   .collapse-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 34px;
-    color: oklch(0.65 0.01 40);
+    height: 32px;
+    width: 32px;
+    color: $text-secondary;
     cursor: pointer;
-    border-radius: $radius-md;
+    border-radius: $radius-full;
     transition: all $transition-fast;
 
     &:hover {
-      background: oklch(1 0 0 / 0.05);
-      color: oklch(0.85 0.01 45);
+      background: rgba(0, 0, 0, 0.05);
+      color: $text-primary;
+    }
+
+    &:active {
+      transform: scale(0.92);
     }
   }
 }

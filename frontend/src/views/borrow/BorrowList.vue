@@ -108,18 +108,10 @@
             width="120"
           >
             <template #default="{ row }">
-              <span
-                v-if="row.fineAmount > 0"
-                style="color: #f56c6c; font-weight: 600;"
-              >
+              <span v-if="row.fineAmount > 0" class="fine-amount">
                 ¥{{ formatFine(row.fineAmount) }}
               </span>
-              <span
-                v-else
-                style="color: #909399;"
-              >
-                -
-              </span>
+              <span v-else class="fine-none">-</span>
             </template>
           </el-table-column>
           <el-table-column
@@ -135,36 +127,38 @@
           </el-table-column>
           <el-table-column
             label="操作"
-            :width="isMobile ? '120' : '200'"
+            :width="isMobile ? '120' : '160'"
             fixed="right"
           >
             <template #default="{ row }">
-              <el-button
-                v-if="row.status === 'BORROWING'"
-                type="primary"
-                link
-                @click="handleRenew(row)"
-              >
-                {{ isMobile ? '' : '续借' }}
-                <el-icon v-if="isMobile"><RefreshRight /></el-icon>
-              </el-button>
-              <el-button
-                v-if="row.status === 'BORROWING'"
-                type="success"
-                link
-                @click="handleReturn(row)"
-              >
-                {{ isMobile ? '' : '还书' }}
-                <el-icon v-if="isMobile"><CircleCheck /></el-icon>
-              </el-button>
-              <el-button
-                type="info"
-                link
-                @click="handleDetail(row)"
-              >
-                {{ isMobile ? '' : '详情' }}
-                <el-icon v-if="isMobile"><View /></el-icon>
-              </el-button>
+              <div class="table-actions">
+                <el-tooltip content="续借" placement="top">
+                  <el-button
+                    v-if="row.status === 'BORROWING'"
+                    type="primary"
+                    link
+                    :icon="RefreshRight"
+                    @click="handleRenew(row)"
+                  />
+                </el-tooltip>
+                <el-tooltip content="还书" placement="top">
+                  <el-button
+                    v-if="row.status === 'BORROWING'"
+                    type="success"
+                    link
+                    :icon="CircleCheck"
+                    @click="handleReturn(row)"
+                  />
+                </el-tooltip>
+                <el-tooltip content="详情" placement="top">
+                  <el-button
+                    type="primary"
+                    link
+                    :icon="View"
+                    @click="handleDetail(row)"
+                  />
+                </el-tooltip>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -177,7 +171,7 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           :layout="isMobile ? 'prev, pager, next' : 'total, sizes, prev, pager, next'"
-          :small="isMobile"
+          :size="isMobile ? 'small' : 'default'"
           @size-change="loadBorrows"
           @current-change="loadBorrows"
         />
@@ -192,6 +186,7 @@ defineOptions({ name: 'Borrows' })
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { RefreshRight, CircleCheck, View } from '@element-plus/icons-vue'
 import { useBorrowStore } from '@/stores/borrow'
 import { exportBorrows } from '@/api/borrow'
 import { useStatusMap } from '@/composables/useStatusMap'
@@ -302,11 +297,12 @@ function handleExport() {
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
 @use '@/styles/mixins.scss' as *;
 
 .borrow-list {
   .search-card {
-    margin-bottom: 20px;
+    margin-bottom: $space-5;
   }
 
   .search-header {
@@ -343,8 +339,26 @@ function handleExport() {
   .pagination {
     display: flex;
     justify-content: flex-end;
-    margin-top: 20px;
+    margin-top: $space-5;
   }
+}
+
+/* ── Fine Amount ─────────────────────── */
+.fine-amount {
+  color: $danger;
+  font-weight: $font-weight-semibold;
+  font-variant-numeric: tabular-nums;
+}
+
+.fine-none {
+  color: $text-secondary;
+}
+
+/* ── Table Actions ───────────────────── */
+.table-actions {
+  display: flex;
+  gap: $space-1;
+  align-items: center;
 }
 
 @include mobile {

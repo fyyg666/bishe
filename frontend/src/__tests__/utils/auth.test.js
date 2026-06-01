@@ -1,5 +1,6 @@
-beforeEach(() => {
+beforeEach(async () => {
   sessionStorage.clear()
+  await vi.resetModules()
 })
 
 it('getToken - should return null when no token set', async () => {

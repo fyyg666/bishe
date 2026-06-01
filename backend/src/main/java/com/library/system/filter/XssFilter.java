@@ -1,27 +1,26 @@
 package com.library.system.filter;
 
 import cn.hutool.core.util.StrUtil;
+import com.library.system.security.SecurityAuditLogger;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
-/**
- * XSS防护过滤器
- * 使用Hutool的XssUtil.stripTags()对所有请求参数进行XSS过滤
- *
- * @author Security Team
- * @version 2.0.0
- */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class XssFilter extends OncePerRequestFilter {
+
+    private final SecurityAuditLogger securityAuditLogger;
 
     /**
      * 公开接口白名单 - 这些接口跳过XSS过滤（相对于context-path的路径）
@@ -46,15 +45,28 @@ public class XssFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        // 检查是否是白名单路径
         if (isWhitelisted(request)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 包装请求以进行XSS处理，直接使用原始response避免响应体截断
-        XssRequestWrapper xssRequest = new XssRequestWrapper(request);
+        Map<String, String[]> paramMap = request.getParameterMap();
+        String path = request.getRequestURI();
+        for (Map.Entry<String, String[]> entry : paramMap.entrySet()) {
+            String paramName = entry.getKey();
+            for (String paramValue : entry.getValue()) {
+                if (!isSafe(paramValue)) {
+                    securityAuditLogger.logXssDetection(path, paramName, paramValue);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"code\":400,\"message\":\"请求包含不安全内容\"}");
+                    response.getWriter().flush();
+                    return;
+                }
+            }
+        }
 
+        XssRequestWrapper xssRequest = new XssRequestWrapper(request);
         filterChain.doFilter(xssRequest, response);
     }
 

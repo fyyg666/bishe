@@ -8,7 +8,7 @@
             v-model="statusFilter"
             placeholder="状态筛选"
             clearable
-            style="width: 120px; margin-right: 12px"
+            class="status-filter-select"
             @change="fetchList"
           >
             <el-option
@@ -289,12 +289,29 @@ onMounted(fetchList)
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+@use '@/styles/mixins.scss' as *;
+
 .suggestion-page {
   .page-header { margin-bottom: 16px; }
   .header-content {
     display: flex; justify-content: space-between; align-items: center;
     h2 { margin: 0; }
   }
+  .status-filter-select { width: 120px; margin-right: 12px; }
   .pagination { margin-top: 16px; text-align: right; }
+}
+
+@include mobile {
+  .suggestion-page {
+    .header-content {
+      flex-direction: column;
+      gap: $space-3;
+      align-items: flex-start;
+    }
+  }
+  :deep(.el-table) {
+    overflow-x: auto;
+  }
 }
 </style>

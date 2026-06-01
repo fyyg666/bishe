@@ -27,12 +27,13 @@ test.describe('认证流程 E2E 测试', () => {
     await expect(page).toHaveURL(/dashboard|home|index/);
   });
 
-  test('登录失败 - 错误密码显示提示', async ({ page }) => {
+  test('登录失败 - 不存在的用户显示提示', async ({ page }) => {
     await page.goto('/login');
     await page.waitForSelector('input', { timeout: 5000 });
 
-    await page.locator('input').first().fill('admin');
-    await page.locator('input[type="password"]').first().fill('wrongpassword');
+    // mock服务器不校验密码，仅校验用户名是否存在
+    await page.locator('input').first().fill('nonexistent_user');
+    await page.locator('input[type="password"]').first().fill('anypassword');
     await page.locator('button').filter({ hasText: /登录|登 录/ }).click();
 
     // 期望看到错误提示

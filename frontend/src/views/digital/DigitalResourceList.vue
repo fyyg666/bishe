@@ -1,5 +1,5 @@
 <template>
-  <div class="digital-resource-list">
+  <div class="digital-resource-list" v-loading="loading">
     <el-card class="search-card">
       <el-form
         :model="searchForm"
@@ -504,19 +504,33 @@ async function handleDownload(row) {
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/variables.scss' as *;
+@use '@/styles/mixins.scss' as *;
+
 .digital-resource-list {
   .search-card {
-    margin-bottom: 16px;
+    margin-bottom: $space-4;
   }
 
   .table-toolbar {
-    margin-bottom: 16px;
+    margin-bottom: $space-4;
   }
 
   .pagination {
     display: flex;
     justify-content: flex-end;
-    margin-top: 20px;
+    margin-top: $space-5;
+  }
+}
+
+@include mobile {
+  .digital-resource-list {
+    :deep(.el-table) {
+      overflow-x: auto;
+    }
+    :deep(.el-table__fixed-right) {
+      box-shadow: none;
+    }
   }
 }
 </style>

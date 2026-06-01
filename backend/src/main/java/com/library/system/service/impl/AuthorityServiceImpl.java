@@ -6,6 +6,7 @@ import com.library.system.dto.AuthorityRecordRequest;
 import com.library.system.dto.AuthorityRecordResponse;
 import com.library.system.dto.PageResult;
 import com.library.system.entity.AuthorityRecord;
+import com.library.system.exception.ResourceNotFoundException;
 import com.library.system.mapper.AuthorityRecordMapper;
 import com.library.system.service.AuthorityService;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ public class AuthorityServiceImpl implements AuthorityService {
     public AuthorityRecordResponse getAuthority(Long id) {
         AuthorityRecord record = authorityRecordMapper.selectById(id);
         if (record == null) {
-            throw new RuntimeException("规范记录不存在: " + id);
+            throw new ResourceNotFoundException("规范记录不存在: " + id);
         }
         return convertToResponse(record);
     }
@@ -71,7 +72,7 @@ public class AuthorityServiceImpl implements AuthorityService {
     public AuthorityRecordResponse updateAuthority(Long id, AuthorityRecordRequest request) {
         AuthorityRecord record = authorityRecordMapper.selectById(id);
         if (record == null) {
-            throw new RuntimeException("规范记录不存在: " + id);
+            throw new ResourceNotFoundException("规范记录不存在: " + id);
         }
         record.setAuthorityType(request.getAuthorityType());
         record.setHeading(request.getHeading());

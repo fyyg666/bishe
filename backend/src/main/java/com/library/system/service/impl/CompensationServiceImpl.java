@@ -2,7 +2,6 @@ package com.library.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.library.system.common.Constants;
 import com.library.system.dto.CompensationRequest;
 import com.library.system.dto.CompensationResponse;
 import com.library.system.dto.PageResult;
@@ -20,6 +19,7 @@ import com.library.system.mapper.CompensationMapper;
 import com.library.system.mapper.UserMapper;
 import com.library.system.service.CompensationService;
 import com.library.system.service.CreditService;
+import com.library.system.template.DistributedLockTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,11 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -50,6 +54,7 @@ public class CompensationServiceImpl implements CompensationService {
     private final CreditService creditService;
     private final BorrowRecordMapper borrowRecordMapper;
     private final BookMapper bookMapper;
+    private final DistributedLockTemplate lockTemplate;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -92,7 +97,7 @@ public class CompensationServiceImpl implements CompensationService {
         compensationMapper.insert(compensation);
 
         log.info("赔偿订单创建成功: orderNo={}, userId={}, type={}", orderNo, request.getUserId(), request.getCompType());
-        return convertToResponse(compensation);
+        return convertToResponse(compensation, buildUserNameMap(List.of(compensation)));
     }
 
     @Override
@@ -107,8 +112,10 @@ public class CompensationServiceImpl implements CompensationService {
         Page<Compensation> page = new Page<>(current, size);
         Page<Compensation> result = compensationMapper.selectPage(page, wrapper);
 
+        Map<Long, String> userNameMap = buildUserNameMap(result.getRecords());
+
         List<CompensationResponse> records = result.getRecords().stream()
-                .map(this::convertToResponse)
+                .map(c -> convertToResponse(c, userNameMap))
                 .collect(Collectors.toList());
 
         return PageResult.of(result.getCurrent(), result.getSize(), result.getTotal(), records);
@@ -120,62 +127,61 @@ public class CompensationServiceImpl implements CompensationService {
         if (compensation == null || compensation.getDeleted() == 1) {
             throw new ResourceNotFoundException(ErrorCode.COMPENSATION_NOT_FOUND, "赔偿记录不存在");
         }
-        return convertToResponse(compensation);
+        return convertToResponse(compensation, buildUserNameMap(List.of(compensation)));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CompensationResponse processCashPayment(Long id, Long operatorId, String remark) {
-        Compensation compensation = getValidCompensation(id);
-        compensation.setStatus(CompensationStatus.PAID.name());
-        compensation.setPaymentMethod("CASH");
-        compensation.setReviewerId(operatorId);
-        compensation.setReviewTime(LocalDateTime.now());
-        compensation.setRemark(remark);
-        compensationMapper.updateById(compensation);
-        log.info("现金赔偿处理完成: orderNo={}, operatorId={}", compensation.getOrderNo(), operatorId);
-        return convertToResponse(compensation);
+        return lockTemplate.executeWithLock("compensation:process:" + id, () -> {
+            Compensation compensation = getValidCompensation(id);
+            compensation.setStatus(CompensationStatus.PAID.name());
+            compensation.setPaymentMethod("CASH");
+            compensation.setReviewerId(operatorId);
+            compensation.setReviewTime(LocalDateTime.now());
+            compensation.setRemark(remark);
+            compensationMapper.updateById(compensation);
+            log.info("现金赔偿处理完成: orderNo={}, operatorId={}", compensation.getOrderNo(), operatorId);
+            return convertToResponse(compensation, buildUserNameMap(List.of(compensation)));
+        });
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CompensationResponse processCreditPayment(Long id, Long operatorId, Integer creditAmount, String remark) {
-        Compensation compensation = getValidCompensation(id);
+        return lockTemplate.executeWithLock("compensation:process:" + id, () -> {
+            Compensation compensation = getValidCompensation(id);
 
-        // 根据赔偿类型动态确定积分扣减值
-        String compType = compensation.getCompType();
-        int penalty = "LOST".equals(compType)
-                ? Constants.Credit.LOST_PENALTY
-                : Constants.Credit.DAMAGE_PENALTY;
+            creditService.deductCredit(compensation.getUserId(), creditAmount, compensation.getCompType(),
+                    "图书赔偿扣除积分", compensation.getId(), "COMPENSATION");
 
-        // 调用积分服务扣除积分
-        creditService.deductCredit(compensation.getUserId(), penalty, compType,
-                "图书赔偿扣除积分", compensation.getId(), "COMPENSATION");
-
-        compensation.setStatus(CompensationStatus.PAID.name());
-        compensation.setPaymentMethod("CREDIT");
-        compensation.setCreditDeducted(creditAmount);
-        compensation.setReviewerId(operatorId);
-        compensation.setReviewTime(LocalDateTime.now());
-        compensation.setRemark(remark);
-        compensationMapper.updateById(compensation);
-        log.info("积分赔偿处理完成: orderNo={}, creditAmount={}", compensation.getOrderNo(), creditAmount);
-        return convertToResponse(compensation);
+            compensation.setStatus(CompensationStatus.PAID.name());
+            compensation.setPaymentMethod("CREDIT");
+            compensation.setCreditDeducted(creditAmount);
+            compensation.setReviewerId(operatorId);
+            compensation.setReviewTime(LocalDateTime.now());
+            compensation.setRemark(remark);
+            compensationMapper.updateById(compensation);
+            log.info("积分赔偿处理完成: orderNo={}, creditAmount={}", compensation.getOrderNo(), creditAmount);
+            return convertToResponse(compensation, buildUserNameMap(List.of(compensation)));
+        });
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CompensationResponse processVolunteerPayment(Long id, Long operatorId, BigDecimal hours, String remark) {
-        Compensation compensation = getValidCompensation(id);
-        compensation.setStatus(CompensationStatus.PAID.name());
-        compensation.setPaymentMethod("VOLUNTEER");
-        compensation.setVolunteerHours(hours);
-        compensation.setReviewerId(operatorId);
-        compensation.setReviewTime(LocalDateTime.now());
-        compensation.setRemark(remark);
-        compensationMapper.updateById(compensation);
-        log.info("志愿服务抵扣赔偿完成: orderNo={}, hours={}", compensation.getOrderNo(), hours);
-        return convertToResponse(compensation);
+        return lockTemplate.executeWithLock("compensation:process:" + id, () -> {
+            Compensation compensation = getValidCompensation(id);
+            compensation.setStatus(CompensationStatus.PAID.name());
+            compensation.setPaymentMethod("VOLUNTEER");
+            compensation.setVolunteerHours(hours);
+            compensation.setReviewerId(operatorId);
+            compensation.setReviewTime(LocalDateTime.now());
+            compensation.setRemark(remark);
+            compensationMapper.updateById(compensation);
+            log.info("志愿服务抵扣赔偿完成: orderNo={}, hours={}", compensation.getOrderNo(), hours);
+            return convertToResponse(compensation, buildUserNameMap(List.of(compensation)));
+        });
     }
 
     @Override
@@ -213,19 +219,12 @@ public class CompensationServiceImpl implements CompensationService {
     /**
      * 实体转DTO
      */
-    private CompensationResponse convertToResponse(Compensation comp) {
-        String username = "";
-        User user = userMapper.selectById(comp.getUserId());
-        if (user != null) {
-            username = user.getUsername();
-        }
+    private CompensationResponse convertToResponse(Compensation comp, Map<Long, String> userNameMap) {
+        String username = userNameMap.getOrDefault(comp.getUserId(), "");
 
         String reviewerName = "";
         if (comp.getReviewerId() != null) {
-            User reviewer = userMapper.selectById(comp.getReviewerId());
-            if (reviewer != null) {
-                reviewerName = reviewer.getUsername();
-            }
+            reviewerName = userNameMap.getOrDefault(comp.getReviewerId(), "");
         }
 
         String compTypeDesc = "LOST".equals(comp.getCompType()) ? "丢失" : "损坏";
@@ -265,5 +264,20 @@ public class CompensationServiceImpl implements CompensationService {
                 .reviewTime(comp.getReviewTime())
                 .createTime(comp.getCreateTime())
                 .build();
+    }
+
+    private Map<Long, String> buildUserNameMap(List<Compensation> compensations) {
+        Set<Long> ids = new HashSet<>();
+        for (Compensation c : compensations) {
+            ids.add(c.getUserId());
+            if (c.getReviewerId() != null) {
+                ids.add(c.getReviewerId());
+            }
+        }
+        if (ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userMapper.selectBatchIds(ids).stream()
+                .collect(Collectors.toMap(User::getId, User::getUsername));
     }
 }

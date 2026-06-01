@@ -318,8 +318,9 @@ async function loadVendors() {
   try {
     const res = await getVendorList({ current: 1, size: 200 })
     vendorOptions.value = res.data?.records || []
-  } catch { /* ignore */ }
-}
+  } catch {
+    ElMessage.error('加载供应商列表失败')
+  }
 
 function openCreateDialog() {
   createForm.value = {
@@ -356,7 +357,11 @@ async function handleSubmit(row) {
     await submitForApproval(row.id)
     ElMessage.success('已提交审批')
     fetchList()
-  } catch { /* ignore */ }
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('提交审批失败')
+    }
+  }
 }
 
 async function handleApprove(row) {
@@ -365,7 +370,11 @@ async function handleApprove(row) {
     await approvePurchaseOrder(row.id)
     ElMessage.success('审批通过')
     fetchList()
-  } catch { /* ignore */ }
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('审批失败')
+    }
+  }
 }
 
 async function handleCancel(row) {
@@ -374,7 +383,11 @@ async function handleCancel(row) {
     await cancelPurchaseOrder(row.id)
     ElMessage.success('已取消')
     fetchList()
-  } catch { /* ignore */ }
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('取消失败')
+    }
+  }
 }
 
 function canCancel(status) {

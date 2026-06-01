@@ -2,6 +2,9 @@ package com.library.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import com.library.system.common.Constants;
 import com.library.system.config.BloomFilterConfig;
 import com.library.system.dto.*;
@@ -41,7 +44,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @CacheConfig(cacheNames = "bookCache")
-public class BookServiceImpl implements BookService {
+public class BookServiceImpl extends ServiceImpl<BookMapper, Book> implements BookService {
 
     private final BookMapper bookMapper;
     private final BookCategoryMapper bookCategoryMapper;
@@ -119,7 +122,11 @@ public class BookServiceImpl implements BookService {
                 .build();
 
 
-        bookMapper.insert(book);
+        try {
+            bookMapper.insert(book);
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException(ErrorCode.ISBN_DUPLICATE, "ISBN已存在");
+        }
 
         // FIXED: P2-009 新增图书后同步更新布隆过滤器
         bloomFilterConfig.addBook(String.valueOf(book.getId()));
@@ -163,10 +170,17 @@ public class BookServiceImpl implements BookService {
         int oldTotal = book.getTotalCount();
         int newTotal = request.getTotalCount();
         int diff = newTotal - oldTotal;
+        int newAvailableCount = book.getAvailableCount() + diff;
+        if (newAvailableCount < 0) {
+            throw new BusinessException(ErrorCode.BOOK_STOCK_ERROR, "可借数量不能为负数，当前借出数量超过新的总数量");
+        }
         book.setTotalCount(newTotal);
-        book.setAvailableCount(Math.max(0, book.getAvailableCount() + diff));
+        book.setAvailableCount(newAvailableCount);
 
-        bookMapper.updateById(book);
+        int rows = bookMapper.updateById(book);
+        if (rows == 0) {
+            throw new BusinessException(ErrorCode.CONCURRENT_OPERATION, "图书信息已被其他操作修改，请刷新后重试");
+        }
 
         log.info("图书更新成功: {}", book.getTitle());
         return convertToResponse(book);
@@ -179,6 +193,10 @@ public class BookServiceImpl implements BookService {
         Book book = bookMapper.selectById(id);
         if (book == null || book.getDeleted() == 1) {
             throw new ResourceNotFoundException(ErrorCode.BOOK_NOT_FOUND, "图书不存在"); 
+        }
+
+        if (book.getBorrowCount() != null && book.getBorrowCount() > 0) {
+            throw new BusinessException(ErrorCode.BOOK_NOT_AVAILABLE, "该图书有活跃借阅记录，无法删除");
         }
 
         bookMapper.deleteById(id);
@@ -301,9 +319,13 @@ public class BookServiceImpl implements BookService {
                 if (batchBooks.size() >= 100) {
                     flushBatchInsert(batchBooks);
                 }
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
                 log.error("导入第{}行失败", rowNum, e);
-                result.getErrors().add("第" + rowNum + "行: 数据格式异常，请检查");  // FIXED: 异常消息脱敏
+                result.getErrors().add("第" + rowNum + "行: 数据格式异常，请检查");
+                result.setFailCount(result.getFailCount() + 1);
+            } catch (BusinessException e) {
+                log.error("导入第{}行失败", rowNum, e);
+                result.getErrors().add("第" + rowNum + "行: " + e.getMessage());
                 result.setFailCount(result.getFailCount() + 1);
             }
         }
@@ -318,8 +340,8 @@ public class BookServiceImpl implements BookService {
      * 批量插入图书并更新布隆过滤器
      */
     private void flushBatchInsert(List<Book> books) {
+        saveBatch(books);
         for (Book book : books) {
-            bookMapper.insert(book);
             bloomFilterConfig.addBook(String.valueOf(book.getId()));
         }
         books.clear();
